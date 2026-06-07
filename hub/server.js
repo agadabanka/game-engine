@@ -24,15 +24,22 @@ const GH_TOKEN = process.env.GH_TOKEN || '';
 const CACHE_MS = Number(process.env.CACHE_MS || 60_000);   // re-pull at most this often
 const authed = (req) => !ADMIN_TOKEN || req.get('x-admin-token') === ADMIN_TOKEN;
 
-// ── registry (volume-backed, seeded from games.json on first boot) ──
+// ── registry (volume-backed, seeded from games.json) ──
+// The store holds the live registry (dashboard edits, scaffolded games). The
+// games.json seed is merged in on read so updates to seeded entries (e.g. newly
+// added meta) propagate to an already-seeded deploy, while stored fields still win.
+function readSeed() {
+  try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'games.json'), 'utf8')); }
+  catch { return []; }
+}
 async function getGames() {
-  let games = await store.get('games', null);
-  if (!games) {
-    try { games = JSON.parse(fs.readFileSync(path.join(__dirname, 'games.json'), 'utf8')); }
-    catch { games = []; }
-    await store.set('games', games);
-  }
-  return games;
+  const seed = readSeed();
+  const stored = await store.get('games', null);
+  if (!stored) { await store.set('games', seed); return seed; }
+  const byId = {};
+  for (const g of seed) byId[g.id] = { ...g };
+  for (const g of stored) byId[g.id] = { ...byId[g.id], ...g, meta: g.meta || byId[g.id]?.meta };
+  return Object.values(byId);
 }
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 

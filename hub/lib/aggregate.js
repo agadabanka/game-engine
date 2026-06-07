@@ -101,6 +101,9 @@ export async function snapshotGame(game, { ghToken } = {}) {
       if (raw) { try { out.meta = JSON.parse(raw); } catch {} break; }
     }
   }
+  // last fallback: inline meta on the registry entry (lets the hub show a rich
+  // card for a game whose repo doesn't carry GAME_META.json yet).
+  if (!out.meta && game.meta) out.meta = game.meta;
 
   out.ok = out.live || out.diary.count > 0;
   if (!out.ok) out.error = base ? 'no response from deploy' : 'no deploy url and no DIARY.md on GitHub';

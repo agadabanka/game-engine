@@ -6,7 +6,15 @@
     "url": null,
     "tagline": "The base game + the rig everything else was built on (frog).",
     "hero": "pixel frog",
-    "verb": "run · jump · stomp"
+    "verb": "run · jump · stomp",
+    "meta": {
+      "hero": "pixel frog",
+      "verb": "run · jump · stomp",
+      "controls": "on-screen + keyboard",
+      "art": "pixel-art",
+      "music": "chiptune",
+      "engine": "game-engine (base)"
+    }
   },
   {
     "id": "jazz",
@@ -15,6 +23,19 @@
     "url": null,
     "tagline": "Building a Bunny with a Bazooka — the second game off the engine.",
     "hero": "cartoon bunny",
-    "verb": "run · jump · shoot · dive"
+    "verb": "run · jump · shoot · dive",
+    "meta": {
+      "hero": "Jazz, a light-blue cartoon bunny in an orange jumpsuit",
+      "verb": "run · jump · shoot · dive · stomp",
+      "worlds": ["Carrot Caverns", "Sunset Strip", "Dustbowl Dunes", "Lava Lagoon", "Thunder Dome"],
+      "levelCount": 13,
+      "controls": "joystick + jump + dive + fire",
+      "art": "bold-outline Saturday-morning cartoon (Gemini, model-sheet-locked)",
+      "music": "Lyria — a score per world",
+      "diff": { "uniqueness": 81, "feelSimilarity": 94 },
+      "engine": "game-engine",
+      "builder": "/build.html",
+      "designLens": "/design.html"
+    }
   }
 ]
