@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Game Engine — Hit New Game and Go</title>
+<style>
+  @page { size: A4; margin: 0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Helvetica Neue",Arial,sans-serif; color:#eaf0ff; }
+  .page{ position:relative; width:210mm; height:297mm; overflow:hidden; page-break-after:always;
+         background-size:cover; background-position:center; background-color:#0a0f1e; }
+  .page:last-child{ page-break-after:auto; }
+  .scrim{ position:absolute; inset:0; }
+  .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; padding:15mm 14mm; }
+  .kicker{ text-transform:uppercase; letter-spacing:.22em; font-size:8.5pt; font-weight:800; color:#9fd6ff; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  h2{ font-size:24pt; margin:2px 0 11px; line-height:1.05; color:#fff; text-shadow:0 3px 16px rgba(0,0,0,.9); }
+  .card{ background:rgba(9,15,32,.74); border:1px solid rgba(255,255,255,.13); border-radius:12px; padding:13px 15px; backdrop-filter:blur(2px); box-shadow:0 10px 30px rgba(0,0,0,.4); }
+  .card.tight{ padding:10px 13px; }
+  p{ margin:6px 0; font-size:10.4pt; line-height:1.5; color:#e9eeff; }
+  .lead{ font-size:11.6pt; color:#fff; }
+  h3{ font-size:11pt; margin:11px 0 3px; color:#9fd6ff; }
+  ul{ margin:5px 0; padding-left:17px; } li{ margin:3px 0; font-size:9.8pt; line-height:1.45; color:#e9eeff; }
+  code{ font-family:"SF Mono",Menlo,Consolas,monospace; background:rgba(120,150,220,.2); color:#cfe0ff; padding:1px 5px; border-radius:4px; font-size:8.6pt; }
+  b.h{ color:#ffd98a; }
+  .foot{ margin-top:auto; }
+  .pageno{ position:absolute; bottom:8mm; right:12mm; font-size:8pt; color:#aebbe0; }
+  /* cover */
+  .cover .wrap{ justify-content:flex-start; }
+  .cover .titlebox{ margin:6mm auto 0; max-width:160mm; text-align:center;
+    background:rgba(8,12,28,.62); border:1px solid rgba(255,255,255,.16); border-radius:16px;
+    padding:13px 22px 17px; backdrop-filter:blur(3px); box-shadow:0 14px 44px rgba(0,0,0,.5); }
+  .cover .titlebox .small{ font-size:10pt; color:#9fd6ff; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+  .cover .titlebox h1{ font-size:42pt; margin:5px 0 0; color:#fff; letter-spacing:.02em; line-height:1;
+    text-shadow:0 2px 12px rgba(0,0,0,.6); }
+  .cover .titlebox .sub{ font-size:13.5pt; color:#ffd98a; margin-top:8px; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  /* architecture diagram */
+  .diap .wrap{ padding:12mm 11mm; }
+  .diagram{ display:flex; gap:6px; margin-top:7px; flex:1; }
+  .spine{ width:9mm; display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+    border-radius:8px; background:linear-gradient(180deg,rgba(196,166,255,.18),rgba(111,182,240,.18));
+    border:1px solid rgba(255,255,255,.1); padding:6px 0; }
+  .spine .ar{ font-size:15pt; color:#cfe0ff; } .spine .lab{ writing-mode:vertical-rl; transform:rotate(180deg);
+    font-size:7.5pt; letter-spacing:.14em; text-transform:uppercase; color:#aebbe0; font-weight:700; }
+  .layers{ flex:1; display:flex; flex-direction:column; gap:6px; }
+  .layer{ display:flex; gap:7px; align-items:stretch; flex:1; }
+  .lname{ width:33mm; flex:none; border-radius:9px; padding:7px 8px; display:flex; flex-direction:column; justify-content:center; border:1px solid; }
+  .lname .lt{ font-size:9pt; font-weight:800; line-height:1.08; }
+  .lname .ls{ font-size:6.6pt; color:#c3cdea; margin-top:3px; letter-spacing:.04em; text-transform:uppercase; }
+  .lboxes{ flex:1; display:flex; flex-wrap:wrap; gap:5px; align-content:center; }
+  .box{ background:rgba(10,16,34,.84); border:1px solid rgba(255,255,255,.14); border-left:3px solid;
+    border-radius:8px; padding:5px 8px; min-width:40mm; flex:1 1 0; }
+  .box b{ font-size:8.4pt; color:#fff; } .box span{ display:block; font-size:6.8pt; color:#b9c4e6; margin-top:1px; line-height:1.3; }
+  code.k{ font-family:"SF Mono",Menlo,Consolas,monospace; font-size:7.4pt; background:none; padding:0; color:inherit; }
+  .Lpub{ background:rgba(255,138,176,.13); border-color:rgba(255,138,176,.5); } .Lpub .lt{ color:#ff8ab0; } .layer.pub .box{ border-left-color:#ff8ab0; }
+  .Lloop{ background:rgba(255,177,77,.13); border-color:rgba(255,177,77,.5); } .Lloop .lt{ color:#ffb14d; } .layer.loop .box{ border-left-color:#ffb14d; }
+  .Leval{ background:rgba(95,214,110,.13); border-color:rgba(95,214,110,.5); } .Leval .lt{ color:#5fd66e; } .layer.eval .box{ border-left-color:#5fd66e; }
+  .Lcont{ background:rgba(185,139,255,.13); border-color:rgba(185,139,255,.5); } .Lcont .lt{ color:#c4a6ff; } .layer.cont .box{ border-left-color:#c4a6ff; }
+  .Leng{ background:rgba(95,214,192,.13); border-color:rgba(95,214,192,.5); } .Leng .lt{ color:#5fd6c0; } .layer.eng .box{ border-left-color:#5fd6c0; }
+  .Lplat{ background:rgba(111,182,240,.13); border-color:rgba(111,182,240,.5); } .Lplat .lt{ color:#6fb6f0; } .layer.plat .box{ border-left-color:#6fb6f0; }
+  .Lfound{ background:rgba(255,211,77,.13); border-color:rgba(255,211,77,.5); } .Lfound .lt{ color:#ffd34d; } .layer.found .box{ border-left-color:#ffd34d; }
+</style></head><body>
+
+<!-- COVER -->
+<section class="page cover" style="background-image:url('img/art/cover.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.12),rgba(6,10,22,.04) 36%,rgba(6,10,22,.55))"></div>
+  <div class="wrap">
+    <div class="titlebox">
+      <div class="small">A make-of field guide · built with Claude Code</div>
+      <h1>GAME ENGINE</h1>
+      <div class="sub">Hit "New Game" and Go</div>
+      <p style="color:#dfe8ff;font-size:10.5pt;max-width:128mm;margin:9px auto 0">The reusable rig that ties together everything learned building <b class="h">the-platformer</b> (a working game) and <b class="h">Jazz</b> (a second game off it) — one command scaffolds a new game wired to the whole stack, and one dashboard watches them all.</p>
+    </div>
+    <div class="foot"><div class="card tight" style="text-align:center">
+      <p style="margin:0;font-size:9.5pt;color:#cfe0ff">the <b class="h">new-game</b> button · the <b class="h">mission-control</b> hub · every game's notes &amp; diaries, one board</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- CH1 — what it is -->
+<section class="page" style="background-image:url('img/art/ch1.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.78),rgba(6,10,22,.24) 44%,rgba(6,10,22,.8))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 1</div><h2>Everything into one</h2>
+    <div class="card">
+      <p class="lead">Two games came before this: <b class="h">the-platformer</b>, a working Phaser game on a deploy-ready skeleton, and <b class="h">Jazz</b>, a cartoon run-and-gun built on top of it. Building the second proved the same engine and discipline could carry a brand-new skin and verb.</p>
+      <p>The lesson Jazz left behind: don't keep rebuilding the bottom. Lift the <b class="h">platform</b>, the <b class="h">engine</b>, and the <b class="h">evaluation</b> tiers into one place, so the third game — and the tenth — starts wired to all of it on day one.</p>
+      <h3>So this repo is two things</h3>
+      <ul>
+        <li><b>The <code>new-game</code> button</b> — one command turns "I want to build X" into a fresh, playable, deploy-ready game repo.</li>
+        <li><b>The mission-control hub</b> — one deployed dashboard that watches every game's live notes, build diaries, and meta.</li>
+      </ul>
+      <p>Not a framework you learn. A rig you inherit.</p>
+    </div>
+    <div class="pageno">1</div>
+  </div>
+</section>
+
+<!-- CH2 — the new-game button -->
+<section class="page" style="background-image:url('img/art/ch2.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.8),rgba(6,10,22,.26) 46%,rgba(6,10,22,.82))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 2</div><h2>The button</h2>
+    <div class="card">
+      <p class="lead">One command, six steps, a new game on GitHub and on the board:</p>
+      <p style="margin:8px 0"><code>node scripts/new-game.mjs "My Game" --hero "a robot ninja" --verb "dash · slash"</code></p>
+      <ul>
+        <li><b class="h">clone</b> the proven base — a complete, playable platformer</li>
+        <li><b class="h">rebrand</b> name, description, README; start a fresh build diary</li>
+        <li><b class="h">write</b> <code>GAME_META.json</code> so the hub shows a rich card</li>
+        <li><b class="h">create</b> the GitHub repo and <b class="h">push</b> (fresh history)</li>
+        <li><b class="h">register</b> it with the hub — it appears on mission control at once</li>
+      </ul>
+      <h3>What the new game already has</h3>
+      <p>Platform (server · store · Gemini · Lyria) · the Phaser engine (scenes · materials · the level DSL · campaign merge) · the canvas level builder · the full evaluation suite (0-death gate · felt-fun · recorder · vision judge · game-diff) · the notes→diary→issues loop. You don't rebuild any of it — you <b class="h">re-skin the surface</b> (hero, verb, art, music, worlds) and design levels.</p>
+    </div>
+    <div class="pageno">2</div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE SPREAD -->
+<section class="page diap" style="background-image:url('img/art/stack.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.62),rgba(6,10,22,.44) 45%,rgba(6,10,22,.74))"></div>
+  <div class="wrap">
+    <div class="kicker">The stack · field map</div>
+    <h2 style="margin-bottom:2px">What a new game stands on</h2>
+    <p style="font-size:9pt;color:#cfe0ff;margin:2px 0 0">Read it bottom-up: two inherited <b class="h">foundations</b> at the base, each tier built on the one beneath. A new game reuses the bottom whole and re-skins the top.</p>
+    <div class="diagram">
+      <div class="spine"><span class="ar">▲</span><span class="lab">builds on</span><span class="ar" style="opacity:.5">base</span></div>
+      <div class="layers">
+        <div class="layer pub"><div class="lname Lpub"><div class="lt">Publish &amp; ship</div><div class="ls">on the platform</div></div>
+          <div class="lboxes">
+            <div class="box"><b>YouTube playlists</b><span>record → upload</span></div>
+            <div class="box"><b>Railway deploy</b><span>push <code class="k">main</code> → live</span></div>
+          </div></div>
+        <div class="layer loop"><div class="lname Lloop"><div class="lt">Feedback loop</div><div class="ls">+ the hub</div></div>
+          <div class="lboxes">
+            <div class="box"><b>In-game notes</b><span>pause → pin → <code class="k">/api/notes</code></span></div>
+            <div class="box"><b>Notes → issues</b><span>GitHub on session start</span></div>
+            <div class="box"><b>Build diary</b><span><code class="k">DIARY.md</code> → <code class="k">/diary.html</code></span></div>
+          </div></div>
+        <div class="layer eval"><div class="lname Leval"><div class="lt">Evaluation</div><div class="ls">the AI playtester</div></div>
+          <div class="lboxes">
+            <div class="box"><b>0-death gate</b><span><code class="k">wincheck</code> — the ship bar</span></div>
+            <div class="box"><b>Felt-fun + recorder</b><span><code class="k">feel</code> · deterministic <code class="k">record</code></span></div>
+            <div class="box"><b>Vision judge · diff</b><span><code class="k">judge</code> · game-diff · feel-judge</span></div>
+          </div></div>
+        <div class="layer cont"><div class="lname Lcont"><div class="lt">Content &amp; authoring</div><div class="ls">worlds + assets</div></div>
+          <div class="lboxes">
+            <div class="box"><b>Art pipeline</b><span>model sheet → refs → chroma-key</span></div>
+            <div class="box"><b>Lyria music</b><span>a score per world</span></div>
+            <div class="box"><b>Level builder</b><span>paint on a grid · <code class="k">/build.html</code></span></div>
+          </div></div>
+        <div class="layer eng"><div class="lname Leng"><div class="lt">Engine (Phaser)</div><div class="ls">AI-first</div></div>
+          <div class="lboxes">
+            <div class="box"><b>Scenes + controls</b><span>Boot · Title · Play · UI</span></div>
+            <div class="box"><b>Materials / elements</b><span>look + footing + grounding</span></div>
+            <div class="box"><b>levelkit + merge</b><span>the DSL · campaign merge</span></div>
+          </div></div>
+        <div class="layer plat"><div class="lname Lplat"><div class="lt">Platform (shared rig)</div><div class="ls">always-on</div></div>
+          <div class="lboxes">
+            <div class="box"><b>server · store</b><span>Express · volume KV</span></div>
+            <div class="box"><b>gemini · Lyria</b><span>image · vision · text · music</span></div>
+            <div class="box"><b>Railway</b><span>click-to-deploy</span></div>
+          </div></div>
+        <div class="layer found"><div class="lname Lfound"><div class="lt">Foundations</div><div class="ls">inherited base</div></div>
+          <div class="lboxes">
+            <div class="box"><b>the-harness</b><span>the method: story levels · 0-death · felt-fun</span></div>
+            <div class="box"><b>the-platformer / the-rig</b><span>a working game + a deploy skeleton</span></div>
+          </div></div>
+      </div>
+    </div>
+    <div class="pageno">3</div>
+  </div>
+</section>
+
+<!-- CH4 — the hub -->
+<section class="page" style="background-image:url('img/art/ch4.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.78),rgba(6,10,22,.26) 44%,rgba(6,10,22,.82))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 3</div><h2>Mission control</h2>
+    <div class="card">
+      <p class="lead">The one tier that's new here: a layer <i>above</i> all games. It doesn't run any game — it <b class="h">observes</b> them.</p>
+      <p>Because every game built on the engine exposes the same surface, the hub pulls them all into one board with a single shape:</p>
+      <ul>
+        <li><code>/api/notes</code> — live playtest feedback (open vs. closed)</li>
+        <li><code>/api/diary</code> — the build log, parsed into entries</li>
+        <li><code>/api/meta</code> — hero, verb, worlds, level count, art, music, diff scores</li>
+      </ul>
+      <h3>Pull-model, so nothing else has to change</h3>
+      <p>Existing games (the-platformer, Jazz) work unchanged. And a game that isn't deployed yet still shows up — the hub reads <code>DIARY.md</code> and <code>GAME_META.json</code> straight from its GitHub repo. The result: per-game cards, one aggregated <b class="h">notes-triage</b> feed, and the combined diary timeline — the state of <i>every</i> game at a glance.</p>
+    </div>
+    <div class="pageno">4</div>
+  </div>
+</section>
+
+<!-- CH5 — the loop + closing -->
+<section class="page" style="background-image:url('img/art/ch5.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.8),rgba(6,10,22,.28) 46%,rgba(6,10,22,.82))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 4</div><h2>From "I felt something" to "it's fixed"</h2>
+    <div class="card">
+      <p class="lead">The engine closes the loop that usually breaks: the gap between a vague feeling while playing and an actual change in the code.</p>
+      <ul>
+        <li><b class="h">Feel it</b> — pause in-game, pin the exact spot, leave a note.</li>
+        <li><b class="h">File it</b> — on session start, each note becomes a GitHub issue.</li>
+        <li><b class="h">Fix it</b> — work the issues; the 0-death gate guards every change.</li>
+        <li><b class="h">Record it</b> — the why goes in the build diary; the hub shows it.</li>
+      </ul>
+      <p>One person can run all of it because the robot QA team — the gate, the felt-fun model, the vision judge — does the playtesting that used to take a room of people.</p>
+      <h3>The fast-follow</h3>
+      <p>Today the scaffolder's base is <code>the-platformer</code>. Next, a de-branded copy of the engine lifts into this repo, so game-engine owns the base outright and a new game depends on nothing else.</p>
+    </div>
+    <div class="pageno">5</div>
+  </div>
+</section>
+
+<!-- BACK -->
+<section class="page" style="background-image:url('img/art/back.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.5),rgba(6,10,22,.2) 42%,rgba(6,10,22,.72))"></div>
+  <div class="wrap">
+    <div class="foot" style="margin-top:auto">
+      <div class="card" style="text-align:center">
+        <div class="kicker" style="color:#9fd6ff">Game Engine</div>
+        <p class="lead" style="margin-top:6px">A constellation of games, one hub, one button.</p>
+        <p style="font-size:9.4pt;color:#cfe0ff">Built with Claude Code on the Railway rig. The method is <b class="h">the-harness</b>; the first games are <b class="h">the-platformer</b> and <b class="h">Jazz</b>; this is the rig that makes the next one cheap.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body></html>
