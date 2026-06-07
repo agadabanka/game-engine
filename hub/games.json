@@ -1,0 +1,20 @@
+[
+  {
+    "id": "the-platformer",
+    "name": "the-platformer",
+    "repo": "agadabanka/the-platformer",
+    "url": null,
+    "tagline": "The base game + the rig everything else was built on (frog).",
+    "hero": "pixel frog",
+    "verb": "run · jump · stomp"
+  },
+  {
+    "id": "jazz",
+    "name": "Jazz",
+    "repo": "agadabanka/jazz",
+    "url": null,
+    "tagline": "Building a Bunny with a Bazooka — the second game off the engine.",
+    "hero": "cartoon bunny",
+    "verb": "run · jump · shoot · dive"
+  }
+]

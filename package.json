@@ -1,0 +1,22 @@
+{
+  "name": "game-engine",
+  "version": "0.1.0",
+  "description": "The reusable rig that ties together everything learned building the-platformer and Jazz — hit 'new game' and go. Includes the meta-hub (mission control) that monitors every game's diaries and notes.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node hub/server.js",
+    "dev": "node hub/server.js",
+    "new-game": "node scripts/new-game.mjs",
+    "refresh": "node hub/refresh.mjs",
+    "book": "node tools/build-book.mjs",
+    "book:art": "node scripts/gen-book-art.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "google-auth-library": "^9.14.1",
+    "playwright": "^1.47.0"
+  }
+}

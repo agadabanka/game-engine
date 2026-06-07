@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game Engine · Mission Control</title>
+<style>
+  :root{ --bg:#0a0f1e; --panel:#121a30; --panel2:#0e1528; --line:#26314f; --ink:#e7edff; --dim:#9fb3e0;
+    --gold:#ffd34d; --green:#5fd66e; --blue:#6fb6f0; --violet:#c4a6ff; --orange:#ffb14d; --pink:#ff8ab0; --red:#ff7a7a; }
+  *{ box-sizing:border-box; } body{ margin:0; background:var(--bg); color:var(--ink); line-height:1.5;
+    font-family:system-ui,Segoe UI,Roboto,sans-serif; }
+  a{ color:#9fd6ff; text-decoration:none; } a:hover{ text-decoration:underline; }
+  header{ padding:18px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(180deg,#101a36,#0a0f1e); position:sticky; top:0; z-index:5; }
+  header h1{ font-size:19px; margin:0; } header .sub{ color:var(--dim); font-size:12.5px; }
+  header .sp{ flex:1; }
+  button{ font:inherit; font-size:13px; background:#1b2747; color:var(--ink); border:1px solid var(--line);
+    border-radius:9px; padding:7px 13px; cursor:pointer; } button:hover{ background:#23315a; }
+  button.go{ background:#2a6df0; border-color:#3a7dff; } button.go:hover{ background:#3a7dff; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:20px 24px 80px; }
+  .totals{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:22px; }
+  @media (max-width:760px){ .totals{ grid-template-columns:repeat(2,1fr); } }
+  .stat{ background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:13px 15px; }
+  .stat .n{ font-size:30px; font-weight:800; line-height:1; } .stat .l{ font-size:11px; color:var(--dim);
+    text-transform:uppercase; letter-spacing:.1em; margin-top:5px; }
+  h2{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
+    border-bottom:1px solid var(--line); padding-bottom:7px; margin:28px 0 14px; }
+  .cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:15px; padding:16px 17px; position:relative; }
+  .card .top{ display:flex; align-items:center; gap:9px; }
+  .card .nm{ font-size:17px; font-weight:800; } .card .tag{ color:var(--dim); font-size:12px; margin:3px 0 10px; }
+  .dot{ width:9px; height:9px; border-radius:50%; flex:none; } .dot.live{ background:var(--green); box-shadow:0 0 8px var(--green); }
+  .dot.idle{ background:var(--gold); } .dot.off{ background:var(--red); }
+  .badge{ font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; padding:2px 7px; border-radius:20px;
+    border:1px solid var(--line); color:var(--dim); margin-left:auto; }
+  .kv{ display:grid; grid-template-columns:auto 1fr; gap:3px 10px; font-size:12.5px; margin:4px 0 10px; }
+  .kv .k{ color:var(--dim); } .kv .v{ color:#dde6ff; }
+  .chips{ display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 10px; }
+  .chip{ font-size:10.5px; background:#0e1730; border:1px solid var(--line); border-radius:14px; padding:2px 9px; color:#cfe0ff; }
+  .metrics{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  .metric{ flex:1; min-width:84px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+  .metric .mn{ font-size:19px; font-weight:800; } .metric .ml{ font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  .metric.notes .mn{ color:var(--orange); } .metric.uniq .mn{ color:var(--gold); } .metric.feel .mn{ color:var(--green); }
+  .diaryline{ font-size:12px; color:#cdd8f5; background:var(--panel2); border-left:3px solid var(--violet);
+    border-radius:8px; padding:8px 11px; margin:8px 0; } .diaryline b{ color:var(--violet); }
+  .links{ display:flex; flex-wrap:wrap; gap:7px; margin-top:11px; }
+  .links a{ font-size:12px; background:#16213f; border:1px solid var(--line); border-radius:8px; padding:5px 10px; }
+  .feed{ display:flex; flex-direction:column; gap:9px; }
+  .note{ background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--orange); border-radius:11px; padding:10px 13px; }
+  .note .meta{ font-size:11px; color:var(--dim); margin-top:4px; } .note .meta b{ color:#cfe0ff; }
+  .note.closed{ border-left-color:var(--green); opacity:.7; }
+  .muted{ color:var(--dim); font-size:13px; } code{ background:#0e1730; padding:1px 6px; border-radius:5px; font-size:12px; color:#cfe0ff; }
+  dialog{ background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:14px; padding:20px; max-width:440px; width:92%; }
+  dialog input{ width:100%; font:inherit; background:#0e1730; border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--ink); margin:4px 0 10px; }
+  dialog label{ font-size:12px; color:var(--dim); }
+  .gen{ color:var(--dim); font-size:11.5px; margin-top:24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎛 Game Engine</h1><span class="sub">mission control — every game's notes &amp; diaries, one board</span>
+  <span class="sp"></span>
+  <button id="add">+ register game</button>
+  <button class="go" id="refresh">↻ refresh</button>
+  <a href="https://github.com/agadabanka/game-engine" style="font-size:13px">repo ↗</a>
+</header>
+<div class="wrap">
+  <div class="totals" id="totals"></div>
+  <h2>Games on the engine</h2>
+  <div class="cards" id="cards"><p class="muted">loading…</p></div>
+  <h2>Notes triage — newest across all games</h2>
+  <div class="feed" id="feed"></div>
+  <div class="gen" id="gen"></div>
+</div>
+
+<dialog id="dlg">
+  <h3 style="margin:0 0 12px">Register a game</h3>
+  <form method="dialog" id="frm">
+    <label>Name</label><input name="name" required placeholder="My Game" />
+    <label>GitHub repo (owner/name)</label><input name="repo" placeholder="agadabanka/my-game" />
+    <label>Live URL (optional — enables note monitoring)</label><input name="url" placeholder="https://my-game.up.railway.app" />
+    <label>Tagline</label><input name="tagline" placeholder="one line" />
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:6px">
+      <button value="cancel">cancel</button><button class="go" id="save" value="save">register</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const ago = (t) => { if (!t) return ''; const s = (Date.now() - new Date(t)) / 1000; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s/60)+'m ago'; if (s < 86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; };
+
+function statRow(t){ return `
+  <div class="stat"><div class="n">${t.games}</div><div class="l">games</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">${t.live}</div><div class="l">live</div></div>
+  <div class="stat"><div class="n">${t.levels||'—'}</div><div class="l">levels</div></div>
+  <div class="stat"><div class="n" style="color:var(--orange)">${t.openNotes}</div><div class="l">open notes</div></div>
+  <div class="stat"><div class="n" style="color:var(--violet)">${t.diaryEntries}</div><div class="l">diary entries</div></div>`;
+}
+
+function card(g){
+  const m = g.meta || {};
+  const status = g.live ? 'live' : (g.diary.count ? 'idle' : 'off');
+  const dlabel = g.live ? 'live' : (g.diary.source === 'github' ? 'diary via github' : 'registered');
+  const hero = m.hero || g.hero || '—';
+  const verb = m.verb || g.verb || '—';
+  const worlds = (m.worlds || []).map((w) => `<span class="chip">${esc(w)}</span>`).join('') || '';
+  const kv = [
+    ['hero', hero], ['verb', verb],
+    m.controls ? ['controls', m.controls] : null,
+    m.art ? ['art', m.art] : null,
+    m.music ? ['music', m.music] : null,
+  ].filter(Boolean).map(([k,v]) => `<div class="k">${k}</div><div class="v">${esc(v)}</div>`).join('');
+  const diff = m.diff || {};
+  const metrics = `<div class="metrics">
+    <div class="metric notes"><div class="mn">${g.notes.open}<span style="font-size:12px;color:var(--dim)">/${g.notes.total}</span></div><div class="ml">open notes</div></div>
+    ${m.levelCount != null ? `<div class="metric"><div class="mn">${m.levelCount}</div><div class="ml">levels</div></div>` : ''}
+    ${diff.uniqueness != null ? `<div class="metric uniq"><div class="mn">${diff.uniqueness}</div><div class="ml">unique</div></div>` : ''}
+    ${diff.feelSimilarity != null ? `<div class="metric feel"><div class="mn">${diff.feelSimilarity}</div><div class="ml">feel</div></div>` : ''}
+  </div>`;
+  const latest = g.diary.latest ? `<div class="diaryline"><b>latest diary:</b> ${esc(g.diary.latest.title)}</div>` : '';
+  const base = g.url ? g.url.replace(/\/$/, '') : null;
+  const links = [
+    base ? [base, '▶ play'] : null,
+    base ? [base + '/diary.html', '📖 diary'] : null,
+    base ? [base + '/diff.html', '⚖️ diff'] : null,
+    base && m.builder ? [base + m.builder, '🧱 builder'] : null,
+    g.repo ? ['https://github.com/' + g.repo, 'repo ↗'] : null,
+  ].filter(Boolean).map(([h,t]) => `<a href="${esc(h)}" target="_blank">${t}</a>`).join('');
+  return `<div class="card">
+    <div class="top"><span class="dot ${status}"></span><span class="nm">${esc(g.name)}</span><span class="badge">${dlabel}</span></div>
+    <div class="tag">${esc(g.tagline || m.tagline || '')}</div>
+    <div class="kv">${kv}</div>
+    ${worlds ? `<div class="chips">${worlds}</div>` : ''}
+    ${metrics}
+    ${latest}
+    <div class="links">${links}</div>
+  </div>`;
+}
+
+function noteRow(n){
+  return `<div class="note ${n.status === 'closed' ? 'closed' : ''}">
+    <div>${esc(n.text)}</div>
+    <div class="meta"><b>${esc(n.game)}</b> · ${esc(n.kind || 'note')}${n.level != null ? ' · L'+n.level : ''} · ${esc(n.status)} · ${ago(n.created_at)}</div>
+  </div>`;
+}
+
+async function load(force){
+  $('cards').innerHTML = '<p class="muted">loading…</p>';
+  const d = await fetch('/api/dashboard' + (force ? '?force=1' : '')).then((r) => r.json()).catch(() => null);
+  if (!d) { $('cards').innerHTML = '<p class="muted">could not load dashboard.</p>'; return; }
+  $('totals').innerHTML = statRow(d.totals);
+  $('cards').innerHTML = d.games.length ? d.games.map(card).join('') : '<p class="muted">no games registered yet.</p>';
+  $('feed').innerHTML = d.notesFeed.length ? d.notesFeed.map(noteRow).join('')
+    : '<p class="muted">no notes yet — leave one in any game via ⏸ Pause → 📝, or set a game\'s live URL to start monitoring.</p>';
+  $('gen').textContent = 'updated ' + new Date(d.generated).toLocaleString() + ' · pulls each game\'s /api/notes + /api/diary + /api/meta';
+}
+
+$('refresh').onclick = () => load(true);
+$('add').onclick = () => $('dlg').showModal();
+$('frm').addEventListener('submit', async (e) => {
+  if (e.submitter && e.submitter.value !== 'save') return;
+  const f = new FormData($('frm'));
+  const body = Object.fromEntries([...f.entries()].filter(([, v]) => v));
+  await fetch('/api/games', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  setTimeout(() => load(true), 400);
+});
+load();
+setInterval(() => load(false), 90_000);
+</script>
+</body>
+</html>
