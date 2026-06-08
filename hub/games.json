@@ -13,7 +13,8 @@
       "controls": "on-screen + keyboard",
       "art": "pixel-art",
       "music": "chiptune",
-      "engine": "game-engine (base)"
+      "engine": "game-engine (base)",
+      "stages": { "scaffold": "done", "identity": "done", "levels": "done", "gate": "done", "feel": "done", "hero": "done", "art": "done", "music": "partial", "deploy": "done", "videos": "done", "book": "done", "loop": "done" }
     }
   },
   {
@@ -35,7 +36,8 @@
       "diff": { "uniqueness": 81, "feelSimilarity": 94 },
       "engine": "game-engine",
       "builder": "/build.html",
-      "designLens": "/design.html"
+      "designLens": "/design.html",
+      "stages": { "scaffold": "done", "identity": "done", "levels": "done", "gate": "done", "feel": "done", "hero": "done", "art": "done", "music": "done", "deploy": "done", "videos": "done", "book": "done", "loop": "done" }
     }
   }
 ]

@@ -8,6 +8,7 @@
 //   GET /api/diary    → DIARY.md (markdown)         (the build log)
 // If a game has no live URL yet (registered but not deployed), we still pull
 // DIARY.md + GAME_META.json straight from GitHub raw so the board is never empty.
+import { STAGES, resolveStages } from './stages.js';
 
 const TIMEOUT = Number(process.env.FETCH_TIMEOUT_MS || 6000);
 
@@ -107,6 +108,7 @@ export async function snapshotGame(game, { ghToken } = {}) {
 
   out.ok = out.live || out.diary.count > 0;
   if (!out.ok) out.error = base ? 'no response from deploy' : 'no deploy url and no DIARY.md on GitHub';
+  out.pipeline = resolveStages(out);   // where this game is in the dev pipeline
   return out;
 }
 
@@ -122,6 +124,7 @@ export async function snapshotAll(games, opts = {}) {
     totalNotes: snaps.reduce((n, s) => n + s.notes.total, 0),
     diaryEntries: snaps.reduce((n, s) => n + s.diary.count, 0),
     levels: snaps.reduce((n, s) => n + (s.meta?.levelCount || 0), 0),
+    avgProgress: snaps.length ? Math.round(snaps.reduce((n, s) => n + (s.pipeline?.pct || 0), 0) / snaps.length) : 0,
   };
-  return { generated: new Date().toISOString(), totals, games: snaps, notesFeed: allNotes.slice(0, 24) };
+  return { generated: new Date().toISOString(), totals, games: snaps, notesFeed: allNotes.slice(0, 24), stages: STAGES };
 }

@@ -18,8 +18,19 @@
     border-radius:9px; padding:7px 13px; cursor:pointer; } button:hover{ background:#23315a; }
   button.go{ background:#2a6df0; border-color:#3a7dff; } button.go:hover{ background:#3a7dff; }
   .wrap{ max-width:1180px; margin:0 auto; padding:20px 24px 80px; }
-  .totals{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:22px; }
-  @media (max-width:760px){ .totals{ grid-template-columns:repeat(2,1fr); } }
+  .totals{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:22px; }
+  @media (max-width:760px){ .totals{ grid-template-columns:repeat(3,1fr); } }
+  /* dev pipeline */
+  .pipe{ margin:11px 0 4px; }
+  .pipehd{ display:flex; justify-content:space-between; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin-bottom:5px; }
+  .ppct{ color:#cfe0ff; font-weight:700; }
+  .pbar{ height:6px; background:#0e1730; border-radius:4px; overflow:hidden; border:1px solid var(--line); }
+  .pfill{ height:100%; background:linear-gradient(90deg,#5fd66e,#6fb6f0); }
+  .pchips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
+  .pchip{ font-size:9.5px; padding:2px 7px; border-radius:6px; border:1px solid var(--line); color:var(--dim); background:#0e1730; cursor:default; }
+  .pchip.done{ background:rgba(95,214,110,.16); border-color:rgba(95,214,110,.5); color:#9fe6aa; }
+  .pchip.partial,.pchip.weak{ background:rgba(255,211,77,.14); border-color:rgba(255,211,77,.5); color:#ffe08a; }
+  .pchip.todo{ opacity:.55; }
   .stat{ background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:13px 15px; }
   .stat .n{ font-size:30px; font-weight:800; line-height:1; } .stat .l{ font-size:11px; color:var(--dim);
     text-transform:uppercase; letter-spacing:.1em; margin-top:5px; }
@@ -94,6 +105,7 @@ const ago = (t) => { if (!t) return ''; const s = (Date.now() - new Date(t)) / 1
 function statRow(t){ return `
   <div class="stat"><div class="n">${t.games}</div><div class="l">games</div></div>
   <div class="stat"><div class="n" style="color:var(--green)">${t.live}</div><div class="l">live</div></div>
+  <div class="stat"><div class="n" style="color:var(--blue)">${t.avgProgress||0}%</div><div class="l">avg progress</div></div>
   <div class="stat"><div class="n">${t.levels||'—'}</div><div class="l">levels</div></div>
   <div class="stat"><div class="n" style="color:var(--orange)">${t.openNotes}</div><div class="l">open notes</div></div>
   <div class="stat"><div class="n" style="color:var(--violet)">${t.diaryEntries}</div><div class="l">diary entries</div></div>`;
@@ -134,8 +146,23 @@ function card(g){
     <div class="kv">${kv}</div>
     ${worlds ? `<div class="chips">${worlds}</div>` : ''}
     ${metrics}
+    ${pipelineHTML(g)}
     ${latest}
     <div class="links">${links}</div>
+  </div>`;
+}
+
+let STAGE_DEFS = [];
+function pipelineHTML(g){
+  const p = g.pipeline; if (!p || !STAGE_DEFS.length) return '';
+  const chips = STAGE_DEFS.map((s) => {
+    const st = p.statuses[s.id] || 'todo';
+    return `<span class="pchip ${st}" title="${esc(s.label)} — ${esc(s.hint)} · ${st}">${esc(s.label)}</span>`;
+  }).join('');
+  return `<div class="pipe">
+    <div class="pipehd"><span>dev pipeline</span><span class="ppct">${p.pct}% · ${p.done}/${p.total} stages</span></div>
+    <div class="pbar"><div class="pfill" style="width:${p.pct}%"></div></div>
+    <div class="pchips">${chips}</div>
   </div>`;
 }
 
@@ -150,6 +177,7 @@ async function load(force){
   $('cards').innerHTML = '<p class="muted">loading…</p>';
   const d = await fetch('/api/dashboard' + (force ? '?force=1' : '')).then((r) => r.json()).catch(() => null);
   if (!d) { $('cards').innerHTML = '<p class="muted">could not load dashboard.</p>'; return; }
+  STAGE_DEFS = d.stages || [];
   $('totals').innerHTML = statRow(d.totals);
   $('cards').innerHTML = d.games.length ? d.games.map(card).join('') : '<p class="muted">no games registered yet.</p>';
   $('feed').innerHTML = d.notesFeed.length ? d.notesFeed.map(noteRow).join('')
