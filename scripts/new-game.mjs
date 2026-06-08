@@ -8,11 +8,12 @@
 //
 // Flags:
 //   --tagline  one-line pitch            --hero  e.g. "a robot ninja"
-//   --verb     e.g. "dash · slash"       --base  base repo (default agadabanka/game-template)
+//   --verb     e.g. "dash · slash"       --base  base repo (default agadabanka/studio-game-template)
 //   --owner    GitHub owner (default = the token's user)
 //   --dir      where to scaffold (default /home/user/<slug>)
 //   --hub      hub URL to register with (default $HUB_URL)
 //   --private  create the repo private    --dry-run  scaffold locally, skip GitHub/push/register
+//   --local    scaffold from the vendored base in engine/game-template/ instead of cloning --base
 //
 // Needs GH_TOKEN. After it runs, finish the deploy with the printed Railway steps.
 import { execFileSync } from 'node:child_process';
@@ -29,11 +30,12 @@ const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''
 const tagline = flag('tagline', `A new game built on the game-engine.`);
 const hero = flag('hero', 'your hero');
 const verb = flag('verb', 'run · jump');
-const baseRepo = flag('base', 'agadabanka/game-template');
+const baseRepo = flag('base', 'agadabanka/studio-game-template');
 const dir = flag('dir', `/home/user/${slug}`);
 const hubUrl = flag('hub', process.env.HUB_URL || '');
 const isPrivate = has('private');
 const dryRun = has('dry-run');
+const useLocal = has('local');
 const GH = process.env.GH_TOKEN;
 if (!GH && !dryRun) { console.error('GH_TOKEN required (or use --dry-run)'); process.exit(1); }
 
@@ -48,15 +50,26 @@ const gh = async (route, method = 'GET', body) => {
   return j;
 };
 
-console.log(`\n🎮 new game: "${name}"  (slug: ${slug})`);
-console.log(`   base ${baseRepo} → ${dir}${dryRun ? '   [DRY RUN]' : ''}\n`);
+// The vendored base lives in engine/game-template/ (a local, de-branded copy of
+// agadabanka/studio-game-template). --local scaffolds from it instead of cloning.
+const localBase = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'engine', 'game-template');
 
-// 1. clone the proven base (a complete, playable game)
+console.log(`\n🎮 new game: "${name}"  (slug: ${slug})`);
+console.log(`   base ${useLocal ? `engine/game-template (local)` : baseRepo} → ${dir}${dryRun ? '   [DRY RUN]' : ''}\n`);
+
+// 1. acquire the proven base (a complete, playable game) as the new game's tree
 if (fs.existsSync(dir)) { console.error(`✗ ${dir} already exists — pick another --dir or remove it.`); process.exit(1); }
-const cloneUrl = GH ? `https://x-access-token:${GH}@github.com/${baseRepo}.git` : `https://github.com/${baseRepo}.git`;
-console.log('• cloning base…');
-run('git', ['clone', '--depth', '1', cloneUrl, dir]);
-fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+if (useLocal) {
+  if (!fs.existsSync(localBase)) { console.error(`✗ --local given but ${localBase} is missing.`); process.exit(1); }
+  console.log('• copying vendored base from engine/game-template…');
+  fs.cpSync(localBase, dir, { recursive: true });
+  fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true }); // no-op if vendored copy has none
+} else {
+  const cloneUrl = GH ? `https://x-access-token:${GH}@github.com/${baseRepo}.git` : `https://github.com/${baseRepo}.git`;
+  console.log('• cloning base…');
+  run('git', ['clone', '--depth', '1', cloneUrl, dir]);
+  fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+}
 
 // 2. rebrand the safe, structural touch-points (name/description/title + fresh diary).
 const edit = (rel, fn) => { const p = path.join(dir, rel); if (!fs.existsSync(p)) return; fs.writeFileSync(p, fn(fs.readFileSync(p, 'utf8'))); };
