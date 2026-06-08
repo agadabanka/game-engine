@@ -8,7 +8,7 @@
 //
 // Flags:
 //   --tagline  one-line pitch            --hero  e.g. "a robot ninja"
-//   --verb     e.g. "dash · slash"       --base  base repo (default agadabanka/the-platformer)
+//   --verb     e.g. "dash · slash"       --base  base repo (default agadabanka/game-template)
 //   --owner    GitHub owner (default = the token's user)
 //   --dir      where to scaffold (default /home/user/<slug>)
 //   --hub      hub URL to register with (default $HUB_URL)
@@ -29,7 +29,7 @@ const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''
 const tagline = flag('tagline', `A new game built on the game-engine.`);
 const hero = flag('hero', 'your hero');
 const verb = flag('verb', 'run · jump');
-const baseRepo = flag('base', 'agadabanka/the-platformer');
+const baseRepo = flag('base', 'agadabanka/game-template');
 const dir = flag('dir', `/home/user/${slug}`);
 const hubUrl = flag('hub', process.env.HUB_URL || '');
 const isPrivate = has('private');
