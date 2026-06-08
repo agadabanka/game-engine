@@ -132,12 +132,12 @@ function card(g){
     ${diff.feelSimilarity != null ? `<div class="metric feel"><div class="mn">${diff.feelSimilarity}</div><div class="ml">feel</div></div>` : ''}
   </div>`;
   const latest = g.diary.latest ? `<div class="diaryline"><b>latest diary:</b> ${esc(g.diary.latest.title)}</div>` : '';
+  // consistent chip set on every card: play · diary · builder (when live) + repo (always)
   const base = g.url ? g.url.replace(/\/$/, '') : null;
   const links = [
     base ? [base, '▶ play'] : null,
     base ? [base + '/diary.html', '📖 diary'] : null,
-    base ? [base + '/diff.html', '⚖️ diff'] : null,
-    base && m.builder ? [base + m.builder, '🧱 builder'] : null,
+    base ? [base + (m.builder || '/build.html'), '🧱 builder'] : null,
     g.repo ? ['https://github.com/' + g.repo, 'repo ↗'] : null,
   ].filter(Boolean).map(([h,t]) => `<a href="${esc(h)}" target="_blank">${t}</a>`).join('');
   return `<div class="card">

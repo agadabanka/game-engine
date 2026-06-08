@@ -53,6 +53,15 @@ async function diaryFromGitHub(repo, token) {
   return null;
 }
 
+// note-ids carried by CLOSED `playtest-note` issues in a game's repo → resolved.
+async function closedNoteIds(repo, token) {
+  const headers = { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `token ${token}` } : {}) };
+  const raw = await fetchText(`https://api.github.com/repos/${repo}/issues?state=closed&labels=playtest-note&per_page=100`, headers);
+  const ids = new Set();
+  if (raw) { try { for (const iss of JSON.parse(raw)) { const m = /note-id:\s*([a-z0-9-]+)/i.exec(iss.body || ''); if (m) ids.add(m[1]); } } catch {} }
+  return ids;
+}
+
 // Build one game's live snapshot. `game` = { id, name, repo, url, tagline }.
 export async function snapshotGame(game, { ghToken } = {}) {
   const base = (game.url || '').replace(/\/$/, '');
@@ -77,11 +86,17 @@ export async function snapshotGame(game, { ghToken } = {}) {
     out.config = config;
     out.meta = meta;
     if (notesResp?.notes) {
-      const notes = notesResp.notes;
+      // A note is "resolved" if its in-game status is closed OR it was filed and
+      // the GitHub issue carrying its note-id is now closed — so fixed notes stop
+      // showing as open here, even though the game store doesn't track resolution.
+      const closed = game.repo ? await closedNoteIds(game.repo, ghToken) : new Set();
+      const notes = notesResp.notes.map((n) => ({
+        ...n, status: (n.status === 'closed' || closed.has(n.id)) ? 'closed' : (n.status || 'open'),
+      }));
       out.notes.total = notes.length;
-      out.notes.open = notes.filter((n) => (n.status || 'open') === 'open').length;
+      out.notes.open = notes.filter((n) => n.status === 'open').length;
       out.notes.recent = notes.slice(-8).reverse().map((n) => ({
-        id: n.id, text: n.text, kind: n.kind, level: n.level, status: n.status || 'open',
+        id: n.id, text: n.text, kind: n.kind, level: n.level, status: n.status,
         created_at: n.created_at, game: game.name,
       }));
     }
