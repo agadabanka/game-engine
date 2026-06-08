@@ -38,7 +38,9 @@ async function getGames() {
   if (!stored) { await store.set('games', seed); return seed; }
   const byId = {};
   for (const g of seed) byId[g.id] = { ...g };
-  for (const g of stored) byId[g.id] = { ...byId[g.id], ...g, meta: g.meta || byId[g.id]?.meta };
+  // stored entry wins for live fields (url, dashboard edits); but the SEED's curated
+  // meta wins when present, so games.json updates (e.g. new stages) propagate.
+  for (const g of stored) byId[g.id] = { ...byId[g.id], ...g, meta: byId[g.id]?.meta || g.meta };
   return Object.values(byId);
 }
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
