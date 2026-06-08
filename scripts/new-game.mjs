@@ -77,6 +77,17 @@ const meta = {
 };
 fs.writeFileSync(path.join(dir, 'GAME_META.json'), JSON.stringify(meta, null, 2) + '\n');
 
+// 3b. install the repo-agnostic notes-to-issues (the base ships one hardcoded to
+// its own repo; a scaffolded game must file its in-game notes into ITS OWN repo,
+// and cross-file shared-code fixes upstream). Keeps the feedback loop tractable.
+try {
+  const tmpl = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'templates', 'notes-to-issues.mjs');
+  if (fs.existsSync(tmpl) && fs.existsSync(path.join(dir, 'tools'))) {
+    fs.copyFileSync(tmpl, path.join(dir, 'tools', 'notes-to-issues.mjs'));
+    console.log('• installed repo-agnostic notes-to-issues (files into the new repo, not the base).');
+  }
+} catch (e) { console.log('• (could not install notes-to-issues template:', e.message, ')'); }
+
 // 4. fresh git history
 run('git', ['init', '-q'], { cwd: dir });
 run('git', ['add', '-A'], { cwd: dir });
