@@ -19,9 +19,10 @@ bottom while replacing the top.
    o    │  CONTENT & AUTHORING   art pipeline (model sheet → refs →  │
    n    │                        chroma-key) · Lyria music · builder  │
    │    ├──────────────────────────────────────────────────────────┤
-   │    │  ENGINE (Phaser)       Boot/Title/Play/UI · materials/     │
-   │    │                        elements · controls · levelkit ·    │
-   │    │                        merge (mergeGroup/shapeArc/vert.)   │
+   │    │  ENGINE (Phaser 4)     Studio SDK (Phaser 4 from           │
+   │    │                        agadabanka/phaser-private) · Boot/   │
+   │    │                        Title/Play/UI · materials/elements · │
+   │    │                        controls · levelkit · merge          │
    │    ├──────────────────────────────────────────────────────────┤
    │    │  PLATFORM (shared rig) server.js · store.js (volume KV) ·  │
    │    │                        gemini.js · Lyria · Railway          │
@@ -43,10 +44,13 @@ Express server, volume-backed persistence that survives redeploys (`store.js`),
 one Gemini helper for image/vision/text (`gemini.js`) plus Vertex Lyria for music,
 and Railway for deploy.
 
-**Engine — Phaser, AI-first.** Four scenes (Boot/Title/Play/UI); a
-materials/element model where every surface declares its look + footing +
-machine-readable *grounding* together; the controls; the level DSL (`levelkit.js`);
-and the campaign-merge tools (`merge.js`).
+**Engine — Phaser 4, AI-first.** Now **Phaser 4** (sourced from
+`agadabanka/phaser-private`), driven through the **Studio SDK**: a deterministic
+stepper, observability bridge, generic autopilot, Level DSL, procedural texture
+bakery, JuiceKit (tweens / particles / GPU filters), procedural SFX, and a follow
+camera. game-engine **owns a local `engine/`** (gap closed — see below): the SDK
+source of truth lives at `engine/sdk/studio.js` and the de-branded base at
+`engine/game-template/`.
 
 **Content & authoring.** Where worlds and assets come from: the art pipeline (lock
 a model sheet, generate everything reference-conditioned, chroma-key it), the Lyria
@@ -85,8 +89,13 @@ hub ──pull──> game A  /api/{notes,diary,meta}   (live)
 new game inherits every tier above; you then re-skin the top (hero, verb, art,
 music, worlds) via the content pipeline and deploy it as its own Railway project.
 
-## The fast-follow
-Today the scaffolder's base is `the-platformer` (the canonical clean game). The
-next step is to lift a *de-branded* copy of the engine (platform + engine +
-evaluation tiers) into this repo as `engine/`, so game-engine owns the base
-outright and a new game depends on nothing else.
+The default base is **`agadabanka/studio-game-template`** (the published Phaser 4 +
+Studio SDK clone target). Override the remote with `--base <owner>/<repo>`, or pass
+**`--local`** to scaffold from the vendored copy in `engine/game-template/` with no
+network dependency.
+
+## The fast-follow — done
+The scaffolder's base is now `agadabanka/studio-game-template` (Phaser 4 on the
+Studio SDK), and game-engine **owns a local `engine/`**: a de-branded copy of the
+base (`engine/game-template/`) plus the SDK source of truth (`engine/sdk/studio.js`).
+The gap is closed — a new game can be scaffolded from this repo alone (`--local`).
