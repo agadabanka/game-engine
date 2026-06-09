@@ -1,0 +1,34 @@
+{
+  "_comment": "Engine trailer spec. `games` maps id→live URL (hub/games.json is used as fallback). Each timeline entry is a `card` (title screen) or a `clip` (gameplay off a game's live deploy). `dur` = on-screen seconds; `skip` = autopilot frames to skip past the intro card; `start` = trim offset into the recorded clip; `name`/`feat` = lower-third caption. Music tracks (urls or local paths) are split evenly across the trailer with crossfades.",
+  "out": "trailer-build/engine_trailer.mp4",
+  "size": "1280x720",
+  "fps": 60,
+  "xfade": 0.45,
+  "accent": "#5cf0c8",
+  "bg": "#080b14",
+  "musicVol": 0.9,
+  "games": {
+    "the-platformer": "https://web-production-a2ee9.up.railway.app",
+    "jazz": "https://web-production-cab9f4.up.railway.app",
+    "starsweeper": "https://game-production-3243.up.railway.app"
+  },
+  "music": [
+    "https://web-production-cab9f4.up.railway.app/assets/music/title.mp3",
+    "https://web-production-cab9f4.up.railway.app/assets/music/storm.mp3",
+    "https://game-production-3243.up.railway.app/assets/music/core.mp3"
+  ],
+  "timeline": [
+    { "type": "card", "title": "ONE&nbsp;ENGINE", "sub": "three games", "big": 104, "dur": 3.0 },
+    { "type": "clip", "game": "the-platformer", "level": 101, "skip": 180, "start": 0.3, "dur": 6.4, "name": "the-platformer", "feat": "run · jump · stomp — where it started" },
+    { "type": "clip", "game": "the-platformer", "level": 105, "skip": 180, "start": 0.4, "dur": 4.6 },
+    { "type": "clip", "game": "jazz", "level": 101, "skip": 180, "start": 0.3, "dur": 6.4, "name": "Jazz", "feat": "same engine · new hero · run · shoot · dive" },
+    { "type": "clip", "game": "jazz", "level": 105, "skip": 200, "start": 0.4, "dur": 5.2, "name": "5 worlds", "feat": "a bunny with a bazooka" },
+    { "type": "clip", "game": "jazz", "level": 103, "skip": 180, "start": 0.4, "dur": 4.4 },
+    { "type": "clip", "game": "starsweeper", "level": 103, "skip": 150, "start": 0.2, "dur": 6.2, "name": "Starsweeper", "feat": "same engine · a whole new universe" },
+    { "type": "clip", "game": "starsweeper", "level": 104, "skip": 240, "start": 0.3, "dur": 5.6, "name": "salvage blaster", "feat": "shoot · float · sweep the stars" },
+    { "type": "clip", "game": "starsweeper", "level": 102, "skip": 180, "start": 0.4, "dur": 4.4 },
+    { "type": "clip", "game": "starsweeper", "level": 105, "skip": 180, "start": 0.3, "dur": 5.4, "name": "5 zones", "feat": "every one beatable, by design" },
+    { "type": "card", "title": "EVERY LEVEL<br>AI-PLAYTESTED", "sub": "0 deaths · guaranteed", "big": 78, "dur": 3.4 },
+    { "type": "card", "title": "the&nbsp;game-engine", "sub": "Gemini art · Lyria music · built by Claude", "big": 84, "dur": 5.0 }
+  ]
+}

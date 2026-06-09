@@ -10,12 +10,14 @@
     "new-game": "node scripts/new-game.mjs",
     "refresh": "node hub/refresh.mjs",
     "book": "node tools/build-book.mjs",
-    "book:art": "node scripts/gen-book-art.mjs"
+    "book:art": "node scripts/gen-book-art.mjs",
+    "trailer": "node tools/trailer/make-trailer.mjs"
   },
   "dependencies": {
     "express": "^4.19.2"
   },
   "devDependencies": {
+    "ffmpeg-static": "^5.2.0",
     "google-auth-library": "^9.14.1",
     "playwright": "^1.47.0"
   }
