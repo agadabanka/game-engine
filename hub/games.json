@@ -6,15 +6,28 @@
     "url": "https://web-production-a2ee9.up.railway.app",
     "tagline": "The base game + the rig everything else was built on (frog).",
     "hero": "pixel frog",
-    "verb": "run · jump · stomp",
+    "verb": "run \u00b7 jump \u00b7 stomp",
     "meta": {
       "hero": "pixel frog",
-      "verb": "run · jump · stomp",
+      "verb": "run \u00b7 jump \u00b7 stomp",
       "controls": "on-screen + keyboard",
       "art": "pixel-art",
       "music": "chiptune",
       "engine": "game-engine (base)",
-      "stages": { "scaffold": "done", "identity": "done", "levels": "done", "gate": "done", "feel": "done", "hero": "done", "art": "done", "music": "partial", "deploy": "done", "videos": "done", "book": "done", "loop": "done" }
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "partial",
+        "deploy": "done",
+        "videos": "done",
+        "book": "done",
+        "loop": "done"
+      }
     }
   },
   {
@@ -22,22 +35,85 @@
     "name": "Jazz",
     "repo": "agadabanka/jazz",
     "url": "https://web-production-cab9f4.up.railway.app",
-    "tagline": "Building a Bunny with a Bazooka — the second game off the engine.",
+    "tagline": "Building a Bunny with a Bazooka \u2014 the second game off the engine.",
     "hero": "cartoon bunny",
-    "verb": "run · jump · shoot · dive",
+    "verb": "run \u00b7 jump \u00b7 shoot \u00b7 dive",
     "meta": {
       "hero": "Jazz, a light-blue cartoon bunny in an orange jumpsuit",
-      "verb": "run · jump · shoot · dive · stomp",
-      "worlds": ["Carrot Caverns", "Sunset Strip", "Dustbowl Dunes", "Lava Lagoon", "Thunder Dome"],
+      "verb": "run \u00b7 jump \u00b7 shoot \u00b7 dive \u00b7 stomp",
+      "worlds": [
+        "Carrot Caverns",
+        "Sunset Strip",
+        "Dustbowl Dunes",
+        "Lava Lagoon",
+        "Thunder Dome"
+      ],
       "levelCount": 13,
       "controls": "joystick + jump + dive + fire",
       "art": "bold-outline Saturday-morning cartoon (Gemini, model-sheet-locked)",
-      "music": "Lyria — a score per world",
-      "diff": { "uniqueness": 81, "feelSimilarity": 94 },
+      "music": "Lyria \u2014 a score per world",
+      "diff": {
+        "uniqueness": 81,
+        "feelSimilarity": 94
+      },
       "engine": "game-engine",
       "builder": "/build.html",
       "designLens": "/design.html",
-      "stages": { "scaffold": "done", "identity": "done", "levels": "done", "gate": "done", "feel": "done", "hero": "done", "art": "done", "music": "done", "deploy": "done", "videos": "done", "book": "done", "loop": "done" }
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done",
+        "videos": "done",
+        "book": "done",
+        "loop": "done"
+      }
+    }
+  },
+  {
+    "id": "deepfin",
+    "name": "Deepfin",
+    "repo": "agadabanka/deepfin",
+    "url": "https://web-production-d3a35.up.railway.app",
+    "tagline": "Swim the sunken reefs \u2014 an axolotl odyssey, every fathom AI-playtested.",
+    "hero": "Pearl, a rose-pink axolotl",
+    "verb": "swim \u00b7 dart \u00b7 bubble",
+    "meta": {
+      "hero": "Pearl, a rose-pink axolotl with a golden conch-shell bubble blaster",
+      "verb": "swim \u00b7 dart \u00b7 dive \u00b7 bubble",
+      "worlds": [
+        "Shallows",
+        "Kelp Forest",
+        "The Wreck",
+        "Midnight Trench",
+        "The Maw"
+      ],
+      "levelCount": 5,
+      "controls": "joystick + stroke + dive + bubble",
+      "art": "bold-outline underwater cartoon (Gemini, model-sheet-locked)",
+      "music": "Lyria \u2014 a score per fathom",
+      "engine": "game-engine",
+      "builder": "/build.html",
+      "designLens": "/design.html",
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done",
+        "videos": "missing",
+        "book": "missing",
+        "loop": "done"
+      }
     }
   }
 ]
