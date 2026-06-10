@@ -6,10 +6,10 @@
     "url": "https://web-production-a2ee9.up.railway.app",
     "tagline": "The base game + the rig everything else was built on (frog).",
     "hero": "pixel frog",
-    "verb": "run \u00b7 jump \u00b7 stomp",
+    "verb": "run · jump · stomp",
     "meta": {
       "hero": "pixel frog",
-      "verb": "run \u00b7 jump \u00b7 stomp",
+      "verb": "run · jump · stomp",
       "controls": "on-screen + keyboard",
       "art": "pixel-art",
       "music": "chiptune",
@@ -35,12 +35,12 @@
     "name": "Jazz",
     "repo": "agadabanka/jazz",
     "url": "https://web-production-cab9f4.up.railway.app",
-    "tagline": "Building a Bunny with a Bazooka \u2014 the second game off the engine.",
+    "tagline": "Building a Bunny with a Bazooka — the second game off the engine.",
     "hero": "cartoon bunny",
-    "verb": "run \u00b7 jump \u00b7 shoot \u00b7 dive",
+    "verb": "run · jump · shoot · dive",
     "meta": {
       "hero": "Jazz, a light-blue cartoon bunny in an orange jumpsuit",
-      "verb": "run \u00b7 jump \u00b7 shoot \u00b7 dive \u00b7 stomp",
+      "verb": "run · jump · shoot · dive · stomp",
       "worlds": [
         "Carrot Caverns",
         "Sunset Strip",
@@ -51,7 +51,7 @@
       "levelCount": 13,
       "controls": "joystick + jump + dive + fire",
       "art": "bold-outline Saturday-morning cartoon (Gemini, model-sheet-locked)",
-      "music": "Lyria \u2014 a score per world",
+      "music": "Lyria — a score per world",
       "diff": {
         "uniqueness": 81,
         "feelSimilarity": 94
@@ -80,12 +80,12 @@
     "name": "Deepfin",
     "repo": "agadabanka/deepfin",
     "url": "https://web-production-d3a35.up.railway.app",
-    "tagline": "Swim the sunken reefs \u2014 an axolotl odyssey, every fathom AI-playtested.",
+    "tagline": "Swim the sunken reefs — an axolotl odyssey, every fathom AI-playtested.",
     "hero": "Pearl, a rose-pink axolotl",
-    "verb": "swim \u00b7 dart \u00b7 bubble",
+    "verb": "swim · dart · bubble",
     "meta": {
       "hero": "Pearl, a rose-pink axolotl with a golden conch-shell bubble blaster",
-      "verb": "swim \u00b7 dart \u00b7 dive \u00b7 bubble",
+      "verb": "swim · dart · dive · bubble",
       "worlds": [
         "Shallows",
         "Kelp Forest",
@@ -96,7 +96,7 @@
       "levelCount": 5,
       "controls": "joystick + stroke + dive + bubble",
       "art": "bold-outline underwater cartoon (Gemini, model-sheet-locked)",
-      "music": "Lyria \u2014 a score per fathom",
+      "music": "Lyria — a score per fathom",
       "engine": "game-engine",
       "builder": "/build.html",
       "designLens": "/design.html",
@@ -113,6 +113,79 @@
         "videos": "done",
         "book": "done",
         "loop": "done"
+      }
+    }
+  },
+  {
+    "id": "ember-depths",
+    "name": "Ember Depths",
+    "repo": "agadabanka/ember-depths",
+    "url": "https://ember-depths-production.up.railway.app",
+    "tagline": "Hop the lava, ride the embers — descend the molten cave.",
+    "hero": "Ember",
+    "verb": "run, hop lava & stomp",
+    "meta": {
+      "hero": "Ember",
+      "verb": "run, hop lava & stomp",
+      "levelCount": 5,
+      "controls": "Arrows / WASD + Space",
+      "art": "ai backdrop + texture-kit (style-matched seamless tiles, themed pickups)",
+      "music": "Lyria 2 composed loop (assets/music/cave.mp3, 31s seamless) + procedural SFX",
+      "engine": "game-engine (studio/phaser-4)",
+      "archetype": "runner",
+      "scorecard": {
+        "date": "2026-06-10",
+        "verdict": "6/6 ACCEPT",
+        "gate": "0-death webgl+canvas",
+        "fun": 90.5,
+        "music": 1,
+        "artCohesion": 77.8,
+        "distinctness": 75,
+        "texturing": 100
+      },
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done",
+        "videos": "todo",
+        "book": "todo",
+        "loop": "todo"
+      }
+    }
+  },
+  {
+    "id": "nimbus-climb",
+    "name": "Nimbus Climb",
+    "repo": "agadabanka/nimbus-climb",
+    "url": "https://nimbus-climb-production.up.railway.app",
+    "tagline": "Ride the updrafts, dodge the storms — climb the sky to the Sun Bell.",
+    "hero": "Nimbi",
+    "verb": "climb, float updrafts & time the gusts",
+    "meta": {
+      "hero": "Nimbi",
+      "verb": "climb, float updrafts & time the gusts",
+      "levelCount": 5,
+      "controls": "Arrows / WASD + Space (joystick on touch)",
+      "art": "ai backdrop + texture-kit (cloud mats) + animated hero",
+      "music": "Lyria 2 composed sky loop",
+      "engine": "game-engine (studio/phaser-4)",
+      "archetype": "vertical",
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done"
       }
     }
   }
