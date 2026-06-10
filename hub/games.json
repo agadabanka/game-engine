@@ -188,5 +188,35 @@
         "deploy": "done"
       }
     }
+  },
+  {
+    "id": "starlance",
+    "name": "Starlance",
+    "repo": "agadabanka/starlance",
+    "url": "https://starlance-production.up.railway.app",
+    "tagline": "Climb the five veils of the nebula to the Hollow Star.",
+    "hero": "a lone crystalline interceptor",
+    "verb": "fly · dodge · blast",
+    "meta": {
+      "hero": "a lone crystalline interceptor",
+      "verb": "fly · dodge · blast",
+      "levelCount": 5,
+      "controls": "← → move · auto-fire (joystick on touch)",
+      "art": "painterly synthwave space (Gemini)",
+      "music": "Lyria — a drive per veil",
+      "engine": "game-engine (studio/phaser-4)",
+      "archetype": "shooter",
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done"
+      }
+    }
   }
 ]
