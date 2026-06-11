@@ -127,9 +127,27 @@ export async function snapshotGame(game, { ghToken } = {}) {
   return out;
 }
 
+// A safe placeholder so one malformed registry entry (or a snapshotGame that
+// throws before the per-fetch timeout applies) can never reject the whole pull.
+function errorSnapshot(game, err) {
+  return {
+    id: game?.id || 'unknown', name: game?.name || game?.id || 'unknown',
+    repo: game?.repo || null, url: (game?.url || '').replace(/\/$/, '') || null,
+    tagline: game?.tagline || null, created_at: game?.created_at || null,
+    hero: game?.hero || null, verb: game?.verb || null,
+    ok: false, live: false, meta: game?.meta || null, config: null,
+    notes: { total: 0, open: 0, recent: [] }, diary: { count: 0, latest: null, source: null },
+    fetchedAt: new Date().toISOString(), error: String(err),
+    pipeline: { statuses: {}, pct: 0, done: 0, total: 0, next: [] },
+  };
+}
+
 // Snapshot every registered game (in parallel) + roll up totals.
 export async function snapshotAll(games, opts = {}) {
-  const snaps = await Promise.all(games.map((g) => snapshotGame(g, opts)));
+  const list = Array.isArray(games) ? games : [];
+  const settled = await Promise.allSettled(list.map((g) => snapshotGame(g, opts)));
+  const snaps = settled.map((r, i) =>
+    r.status === 'fulfilled' ? r.value : errorSnapshot(list[i], r.reason));
   const allNotes = snaps.flatMap((s) => s.notes.recent);
   allNotes.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const totals = {

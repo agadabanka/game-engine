@@ -46,29 +46,91 @@ async function getGames() {
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // ── cached dashboard snapshot ──
+// Invariant: /api/dashboard must ALWAYS return promptly with valid JSON and can
+// never hang or 500. We do this by (a) serving the last snapshot from memory or
+// disk immediately, (b) refreshing in the background, and (c) bounding the very
+// first paint (when nothing is cached yet) so a slow/failing pull still resolves.
+const FIRST_PAINT_MS = Number(process.env.FIRST_PAINT_MS || 8000);
 let _cache = { at: 0, data: null, refreshing: null };
-async function refresh() {
-  const games = await getGames();
-  const data = await snapshotAll(games, { ghToken: GH_TOKEN });
-  _cache = { at: Date.now(), data, refreshing: null };
-  await store.set('last_snapshot', data);   // survives restarts for an instant first paint
-  return data;
+
+// A valid-but-empty dashboard so the client renders "0 games" instead of hanging
+// on "loading…" if the very first refresh is slow or every fetch fails.
+function emptySnapshot() {
+  return {
+    generated: new Date().toISOString(),
+    totals: { games: 0, live: 0, openNotes: 0, totalNotes: 0, diaryEntries: 0, levels: 0, avgProgress: 0 },
+    games: [], notesFeed: [], stages: [], warming: true,
+  };
 }
+
+async function refresh() {
+  // CRITICAL: always clear `refreshing` (success AND failure) so a failed pull
+  // never poisons the cache and blocks every later request. Never throws.
+  try {
+    const games = await getGames();
+    const data = await snapshotAll(games, { ghToken: GH_TOKEN });
+    _cache = { at: Date.now(), data, refreshing: null };
+    store.set('last_snapshot', data).catch((e) => console.error('persist snapshot failed', e));
+    return data;
+  } catch (e) {
+    console.error('refresh failed', e);
+    _cache.refreshing = null;   // allow a retry on the next request
+    _cache.at = Date.now();     // back off so we don't hot-loop refreshes on failure
+    return _cache.data;         // keep serving whatever we already had (may be null)
+  }
+}
+
+// Kick off a background refresh if one isn't already running. Never awaited by
+// the hot path once we have any cached data.
+function refreshInBackground() {
+  if (!_cache.refreshing) _cache.refreshing = refresh();
+  return _cache.refreshing;
+}
+
+// Resolve a promise but give up after `ms`, returning `fallback` instead of hanging.
+function withTimeout(promise, ms, fallback) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(fallback), ms);
+    Promise.resolve(promise).then(
+      (v) => { clearTimeout(t); resolve(v); },
+      () => { clearTimeout(t); resolve(fallback); },
+    );
+  });
+}
+
 async function dashboard(force = false) {
-  if (!force && _cache.data && Date.now() - _cache.at < CACHE_MS) return _cache.data;
-  if (!_cache.data) _cache.data = await store.get('last_snapshot', null);   // warm from disk
-  if (_cache.refreshing) return _cache.data || _cache.refreshing;
-  _cache.refreshing = refresh().catch((e) => { console.error('refresh failed', e); return _cache.data; });
-  // if we already have something cached, return it now and let refresh run in the background
-  return _cache.data || (await _cache.refreshing);
+  // Warm the in-memory cache from disk once (instant first paint after a restart).
+  if (!_cache.data) {
+    try { _cache.data = await store.get('last_snapshot', null); } catch (e) { console.error('store read failed', e); }
+  }
+
+  const fresh = _cache.data && Date.now() - _cache.at < CACHE_MS;
+  if (force || !fresh) refreshInBackground();   // pull, but don't block on it if we can avoid it
+
+  // We have something to show → return it immediately; the refresh runs behind us.
+  if (_cache.data) return _cache.data;
+
+  // Truly nothing cached yet (cold boot, empty volume) → wait for the first paint,
+  // but only up to FIRST_PAINT_MS so a slow pull can never leave the client on
+  // "loading…". If it's still not ready, hand back a valid empty board.
+  const first = await withTimeout(refreshInBackground(), FIRST_PAINT_MS, null);
+  return first || _cache.data || emptySnapshot();
 }
 
 // ── routes ──
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'game-engine-hub' }));
 
 app.get('/api/dashboard', async (req, res) => {
-  try { res.json(await dashboard(req.query.force === '1')); }
-  catch (e) { res.status(500).json({ error: String(e) }); }
+  // Belt-and-suspenders: dashboard() is designed never to throw or hang, but if
+  // anything slips through we still return a valid (empty) board, never a 500 or
+  // a hang — the client must never be stuck on "loading…".
+  try {
+    const data = await withTimeout(dashboard(req.query.force === '1'), FIRST_PAINT_MS + 2000, null);
+    res.json(data || _cache.data || emptySnapshot());
+  } catch (e) {
+    console.error('dashboard route failed', e);
+    res.json(_cache.data || emptySnapshot());
+  }
 });
 app.post('/api/refresh', async (_req, res) => {
   try { res.json(await refresh()); } catch (e) { res.status(500).json({ error: String(e) }); }
