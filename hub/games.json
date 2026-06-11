@@ -255,12 +255,12 @@
     "name": "Starsweeper",
     "repo": "agadabanka/starsweeper",
     "url": "https://game-production-3243.up.railway.app",
-    "tagline": "A Little Astronaut's Long Way Home — a low-gravity space platformer.",
+    "tagline": "A Little Astronaut's Long Way Home \u2014 a low-gravity space platformer.",
     "hero": "Pip, a junior orbital sweeper in an orange EVA suit",
-    "verb": "run · float-jump · dive · blast",
+    "verb": "run \u00b7 float-jump \u00b7 dive \u00b7 blast",
     "meta": {
       "hero": "Pip, a junior orbital sweeper in an orange EVA suit",
-      "verb": "run · float-jump · dive · blast",
+      "verb": "run \u00b7 float-jump \u00b7 dive \u00b7 blast",
       "worlds": [
         "Cold Start",
         "Drift",
@@ -271,7 +271,7 @@
       "levelCount": 5,
       "controls": "joystick + float-jump + dive + blast (on-screen + keyboard)",
       "art": "bespoke space backdrops per zone + a generated astronaut hero (Pip) + key art (Gemini)",
-      "music": "original Lyria score — a distinct space track per zone + title",
+      "music": "original Lyria score \u2014 a distinct space track per zone + title",
       "engine": "game-engine",
       "builder": "/build.html",
       "designLens": "/design.html",
@@ -288,6 +288,37 @@
         "videos": "done",
         "book": "done",
         "loop": "done"
+      }
+    }
+  },
+  {
+    "id": "roadwar-iso",
+    "name": "Roadwar Iso",
+    "repo": "agadabanka/roadwar-iso",
+    "url": "https://roadwar-iso-production.up.railway.app",
+    "tagline": "Build your convoy, crush the warlord \u2014 an isometric 2.5D car RTS.",
+    "hero": "a convoy of toon battle-cars, in iso",
+    "verb": "deploy \u00b7 rally \u00b7 ram",
+    "meta": {
+      "hero": "a convoy of toon battle-cars, in iso",
+      "verb": "deploy \u00b7 rally \u00b7 ram",
+      "levelCount": 5,
+      "controls": "click the field to deploy \u00b7 1/2/3 pick a car \u00b7 4 refinery",
+      "art": "toon cel-shaded ISOMETRIC cars (Gemini)",
+      "music": "Lyria \u2014 a battle anthem per ground",
+      "engine": "game-engine (studio/phaser-4)",
+      "archetype": "isorts",
+      "designLens": "FUN 91.7; tension auto-balanced 0.34\u21920.71 to a BRUTAL boss finale; 89% strategic diversity",
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done"
       }
     }
   }
