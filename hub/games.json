@@ -327,19 +327,17 @@
         "art": "done",
         "music": "done",
         "deploy": "done",
-        "videos": "done",
+        "videos": "todo",
         "book": "done",
         "loop": "done"
-      },
-      "videos": {
-        "zone-1-cold-start": "https://youtu.be/35KPCJCvTZk",
-        "zone-2-drift": "https://youtu.be/-mfbgoH9MJ8",
-        "zone-3-vent": "https://youtu.be/AIQWHxdsTgE",
-        "zone-4-salvage": "https://youtu.be/s8PiT0fVy9U",
-        "zone-5-the-warden": "https://youtu.be/bcWDfPZPIsE"
-      },
-      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtSOR3X3GbQXZxxc3HSoxjg"
-    }
+      }
+    },
+    "screenshots": [
+      "/shots/starsweeper/1.png",
+      "/shots/starsweeper/2.png",
+      "/shots/starsweeper/3.png",
+      "/shots/starsweeper/4.png"
+    ]
   },
   {
     "id": "roadwar-iso",
