@@ -8,7 +8,7 @@
 //   GET /api/diary    → DIARY.md (markdown)         (the build log)
 // If a game has no live URL yet (registered but not deployed), we still pull
 // DIARY.md + GAME_META.json straight from GitHub raw so the board is never empty.
-import { STAGES, resolveStages } from './stages.js';
+import { STAGES, PHASES, resolveStages } from './stages.js';
 
 const TIMEOUT = Number(process.env.FETCH_TIMEOUT_MS || 6000);
 
@@ -53,13 +53,44 @@ async function diaryFromGitHub(repo, token) {
   return null;
 }
 
-// note-ids carried by CLOSED `playtest-note` issues in a game's repo → resolved.
-async function closedNoteIds(repo, token) {
+// The `playtest-note` issues in a game's repo — the OTHER half of the user's flow
+// (in-game note → GitHub issue → Claude fixes it). We pull both states so the hub
+// can (a) mark a note resolved when its issue closes, (b) deep-link each note to
+// its issue, and (c) count the open/closed loop per game.
+async function playtestIssues(repo, token) {
   const headers = { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `token ${token}` } : {}) };
-  const raw = await fetchText(`https://api.github.com/repos/${repo}/issues?state=closed&labels=playtest-note&per_page=100`, headers);
-  const ids = new Set();
-  if (raw) { try { for (const iss of JSON.parse(raw)) { const m = /note-id:\s*([a-z0-9-]+)/i.exec(iss.body || ''); if (m) ids.add(m[1]); } } catch {} }
-  return ids;
+  const byNote = new Map();   // note-id → { number, url, state, title }
+  let open = 0, closed = 0;
+  const raw = await fetchText(`https://api.github.com/repos/${repo}/issues?state=all&labels=playtest-note&per_page=100`, headers);
+  if (raw) {
+    try {
+      for (const iss of JSON.parse(raw)) {
+        if (iss.pull_request) continue;               // issues only
+        if (iss.state === 'closed') closed++; else open++;
+        const m = /note-id:\s*([a-z0-9-]+)/i.exec(iss.body || '');
+        if (m) byNote.set(m[1], { number: iss.number, url: iss.html_url, state: iss.state, title: iss.title });
+      }
+    } catch {}
+  }
+  return { byNote, open, closed };
+}
+
+// meta.videos is { "<clip-key>": "https://youtu.be/<id>" } — normalize to a gallery
+// the client can render directly (thumbnail + title + watch link), montage last.
+function normalizeVideos(meta) {
+  const v = meta && meta.videos;
+  if (!v || typeof v !== 'object') return [];
+  const idOf = (u) => { const m = /(?:youtu\.be\/|v=|embed\/)([\w-]{6,})/.exec(String(u)); return m ? m[1] : null; };
+  const titleOf = (k) => {
+    if (/montage/i.test(k)) return 'Montage';
+    const m = /(?:level|glade|veil|world|ground|fathom)-?(\d+)-?(.*)$/i.exec(k);
+    if (m) return 'L' + m[1] + (m[2] ? ' · ' + m[2].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim() : '');
+    return k.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+  return Object.entries(v)
+    .map(([key, url]) => { const id = idOf(url); return id ? { key, url, id, title: titleOf(key), thumb: `https://img.youtube.com/vi/${id}/hqdefault.jpg`, montage: /montage/i.test(key) } : null; })
+    .filter(Boolean)
+    .sort((a, b) => (a.montage ? 1 : 0) - (b.montage ? 1 : 0) || a.key.localeCompare(b.key));
 }
 
 // Build one game's live snapshot. `game` = { id, name, repo, url, tagline }.
@@ -71,6 +102,8 @@ export async function snapshotGame(game, { ghToken } = {}) {
     hero: game.hero || null, verb: game.verb || null,
     ok: false, live: false, meta: null, config: null,
     notes: { total: 0, open: 0, recent: [] }, diary: { count: 0, latest: null, source: null },
+    issues: { open: 0, closed: 0, url: game.repo ? `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` : null },
+    videos: [],
     fetchedAt: new Date().toISOString(), error: null,
   };
 
@@ -86,19 +119,26 @@ export async function snapshotGame(game, { ghToken } = {}) {
     out.config = config;
     out.meta = meta;
     if (notesResp?.notes) {
-      // A note is "resolved" if its in-game status is closed OR it was filed and
-      // the GitHub issue carrying its note-id is now closed — so fixed notes stop
-      // showing as open here, even though the game store doesn't track resolution.
-      const closed = game.repo ? await closedNoteIds(game.repo, ghToken) : new Set();
-      const notes = notesResp.notes.map((n) => ({
-        ...n, status: (n.status === 'closed' || closed.has(n.id)) ? 'closed' : (n.status || 'open'),
-      }));
+      // A note is "resolved" if its in-game status is closed OR the GitHub issue
+      // carrying its note-id is now closed — so fixed notes stop showing as open
+      // here, and each note can deep-link to the issue it became (the loop, visible).
+      const iss = game.repo ? await playtestIssues(game.repo, ghToken) : { byNote: new Map(), open: 0, closed: 0 };
+      out.issues = { open: iss.open, closed: iss.closed, url: game.repo ? `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` : null };
+      const notes = notesResp.notes.map((n) => {
+        const link = iss.byNote.get(n.id);
+        return { ...n, status: (n.status === 'closed' || link?.state === 'closed') ? 'closed' : (n.status || 'open'), issue: link || null };
+      });
       out.notes.total = notes.length;
       out.notes.open = notes.filter((n) => n.status === 'open').length;
       out.notes.recent = notes.slice(-8).reverse().map((n) => ({
         id: n.id, text: n.text, kind: n.kind, level: n.level, status: n.status,
         created_at: n.created_at, game: game.name,
+        issueUrl: n.issue?.url || null, issueNumber: n.issue?.number || null,
       }));
+    } else if (game.repo) {
+      // no live notes endpoint, but the repo may still carry the issue loop
+      const iss = await playtestIssues(game.repo, ghToken);
+      out.issues = { open: iss.open, closed: iss.closed, url: `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` };
     }
     if (diaryMd) { const e = parseDiary(diaryMd); out.diary = { count: e.length, latest: e[e.length - 1] || null, entries: e.slice(-6).reverse(), source: 'live' }; }
   }
@@ -121,6 +161,16 @@ export async function snapshotGame(game, { ghToken } = {}) {
   // card for a game whose repo doesn't carry GAME_META.json yet).
   if (!out.meta && game.meta) out.meta = game.meta;
 
+  // Fill gaps from the curated registry meta WITHOUT overriding live truth: the
+  // resolved meta (live → GitHub) wins per-key, but the hand-curated games.json
+  // entry backfills stages/videos a game's own deploy doesn't self-report (older
+  // games like deepfin serve no /api/meta, so their sparse repo meta loses detail).
+  if (game.meta && out.meta && out.meta !== game.meta) {
+    if (game.meta.stages) out.meta.stages = { ...game.meta.stages, ...(out.meta.stages || {}) };
+    if (game.meta.videos && !out.meta.videos) out.meta.videos = game.meta.videos;
+  }
+
+  out.videos = normalizeVideos(out.meta);   // the uploaded AI-playthrough gallery
   out.ok = out.live || out.diary.count > 0;
   if (!out.ok) out.error = base ? 'no response from deploy' : 'no deploy url and no DIARY.md on GitHub';
   out.pipeline = resolveStages(out);   // where this game is in the dev pipeline
@@ -137,6 +187,8 @@ function errorSnapshot(game, err) {
     hero: game?.hero || null, verb: game?.verb || null,
     ok: false, live: false, meta: game?.meta || null, config: null,
     notes: { total: 0, open: 0, recent: [] }, diary: { count: 0, latest: null, source: null },
+    issues: { open: 0, closed: 0, url: game?.repo ? `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` : null },
+    videos: [],
     fetchedAt: new Date().toISOString(), error: String(err),
     pipeline: { statuses: {}, pct: 0, done: 0, total: 0, next: [] },
   };
@@ -157,7 +209,8 @@ export async function snapshotAll(games, opts = {}) {
     totalNotes: snaps.reduce((n, s) => n + s.notes.total, 0),
     diaryEntries: snaps.reduce((n, s) => n + s.diary.count, 0),
     levels: snaps.reduce((n, s) => n + (s.meta?.levelCount || 0), 0),
+    videos: snaps.reduce((n, s) => n + (s.videos?.length || 0), 0),
     avgProgress: snaps.length ? Math.round(snaps.reduce((n, s) => n + (s.pipeline?.pct || 0), 0) / snaps.length) : 0,
   };
-  return { generated: new Date().toISOString(), totals, games: snaps, notesFeed: allNotes.slice(0, 24), stages: STAGES };
+  return { generated: new Date().toISOString(), totals, games: snaps, notesFeed: allNotes.slice(0, 24), stages: STAGES, phases: PHASES };
 }

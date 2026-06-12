@@ -18,7 +18,7 @@
     border-radius:9px; padding:7px 13px; cursor:pointer; } button:hover{ background:#23315a; }
   button.go{ background:#2a6df0; border-color:#3a7dff; } button.go:hover{ background:#3a7dff; }
   .wrap{ max-width:1180px; margin:0 auto; padding:20px 24px 80px; }
-  .totals{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:22px; }
+  .totals{ display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:12px; margin-bottom:22px; }
   @media (max-width:760px){ .totals{ grid-template-columns:repeat(3,1fr); } }
   /* dev pipeline */
   .pipe{ margin:11px 0 4px; }
@@ -37,7 +37,11 @@
   h2{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
     border-bottom:1px solid var(--line); padding-bottom:7px; margin:28px 0 14px; }
   .cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
-  .card{ background:var(--panel); border:1px solid var(--line); border-radius:15px; padding:16px 17px; position:relative; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:15px; padding:16px 17px; position:relative;
+    cursor:pointer; transition:border-color .12s, transform .12s; }
+  .card:hover{ border-color:#3a7dff; transform:translateY(-2px); }
+  .card .peek{ font-size:11px; color:var(--dim); margin-top:10px; text-align:right; }
+  .card:hover .peek{ color:#9fd6ff; }
   .card .top{ display:flex; align-items:center; gap:9px; }
   .card .nm{ font-size:17px; font-weight:800; } .card .tag{ color:var(--dim); font-size:12px; margin:3px 0 10px; }
   .dot{ width:9px; height:9px; border-radius:50%; flex:none; } .dot.live{ background:var(--green); box-shadow:0 0 8px var(--green); }
@@ -65,11 +69,37 @@
   dialog input{ width:100%; font:inherit; background:#0e1730; border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--ink); margin:4px 0 10px; }
   dialog label{ font-size:12px; color:var(--dim); }
   .gen{ color:var(--dim); font-size:11.5px; margin-top:24px; }
+  /* ── drill-in: LOOK INTO a game ── */
+  dialog#detail{ max-width:880px; width:94%; padding:0; border:1px solid var(--line); max-height:90vh; overflow:auto; }
+  dialog#detail::backdrop{ background:rgba(4,8,18,.66); }
+  .dhead{ position:sticky; top:0; background:linear-gradient(180deg,#16213f,#121a30); border-bottom:1px solid var(--line); padding:18px 22px 14px; z-index:2; }
+  .dhead .dtop{ display:flex; align-items:center; gap:10px; }
+  .dhead .dnm{ font-size:22px; font-weight:800; } .dhead .dtag{ color:var(--dim); font-size:13px; margin-top:4px; }
+  .dhead .x{ margin-left:auto; background:#1b2747; border:1px solid var(--line); color:var(--ink); border-radius:9px; width:32px; height:32px; cursor:pointer; font-size:15px; flex:none; }
+  .darch{ font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; padding:3px 9px; border-radius:20px; border:1px solid var(--line); color:#cfe0ff; background:#0e1730; }
+  .dwrap{ padding:4px 22px 26px; }
+  .sect{ margin-top:22px; } .sect h4{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:0 0 11px; }
+  .sect h4 .cnt{ color:#cfe0ff; font-weight:700; letter-spacing:0; text-transform:none; margin-left:8px; }
+  .phase{ margin-bottom:12px; } .phase .plabel{ font-size:12.5px; color:#cfe0ff; font-weight:700; margin-bottom:6px; display:flex; }
+  .phase .phint{ color:var(--dim); font-weight:400; font-size:11px; margin-left:8px; flex:1; }
+  .phase .pdone{ color:var(--dim); font-weight:700; }
+  .vids{ display:grid; grid-template-columns:repeat(auto-fill,minmax(184px,1fr)); gap:12px; }
+  .vid{ border:1px solid var(--line); border-radius:11px; overflow:hidden; background:var(--panel2); display:block; }
+  .vid img{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:#0a1124; }
+  .vid .vt{ font-size:12px; padding:7px 10px; } .vid:hover{ border-color:#3a7dff; } .vid .vt b{ color:var(--gold); }
+  .vid.mont .vt b{ color:var(--violet); }
+  .nlist{ display:flex; flex-direction:column; gap:8px; }
+  .nrow{ background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--orange); border-radius:10px; padding:9px 12px; font-size:13px; }
+  .nrow.closed{ border-left-color:var(--green); opacity:.78; }
+  .nrow .nmeta{ font-size:11px; color:var(--dim); margin-top:5px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .nrow .nmeta a{ background:#16213f; border:1px solid var(--line); border-radius:6px; padding:1px 7px; }
+  .scorecard{ font-size:12.5px; color:#dde6ff; line-height:1.6; } .scorecard.dgrid{ display:grid; grid-template-columns:1fr 1fr; gap:4px 16px; }
+  .scorecard .sk{ color:var(--dim); } @media (max-width:680px){ .scorecard.dgrid{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <header>
-  <h1>🎛 Game Engine</h1><span class="sub">mission control — every game's notes &amp; diaries, one board</span>
+  <h1>🎛 Game Engine</h1><span class="sub">mission control — look <b>across</b> every game, click any one to look <b>inside</b></span>
   <span class="sp"></span>
   <button id="add">+ register game</button>
   <button class="go" id="refresh">↻ refresh</button>
@@ -97,6 +127,8 @@
   </form>
 </dialog>
 
+<dialog id="detail"><div id="detailBody"></div></dialog>
+
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
@@ -107,6 +139,7 @@ function statRow(t){ return `
   <div class="stat"><div class="n" style="color:var(--green)">${t.live}</div><div class="l">live</div></div>
   <div class="stat"><div class="n" style="color:var(--blue)">${t.avgProgress||0}%</div><div class="l">avg progress</div></div>
   <div class="stat"><div class="n">${t.levels||'—'}</div><div class="l">levels</div></div>
+  <div class="stat"><div class="n" style="color:var(--pink)">${t.videos||0}</div><div class="l">videos</div></div>
   <div class="stat"><div class="n" style="color:var(--orange)">${t.openNotes}</div><div class="l">open notes</div></div>
   <div class="stat"><div class="n" style="color:var(--violet)">${t.diaryEntries}</div><div class="l">diary entries</div></div>`;
 }
@@ -117,7 +150,7 @@ function card(g){
   const dlabel = g.live ? 'live' : (g.diary.source === 'github' ? 'diary via github' : 'registered');
   const hero = m.hero || g.hero || '—';
   const verb = m.verb || g.verb || '—';
-  const worlds = (m.worlds || []).map((w) => `<span class="chip">${esc(w)}</span>`).join('') || '';
+  const worlds = (Array.isArray(m.worlds) ? m.worlds : []).map((w) => `<span class="chip">${esc(w)}</span>`).join('');
   const kv = [
     ['hero', hero], ['verb', verb],
     m.controls ? ['controls', m.controls] : null,
@@ -125,9 +158,11 @@ function card(g){
     m.music ? ['music', m.music] : null,
   ].filter(Boolean).map(([k,v]) => `<div class="k">${k}</div><div class="v">${esc(v)}</div>`).join('');
   const diff = m.diff || {};
+  const nVid = (g.videos || []).length;
   const metrics = `<div class="metrics">
     <div class="metric notes"><div class="mn">${g.notes.open}<span style="font-size:12px;color:var(--dim)">/${g.notes.total}</span></div><div class="ml">open notes</div></div>
     ${m.levelCount != null ? `<div class="metric"><div class="mn">${m.levelCount}</div><div class="ml">levels</div></div>` : ''}
+    ${nVid ? `<div class="metric"><div class="mn" style="color:var(--pink)">${nVid}</div><div class="ml">videos</div></div>` : ''}
     ${diff.uniqueness != null ? `<div class="metric uniq"><div class="mn">${diff.uniqueness}</div><div class="ml">unique</div></div>` : ''}
     ${diff.feelSimilarity != null ? `<div class="metric feel"><div class="mn">${diff.feelSimilarity}</div><div class="ml">feel</div></div>` : ''}
   </div>`;
@@ -139,8 +174,8 @@ function card(g){
     base ? [base + '/diary.html', '📖 diary'] : null,
     base ? [base + (m.builder || '/build.html'), '🧱 builder'] : null,
     g.repo ? ['https://github.com/' + g.repo, 'repo ↗'] : null,
-  ].filter(Boolean).map(([h,t]) => `<a href="${esc(h)}" target="_blank">${t}</a>`).join('');
-  return `<div class="card">
+  ].filter(Boolean).map(([h,t]) => `<a href="${esc(h)}" target="_blank" onclick="event.stopPropagation()">${t}</a>`).join('');
+  return `<div class="card" onclick="openGame('${esc(g.id)}')">
     <div class="top"><span class="dot ${status}"></span><span class="nm">${esc(g.name)}</span><span class="badge">${dlabel}</span></div>
     <div class="tag">${esc(g.tagline || m.tagline || '')}</div>
     <div class="kv">${kv}</div>
@@ -149,10 +184,11 @@ function card(g){
     ${pipelineHTML(g)}
     ${latest}
     <div class="links">${links}</div>
+    <div class="peek">look inside →</div>
   </div>`;
 }
 
-let STAGE_DEFS = [];
+let STAGE_DEFS = [], PHASE_DEFS = [], LAST = null;
 function pipelineHTML(g){
   const p = g.pipeline; if (!p || !STAGE_DEFS.length) return '';
   const chips = STAGE_DEFS.map((s) => {
@@ -167,17 +203,102 @@ function pipelineHTML(g){
 }
 
 function noteRow(n){
+  const iss = n.issueUrl ? ` · <a href="${esc(n.issueUrl)}" target="_blank">issue #${esc(n.issueNumber)} ↗</a>` : '';
   return `<div class="note ${n.status === 'closed' ? 'closed' : ''}">
     <div>${esc(n.text)}</div>
-    <div class="meta"><b>${esc(n.game)}</b> · ${esc(n.kind || 'note')}${n.level != null ? ' · L'+n.level : ''} · ${esc(n.status)} · ${ago(n.created_at)}</div>
+    <div class="meta"><b>${esc(n.game)}</b> · ${esc(n.kind || 'note')}${n.level != null ? ' · L'+n.level : ''} · ${esc(n.status)} · ${ago(n.created_at)}${iss}</div>
   </div>`;
 }
+
+// ── LOOK INSIDE one game: the full make→iterate flow, its videos, its notes loop ──
+function phaseBlock(g){
+  const p = g.pipeline; if (!p || !STAGE_DEFS.length) return '';
+  const defs = PHASE_DEFS.length ? PHASE_DEFS : [{ id: null, label: 'Pipeline', hint: '' }];
+  const blocks = defs.map((ph) => {
+    const stages = STAGE_DEFS.filter((s) => ph.id == null || s.phase === ph.id);
+    if (!stages.length) return '';
+    const done = stages.filter((s) => (p.statuses[s.id] || 'todo') === 'done').length;
+    const chips = stages.map((s) => { const st = p.statuses[s.id] || 'todo';
+      return `<span class="pchip ${st}" title="${esc(s.hint)} · ${st}">${esc(s.label)}</span>`; }).join('');
+    return `<div class="phase"><div class="plabel">${esc(ph.label)}<span class="phint">${esc(ph.hint || '')}</span><span class="pdone">${done}/${stages.length}</span></div><div class="pchips">${chips}</div></div>`;
+  }).join('');
+  return `<div class="sect"><h4>Pipeline<span class="cnt">${p.pct}% · ${p.done}/${p.total} stages</span></h4>
+    <div class="pbar" style="margin-bottom:13px"><div class="pfill" style="width:${p.pct}%"></div></div>${blocks}</div>`;
+}
+function videoGallery(g){
+  const vs = g.videos || []; if (!vs.length) return '';
+  const cells = vs.map((v) => `<a class="vid ${v.montage ? 'mont' : ''}" href="${esc(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+    <img loading="lazy" src="${esc(v.thumb)}" alt="${esc(v.title)}" onerror="this.style.opacity=.2" />
+    <div class="vt"><b>${esc(v.title)}</b></div></a>`).join('');
+  return `<div class="sect"><h4>🎬 AI playthroughs<span class="cnt">${vs.length} on YouTube</span></h4><div class="vids">${cells}</div></div>`;
+}
+function notesLoop(g){
+  const iss = g.issues || { open: 0, closed: 0 };
+  const head = `<span class="cnt">${iss.open} open · ${iss.closed} fixed${iss.url ? ` · <a href="${esc(iss.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">all issues ↗</a>` : ''}</span>`;
+  const rows = (g.notes.recent || []).map((n) => `<div class="nrow ${n.status === 'closed' ? 'closed' : ''}">
+    <div>${esc(n.text)}</div>
+    <div class="nmeta">${esc(n.kind || 'note')}${n.level != null ? ' · L' + n.level : ''} · ${esc(n.status)} · ${ago(n.created_at)}
+      ${n.issueUrl ? `<a href="${esc(n.issueUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">issue #${esc(n.issueNumber)} ↗</a>` : ''}</div>
+  </div>`).join('');
+  return `<div class="sect"><h4>📝 Notes → issues → fixes${head}</h4>
+    ${rows ? `<div class="nlist">${rows}</div>` : '<p class="muted">No playtest notes yet — in the live game, ⏸ Pause → 📝 drops a note that files a GitHub issue automatically.</p>'}</div>`;
+}
+function diaryBlock(g){
+  const es = (g.diary && g.diary.entries) || []; if (!es.length) return '';
+  const rows = es.map((e) => `<div class="diaryline"><b>${esc(e.title)}</b>${e.bullets ? ` · ${e.bullets} notes` : ''}</div>`).join('');
+  return `<div class="sect"><h4>📔 Build diary<span class="cnt">${g.diary.count} entries</span></h4>${rows}</div>`;
+}
+function scoreBlock(g){
+  const m = g.meta || {}, out = [];
+  if (m.designLens && !/^\//.test(m.designLens)) out.push(`<div class="sect"><h4>🎯 Design lens</h4><div class="scorecard">${esc(m.designLens)}</div></div>`);
+  const sc = m.scorecard;
+  if (sc && typeof sc === 'object') {
+    const items = Object.entries(sc).map(([k, v]) => `<div><span class="sk">${esc(k)}</span> ${esc(typeof v === 'object' ? JSON.stringify(v) : v)}</div>`).join('');
+    out.push(`<div class="sect"><h4>📊 Scorecard</h4><div class="scorecard dgrid">${items}</div></div>`);
+  }
+  return out.join('');
+}
+function detailHTML(g){
+  const m = g.meta || {}, base = g.url ? g.url.replace(/\/$/, '') : null;
+  const status = g.live ? 'live' : (g.diary.count ? 'idle' : 'off');
+  const arch = m.archetype ? `<span class="darch">${esc(m.archetype)}</span>` : '';
+  const links = [
+    base ? [base, '▶ play'] : null,
+    base ? [base + (m.builder || '/build.html'), '🧱 builder'] : null,
+    base && m.designLens && /^\//.test(m.designLens) ? [base + m.designLens, '🎨 design'] : null,
+    base ? [base + '/diary.html', '📖 diary'] : null,
+    g.repo ? ['https://github.com/' + g.repo, '🐙 repo'] : null,
+    g.issues && g.issues.url ? [g.issues.url, '🐛 issues'] : null,
+  ].filter(Boolean).map(([h, t]) => `<a href="${esc(h)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t}</a>`).join('');
+  const kv = [['hero', m.hero || g.hero], ['verb', m.verb || g.verb], m.controls ? ['controls', m.controls] : null, m.art ? ['art', m.art] : null, m.music ? ['music', m.music] : null]
+    .filter(Boolean).filter(([, v]) => v).map(([k, v]) => `<div class="k">${k}</div><div class="v">${esc(v)}</div>`).join('');
+  return `<div class="dhead">
+      <div class="dtop"><span class="dot ${status}"></span><span class="dnm">${esc(g.name)}</span>${arch}
+        <button class="x" title="close" onclick="document.getElementById('detail').close()">✕</button></div>
+      <div class="dtag">${esc(g.tagline || m.tagline || '')}</div>
+      <div class="links" style="margin-top:11px">${links}</div>
+    </div>
+    <div class="dwrap">
+      ${kv ? `<div class="kv" style="margin-top:16px">${kv}</div>` : ''}
+      ${phaseBlock(g)}
+      ${videoGallery(g)}
+      ${notesLoop(g)}
+      ${diaryBlock(g)}
+      ${scoreBlock(g)}
+    </div>`;
+}
+function openGame(id){
+  const g = (LAST && LAST.games || []).find((x) => x.id === id); if (!g) return;
+  $('detailBody').innerHTML = detailHTML(g);
+  const d = $('detail'); d.showModal(); d.scrollTop = 0;
+}
+window.openGame = openGame;
 
 async function load(force){
   $('cards').innerHTML = '<p class="muted">loading…</p>';
   const d = await fetch('/api/dashboard' + (force ? '?force=1' : '')).then((r) => r.json()).catch(() => null);
   if (!d) { $('cards').innerHTML = '<p class="muted">could not load dashboard.</p>'; return; }
-  STAGE_DEFS = d.stages || [];
+  LAST = d; STAGE_DEFS = d.stages || []; PHASE_DEFS = d.phases || [];
   $('totals').innerHTML = statRow(d.totals);
   $('cards').innerHTML = d.games.length ? d.games.map(card).join('') : '<p class="muted">no games registered yet.</p>';
   $('feed').innerHTML = d.notesFeed.length ? d.notesFeed.map(noteRow).join('')
@@ -187,6 +308,8 @@ async function load(force){
 
 $('refresh').onclick = () => load(true);
 $('add').onclick = () => $('dlg').showModal();
+// click the backdrop (outside the inner content) to close the drill-in
+$('detail').addEventListener('click', (e) => { if (e.target.id === 'detail') e.target.close(); });
 $('frm').addEventListener('submit', async (e) => {
   if (e.submitter && e.submitter.value !== 'save') return;
   const f = new FormData($('frm'));

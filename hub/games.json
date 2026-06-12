@@ -340,6 +340,14 @@
       "engine": "game-engine (studio/phaser-4)",
       "archetype": "builder",
       "designLens": "the 5th genre; Studio.UI kit showcase; win-by-construction plans (lint 29/29)",
+      "videos": {
+        "glade-1-dawn-meadow": "https://youtu.be/PoRmjgmMY1c",
+        "glade-2-fern-hollow": "https://youtu.be/Wjwj_G58o0I",
+        "glade-3-riverbend": "https://youtu.be/E5-31mUthZE",
+        "glade-4-mushroom-dell": "https://youtu.be/O_RHuuU_54g",
+        "glade-5-ancient-heartwood": "https://youtu.be/aEJzBvAmoS8",
+        "grovekeep-montage": "https://youtu.be/VtlZJxkGI0g"
+      },
       "stages": {
         "scaffold": "done",
         "identity": "done",
@@ -349,7 +357,8 @@
         "hero": "done",
         "art": "done",
         "music": "done",
-        "deploy": "done"
+        "deploy": "done",
+        "videos": "done"
       }
     }
   }
