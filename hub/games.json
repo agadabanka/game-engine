@@ -27,14 +27,19 @@
         "videos": "done",
         "book": "done",
         "loop": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/the-platformer/1.png",
-      "/shots/the-platformer/2.png",
-      "/shots/the-platformer/3.png",
-      "/shots/the-platformer/4.png"
-    ]
+      },
+      "videos": {
+        "level-1": "https://youtu.be/l9w5VSV0W2Y",
+        "level-2": "https://youtu.be/tlG7V7QN0Mo",
+        "level-3": "https://youtu.be/82P6dXRiCvw",
+        "level-4": "https://youtu.be/unk0Iw3rNw8",
+        "level-5": "https://youtu.be/LwRDvhcl-Gs",
+        "level-6": "https://youtu.be/aNRxp4DQD_k",
+        "level-7": "https://youtu.be/FXYBADgA8lk",
+        "level-8": "https://youtu.be/7_4d2KbiDeo"
+      },
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsWvjJuyesu8u4izuV6b38I"
+    }
   },
   {
     "id": "jazz",
@@ -78,14 +83,16 @@
         "videos": "done",
         "book": "done",
         "loop": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/jazz/1.png",
-      "/shots/jazz/2.png",
-      "/shots/jazz/3.png",
-      "/shots/jazz/4.png"
-    ]
+      },
+      "videos": {
+        "level-1": "https://youtu.be/hU8g6Y33V70",
+        "level-2": "https://youtu.be/KyNCpEkLrEc",
+        "level-3": "https://youtu.be/to4CofPNgng",
+        "level-4": "https://youtu.be/tZGyDq1T4hs",
+        "level-5": "https://youtu.be/7p3hNlvDogM"
+      },
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsUjgVSH77BURDcccTv804T"
+    }
   },
   {
     "id": "deepfin",
@@ -125,14 +132,16 @@
         "videos": "done",
         "book": "done",
         "loop": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/deepfin/1.png",
-      "/shots/deepfin/2.png",
-      "/shots/deepfin/3.png",
-      "/shots/deepfin/4.png"
-    ]
+      },
+      "videos": {
+        "level-1": "https://youtu.be/zJ7JSPzdkP8",
+        "level-2": "https://youtu.be/Fyy31B6PMPc",
+        "level-3": "https://youtu.be/YsWHSbQLg7c",
+        "level-4": "https://youtu.be/gEBp1CsLMNk",
+        "level-5": "https://youtu.be/O9myDmog_ew"
+      },
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsA-QrkOOxfdO_DaCU8Xp_W"
+    }
   },
   {
     "id": "ember-depths",
@@ -327,17 +336,19 @@
         "art": "done",
         "music": "done",
         "deploy": "done",
-        "videos": "todo",
+        "videos": "done",
         "book": "done",
         "loop": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/starsweeper/1.png",
-      "/shots/starsweeper/2.png",
-      "/shots/starsweeper/3.png",
-      "/shots/starsweeper/4.png"
-    ]
+      },
+      "videos": {
+        "level-1": "https://youtu.be/ZBV1YVDnQYA",
+        "level-2": "https://youtu.be/c8vgCzCV6HQ",
+        "level-3": "https://youtu.be/bNnQY2EGcFk",
+        "level-4": "https://youtu.be/yKqtKGvoA0Y",
+        "level-5": "https://youtu.be/2WVAGWzL2-s"
+      },
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtSOR3X3GbQXZxxc3HSoxjg"
+    }
   },
   {
     "id": "roadwar-iso",
