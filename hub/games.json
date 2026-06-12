@@ -180,17 +180,20 @@
         "art": "done",
         "music": "done",
         "deploy": "done",
-        "videos": "todo",
+        "videos": "done",
         "book": "todo",
         "loop": "todo"
-      }
-    },
-    "screenshots": [
-      "/shots/ember-depths/1.png",
-      "/shots/ember-depths/2.png",
-      "/shots/ember-depths/3.png",
-      "/shots/ember-depths/4.png"
-    ]
+      },
+      "videos": {
+        "ember-depths-level-1-molten-shallows": "https://youtu.be/tajJ6XQn0zs",
+        "ember-depths-level-2-the-caldera": "https://youtu.be/k-0QG6ic8Ww",
+        "ember-depths-level-3-ember-vents": "https://youtu.be/peK25DEd0nk",
+        "ember-depths-level-4-magma-run": "https://youtu.be/wAFudHu-bOQ",
+        "ember-depths-level-5-the-core": "https://youtu.be/IBqHMC0_zxE",
+        "ember-depths-montage": "https://youtu.be/0tr6NyryrS0"
+      },
+      "playlist": "https://www.youtube.com/watch_videos?video_ids=tajJ6XQn0zs,k-0QG6ic8Ww,peK25DEd0nk,wAFudHu-bOQ,IBqHMC0_zxE,0tr6NyryrS0"
+    }
   },
   {
     "id": "nimbus-climb",
@@ -218,15 +221,19 @@
         "hero": "done",
         "art": "done",
         "music": "done",
-        "deploy": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/nimbus-climb/1.png",
-      "/shots/nimbus-climb/2.png",
-      "/shots/nimbus-climb/3.png",
-      "/shots/nimbus-climb/4.png"
-    ]
+        "deploy": "done",
+        "videos": "done"
+      },
+      "videos": {
+        "nimbus-climb-level-1-foothill-puffs": "https://youtu.be/RyGPmfvL6xM",
+        "nimbus-climb-level-2-whisperdraft": "https://youtu.be/eIkE4ebbJzg",
+        "nimbus-climb-level-3-mistspire": "https://youtu.be/ERdSn9p8IKo",
+        "nimbus-climb-level-4-stormshelf-pass": "https://youtu.be/9WbwEHGXhFs",
+        "nimbus-climb-level-5-the-sun-bell": "https://youtu.be/IDlY5jxMKbo",
+        "nimbus-climb-montage": "https://youtu.be/c3bcV58B6Pw"
+      },
+      "playlist": "https://www.youtube.com/watch_videos?video_ids=RyGPmfvL6xM,eIkE4ebbJzg,ERdSn9p8IKo,9WbwEHGXhFs,IDlY5jxMKbo,c3bcV58B6Pw"
+    }
   },
   {
     "id": "starlance",
@@ -254,15 +261,19 @@
         "hero": "done",
         "art": "done",
         "music": "done",
-        "deploy": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/starlance/1.png",
-      "/shots/starlance/2.png",
-      "/shots/starlance/3.png",
-      "/shots/starlance/4.png"
-    ]
+        "deploy": "done",
+        "videos": "done"
+      },
+      "videos": {
+        "starlance-level-1-rose-veil": "https://youtu.be/ditCJU2SK_w",
+        "starlance-level-2-ion-veil": "https://youtu.be/DavGA85cW34",
+        "starlance-level-3-storm-veil": "https://youtu.be/D5C76n7PZ0U",
+        "starlance-level-4-void-rift": "https://youtu.be/jeOD3iRjJQE",
+        "starlance-level-5-the-hollow-star": "https://youtu.be/EwNE5z_umrY",
+        "starlance-montage": "https://youtu.be/AlXweJtR7vI"
+      },
+      "playlist": "https://www.youtube.com/watch_videos?video_ids=ditCJU2SK_w,DavGA85cW34,D5C76n7PZ0U,jeOD3iRjJQE,EwNE5z_umrY,AlXweJtR7vI"
+    }
   },
   {
     "id": "roadwar",
@@ -291,15 +302,19 @@
         "hero": "done",
         "art": "done",
         "music": "done",
-        "deploy": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/roadwar/1.png",
-      "/shots/roadwar/2.png",
-      "/shots/roadwar/3.png",
-      "/shots/roadwar/4.png"
-    ]
+        "deploy": "done",
+        "videos": "done"
+      },
+      "videos": {
+        "roadwar-level-1-desert-highway": "https://youtu.be/FDKEn3ELSlU",
+        "roadwar-level-2-the-junkyard": "https://youtu.be/rhdssFpH8_o",
+        "roadwar-level-3-neon-strip": "https://youtu.be/ICYwWUnR7rs",
+        "roadwar-level-4-red-canyon": "https://youtu.be/1o6fEPKDPr0",
+        "roadwar-level-5-warlord-s-gate": "https://youtu.be/oIBlCCtgBck",
+        "roadwar-montage": "https://youtu.be/p_tEOLN24xw"
+      },
+      "playlist": "https://www.youtube.com/watch_videos?video_ids=FDKEn3ELSlU,rhdssFpH8_o,ICYwWUnR7rs,1o6fEPKDPr0,oIBlCCtgBck,p_tEOLN24xw"
+    }
   },
   {
     "id": "starsweeper",
@@ -377,15 +392,19 @@
         "hero": "done",
         "art": "done",
         "music": "done",
-        "deploy": "done"
-      }
-    },
-    "screenshots": [
-      "/shots/roadwar-iso/1.png",
-      "/shots/roadwar-iso/2.png",
-      "/shots/roadwar-iso/3.png",
-      "/shots/roadwar-iso/4.png"
-    ]
+        "deploy": "done",
+        "videos": "done"
+      },
+      "videos": {
+        "roadwar-iso-level-1-desert-highway": "https://youtu.be/_CyMZe83zZA",
+        "roadwar-iso-level-2-the-junkyard": "https://youtu.be/sALebSTPzYk",
+        "roadwar-iso-level-3-neon-strip": "https://youtu.be/cX_vWgCyCNc",
+        "roadwar-iso-level-4-red-canyon": "https://youtu.be/vWLXQ0hWmVo",
+        "roadwar-iso-level-5-warlord-s-gate": "https://youtu.be/nRXke_tQ3Ro",
+        "roadwar-iso-montage": "https://youtu.be/Jr7B_5JUVGE"
+      },
+      "playlist": "https://www.youtube.com/watch_videos?video_ids=_CyMZe83zZA,sALebSTPzYk,cX_vWgCyCNc,vWLXQ0hWmVo,nRXke_tQ3Ro,Jr7B_5JUVGE"
+    }
   },
   {
     "id": "grovekeep",
@@ -406,14 +425,14 @@
       "archetype": "builder",
       "designLens": "the 5th genre; Studio.UI kit showcase; win-by-construction plans (lint 29/29)",
       "videos": {
-        "grovekeep-level-1-dawn-meadow": "https://youtu.be/a3_N0SlF9uk",
-        "grovekeep-level-2-fern-hollow": "https://youtu.be/_tjHkDFqHCk",
-        "grovekeep-level-3-riverbend": "https://youtu.be/TXMEIrnbhKM",
-        "grovekeep-level-4-mushroom-dell": "https://youtu.be/hOu4FRg0SXI",
-        "grovekeep-level-5-ancient-heartwood": "https://youtu.be/imZxQ7Qz39Q",
-        "grovekeep-montage": "https://youtu.be/yTJZdV3je_Y"
+        "grovekeep-level-1-dawn-meadow": "https://youtu.be/LgtX2z2nWPs",
+        "grovekeep-level-2-fern-hollow": "https://youtu.be/6yMUy48ZLdY",
+        "grovekeep-level-3-riverbend": "https://youtu.be/dqZykYbmCdQ",
+        "grovekeep-level-4-mushroom-dell": "https://youtu.be/QdJk3Ns30B8",
+        "grovekeep-level-5-ancient-heartwood": "https://youtu.be/c5EjrqzzXEo",
+        "grovekeep-montage": "https://youtu.be/8aZfnuzlWR8"
       },
-      "playlist": "https://www.youtube.com/watch_videos?video_ids=a3_N0SlF9uk,_tjHkDFqHCk,TXMEIrnbhKM,hOu4FRg0SXI,imZxQ7Qz39Q,yTJZdV3je_Y",
+      "playlist": "https://www.youtube.com/watch_videos?video_ids=LgtX2z2nWPs,6yMUy48ZLdY,dqZykYbmCdQ,QdJk3Ns30B8,c5EjrqzzXEo,8aZfnuzlWR8",
       "stages": {
         "scaffold": "done",
         "identity": "done",
