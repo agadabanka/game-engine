@@ -81,7 +81,8 @@ function normalizeVideos(meta) {
   const v = meta && meta.videos;
   if (!v || typeof v !== 'object') return [];
   const idOf = (u) => { const m = /(?:youtu\.be\/|v=|embed\/)([\w-]{6,})/.exec(String(u)); return m ? m[1] : null; };
-  const titleOf = (k) => {
+  const titleOf = (raw) => {
+    const k = String(raw).replace(/\.[a-z0-9]+$/i, '');   // drop any file extension
     if (/montage/i.test(k)) return 'Montage';
     const m = /(?:level|glade|veil|world|ground|fathom)-?(\d+)-?(.*)$/i.exec(k);
     if (m) return 'L' + m[1] + (m[2] ? ' · ' + m[2].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim() : '');
@@ -103,7 +104,7 @@ export async function snapshotGame(game, { ghToken } = {}) {
     ok: false, live: false, meta: null, config: null,
     notes: { total: 0, open: 0, recent: [] }, diary: { count: 0, latest: null, source: null },
     issues: { open: 0, closed: 0, url: game.repo ? `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` : null },
-    videos: [],
+    videos: [], playlist: null,
     fetchedAt: new Date().toISOString(), error: null,
   };
 
@@ -171,6 +172,10 @@ export async function snapshotGame(game, { ghToken } = {}) {
   }
 
   out.videos = normalizeVideos(out.meta);   // the uploaded AI-playthrough gallery
+  // a single "watch all" playlist link: the game's own meta.playlist if it has
+  // one, else synthesize YouTube's anonymous watch_videos playlist from the ids.
+  out.playlist = (out.meta && out.meta.playlist)
+    || (out.videos.length > 1 ? 'https://www.youtube.com/watch_videos?video_ids=' + out.videos.map((v) => v.id).join(',') : (out.videos[0] && out.videos[0].url) || null);
   out.ok = out.live || out.diary.count > 0;
   if (!out.ok) out.error = base ? 'no response from deploy' : 'no deploy url and no DIARY.md on GitHub';
   out.pipeline = resolveStages(out);   // where this game is in the dev pipeline
@@ -188,7 +193,7 @@ function errorSnapshot(game, err) {
     ok: false, live: false, meta: game?.meta || null, config: null,
     notes: { total: 0, open: 0, recent: [] }, diary: { count: 0, latest: null, source: null },
     issues: { open: 0, closed: 0, url: game?.repo ? `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` : null },
-    videos: [],
+    videos: [], playlist: null,
     fetchedAt: new Date().toISOString(), error: String(err),
     pipeline: { statuses: {}, pct: 0, done: 0, total: 0, next: [] },
   };

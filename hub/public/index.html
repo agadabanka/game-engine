@@ -70,7 +70,7 @@
   dialog label{ font-size:12px; color:var(--dim); }
   .gen{ color:var(--dim); font-size:11.5px; margin-top:24px; }
   /* ── drill-in: LOOK INTO a game ── */
-  dialog#detail{ max-width:880px; width:94%; padding:0; border:1px solid var(--line); max-height:90vh; overflow:auto; }
+  dialog#detail{ max-width:960px; width:94%; padding:0; border:1px solid var(--line); max-height:92vh; overflow:auto; }
   dialog#detail::backdrop{ background:rgba(4,8,18,.66); }
   .dhead{ position:sticky; top:0; background:linear-gradient(180deg,#16213f,#121a30); border-bottom:1px solid var(--line); padding:18px 22px 14px; z-index:2; }
   .dhead .dtop{ display:flex; align-items:center; gap:10px; }
@@ -95,6 +95,30 @@
   .nrow .nmeta a{ background:#16213f; border:1px solid var(--line); border-radius:6px; padding:1px 7px; }
   .scorecard{ font-size:12.5px; color:#dde6ff; line-height:1.6; } .scorecard.dgrid{ display:grid; grid-template-columns:1fr 1fr; gap:4px 16px; }
   .scorecard .sk{ color:var(--dim); } @media (max-width:680px){ .scorecard.dgrid{ grid-template-columns:1fr; } }
+  /* ── Play-Store-style storefront ── */
+  .hero{ position:relative; width:100%; aspect-ratio:16/9; background:#0a1124; border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:6px; }
+  .hero img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .hero iframe{ width:100%; height:100%; border:0; display:block; }
+  .hero .play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(4,8,18,.20); }
+  .hero .play:hover{ background:rgba(4,8,18,.32); } .hero .play:hover{ text-decoration:none; }
+  .hero .pbtn{ width:68px; height:68px; border-radius:50%; background:rgba(10,16,36,.72); border:2px solid #fff; color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; padding-left:5px; }
+  .hero .play:hover .pbtn{ background:#e23; border-color:#e23; }
+  .shots{ display:flex; gap:9px; overflow-x:auto; padding:11px 1px 3px; }
+  .shot{ flex:0 0 auto; width:152px; border:1px solid var(--line); border-radius:9px; overflow:hidden; cursor:pointer; background:var(--panel2); }
+  .shot.active{ border-color:#3a7dff; } .shot:hover{ border-color:#6fb6f0; }
+  .shot img{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
+  .shot .st{ font-size:10.5px; padding:4px 8px; color:#cfe0ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cta{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:16px 0 2px; }
+  .cta a{ font-size:14px; font-weight:700; padding:10px 18px; border-radius:10px; }
+  .cta a:hover{ text-decoration:none; }
+  .cta a.play{ background:#2a6df0; color:#fff; border:1px solid #3a7dff; } .cta a.play:hover{ background:#3a7dff; }
+  .cta a.watch{ background:#e0322e; color:#fff; border:1px solid #f4524e; } .cta a.watch:hover{ background:#f4524e; }
+  .cta a.sec{ background:#16213f; color:var(--ink); border:1px solid var(--line); font-weight:600; }
+  .cta a.sec:hover{ background:#1d2c4f; }
+  .about{ font-size:13.5px; color:#dde6ff; line-height:1.6; }
+  .statchips{ display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 2px; }
+  .statchip{ background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:7px 13px; min-width:76px; }
+  .statchip .sn{ font-size:18px; font-weight:800; } .statchip .sl{ font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
 </style>
 </head>
 <body>
@@ -225,12 +249,53 @@ function phaseBlock(g){
   return `<div class="sect"><h4>Pipeline<span class="cnt">${p.pct}% · ${p.done}/${p.total} stages</span></h4>
     <div class="pbar" style="margin-bottom:13px"><div class="pfill" style="width:${p.pct}%"></div></div>${blocks}</div>`;
 }
-function videoGallery(g){
-  const vs = g.videos || []; if (!vs.length) return '';
-  const cells = vs.map((v) => `<a class="vid ${v.montage ? 'mont' : ''}" href="${esc(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+// ── storefront (Play-Store-style): a featured player + a screenshot/clip strip ──
+const ytEmbed = (id) => 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1';
+window.playVideo = function (id) {
+  const h = document.getElementById('hero'); if (!h) return;
+  h.innerHTML = '<iframe src="' + ytEmbed(id) + '" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
+  document.querySelectorAll('.shot').forEach((s) => s.classList.toggle('active', s.dataset.id === id));
+};
+function heroBlock(g){
+  const vs = g.videos || [], base = g.url ? g.url.replace(/\/$/, '') : null;
+  if (!vs.length) {
+    return `<div class="hero" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#16213f,#0a1124)">
+      ${base ? `<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span class="pbtn">▶</span></a>` : '<span class="muted">no preview yet</span>'}</div>`;
+  }
+  const feat = vs.find((v) => v.montage) || vs[0];
+  const shots = vs.map((v) => `<div class="shot ${v === feat ? 'active' : ''}" data-id="${esc(v.id)}" onclick="event.stopPropagation();playVideo('${esc(v.id)}')">
     <img loading="lazy" src="${esc(v.thumb)}" alt="${esc(v.title)}" onerror="this.style.opacity=.2" />
-    <div class="vt"><b>${esc(v.title)}</b></div></a>`).join('');
-  return `<div class="sect"><h4>🎬 AI playthroughs<span class="cnt">${vs.length} on YouTube</span></h4><div class="vids">${cells}</div></div>`;
+    <div class="st">${v.montage ? '▣ ' : ''}${esc(v.title)}</div></div>`).join('');
+  return `<div class="hero" id="hero">
+      <img src="${esc(feat.thumb)}" alt="${esc(feat.title)}" onerror="this.style.opacity=.25" />
+      <div class="play" onclick="event.stopPropagation();playVideo('${esc(feat.id)}')"><span class="pbtn">▶</span></div>
+    </div>
+    <div class="shots">${shots}</div>`;
+}
+function ctaBlock(g){
+  const base = g.url ? g.url.replace(/\/$/, '') : null, m = g.meta || {}, a = [];
+  if (base) a.push(`<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Play</a>`);
+  if (g.playlist) a.push(`<a class="watch" href="${esc(g.playlist)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Watch all on YouTube</a>`);
+  if (base) a.push(`<a class="sec" href="${esc(base + (m.builder || '/build.html'))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧱 Builder</a>`);
+  if (base) a.push(`<a class="sec" href="${esc(base + '/diary.html')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📖 Diary</a>`);
+  if (g.repo) a.push(`<a class="sec" href="https://github.com/${esc(g.repo)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🐙 Repo</a>`);
+  if (g.issues && g.issues.url) a.push(`<a class="sec" href="${esc(g.issues.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🐛 Issues</a>`);
+  return `<div class="cta">${a.join('')}</div>`;
+}
+function aboutBlock(g){
+  const m = g.meta || {};
+  const kv = [['verb', m.verb || g.verb], m.controls ? ['controls', m.controls] : null, m.art ? ['art', m.art] : null, m.music ? ['music', m.music] : null, ['hero', m.hero || g.hero]]
+    .filter(Boolean).filter(([, v]) => v).map(([k, v]) => `<div class="k">${k}</div><div class="v">${esc(v)}</div>`).join('');
+  const chips = [
+    m.levelCount != null ? ['levels', m.levelCount] : null,
+    (g.videos || []).length ? ['videos', g.videos.length] : null,
+    ['progress', (g.pipeline ? g.pipeline.pct : 0) + '%'],
+    g.issues ? ['notes fixed', g.issues.closed] : null,
+  ].filter(Boolean).map(([l, n]) => `<div class="statchip"><div class="sn">${esc(n)}</div><div class="sl">${esc(l)}</div></div>`).join('');
+  return `<div class="sect"><h4>About this game</h4>
+    <div class="about">${esc(g.tagline || m.tagline || '')}</div>
+    ${kv ? `<div class="kv" style="margin-top:10px">${kv}</div>` : ''}
+    <div class="statchips">${chips}</div></div>`;
 }
 function notesLoop(g){
   const iss = g.issues || { open: 0, closed: 0 };
@@ -259,29 +324,19 @@ function scoreBlock(g){
   return out.join('');
 }
 function detailHTML(g){
-  const m = g.meta || {}, base = g.url ? g.url.replace(/\/$/, '') : null;
+  const m = g.meta || {};
   const status = g.live ? 'live' : (g.diary.count ? 'idle' : 'off');
   const arch = m.archetype ? `<span class="darch">${esc(m.archetype)}</span>` : '';
-  const links = [
-    base ? [base, '▶ play'] : null,
-    base ? [base + (m.builder || '/build.html'), '🧱 builder'] : null,
-    base && m.designLens && /^\//.test(m.designLens) ? [base + m.designLens, '🎨 design'] : null,
-    base ? [base + '/diary.html', '📖 diary'] : null,
-    g.repo ? ['https://github.com/' + g.repo, '🐙 repo'] : null,
-    g.issues && g.issues.url ? [g.issues.url, '🐛 issues'] : null,
-  ].filter(Boolean).map(([h, t]) => `<a href="${esc(h)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t}</a>`).join('');
-  const kv = [['hero', m.hero || g.hero], ['verb', m.verb || g.verb], m.controls ? ['controls', m.controls] : null, m.art ? ['art', m.art] : null, m.music ? ['music', m.music] : null]
-    .filter(Boolean).filter(([, v]) => v).map(([k, v]) => `<div class="k">${k}</div><div class="v">${esc(v)}</div>`).join('');
   return `<div class="dhead">
       <div class="dtop"><span class="dot ${status}"></span><span class="dnm">${esc(g.name)}</span>${arch}
         <button class="x" title="close" onclick="document.getElementById('detail').close()">✕</button></div>
       <div class="dtag">${esc(g.tagline || m.tagline || '')}</div>
-      <div class="links" style="margin-top:11px">${links}</div>
     </div>
-    <div class="dwrap">
-      ${kv ? `<div class="kv" style="margin-top:16px">${kv}</div>` : ''}
+    <div class="dwrap store">
+      ${heroBlock(g)}
+      ${ctaBlock(g)}
+      ${aboutBlock(g)}
       ${phaseBlock(g)}
-      ${videoGallery(g)}
       ${notesLoop(g)}
       ${diaryBlock(g)}
       ${scoreBlock(g)}
