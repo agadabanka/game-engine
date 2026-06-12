@@ -104,7 +104,7 @@ export async function snapshotGame(game, { ghToken } = {}) {
     ok: false, live: false, meta: null, config: null,
     notes: { total: 0, open: 0, recent: [] }, diary: { count: 0, latest: null, source: null },
     issues: { open: 0, closed: 0, url: game.repo ? `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` : null },
-    videos: [], playlist: null,
+    videos: [], playlist: null, screenshots: Array.isArray(game.screenshots) ? game.screenshots : [],
     fetchedAt: new Date().toISOString(), error: null,
   };
 
@@ -169,6 +169,7 @@ export async function snapshotGame(game, { ghToken } = {}) {
   if (game.meta && out.meta && out.meta !== game.meta) {
     if (game.meta.stages) out.meta.stages = { ...game.meta.stages, ...(out.meta.stages || {}) };
     if (game.meta.videos && !out.meta.videos) out.meta.videos = game.meta.videos;
+    if (game.meta.playlist && !out.meta.playlist) out.meta.playlist = game.meta.playlist;
   }
 
   out.videos = normalizeVideos(out.meta);   // the uploaded AI-playthrough gallery
@@ -193,7 +194,7 @@ function errorSnapshot(game, err) {
     ok: false, live: false, meta: game?.meta || null, config: null,
     notes: { total: 0, open: 0, recent: [] }, diary: { count: 0, latest: null, source: null },
     issues: { open: 0, closed: 0, url: game?.repo ? `https://github.com/${game.repo}/issues?q=label%3Aplaytest-note` : null },
-    videos: [], playlist: null,
+    videos: [], playlist: null, screenshots: Array.isArray(game?.screenshots) ? game.screenshots : [],
     fetchedAt: new Date().toISOString(), error: String(err),
     pipeline: { statuses: {}, pct: 0, done: 0, total: 0, next: [] },
   };

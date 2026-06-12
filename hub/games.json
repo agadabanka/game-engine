@@ -6,10 +6,10 @@
     "url": "https://web-production-a2ee9.up.railway.app",
     "tagline": "The base game + the rig everything else was built on (frog).",
     "hero": "pixel frog",
-    "verb": "run \u00b7 jump \u00b7 stomp",
+    "verb": "run · jump · stomp",
     "meta": {
       "hero": "pixel frog",
-      "verb": "run \u00b7 jump \u00b7 stomp",
+      "verb": "run · jump · stomp",
       "controls": "on-screen + keyboard",
       "art": "pixel-art",
       "music": "chiptune",
@@ -28,19 +28,25 @@
         "book": "done",
         "loop": "done"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/the-platformer/1.png",
+      "/shots/the-platformer/2.png",
+      "/shots/the-platformer/3.png",
+      "/shots/the-platformer/4.png"
+    ]
   },
   {
     "id": "jazz",
     "name": "Jazz",
     "repo": "agadabanka/jazz",
     "url": "https://web-production-cab9f4.up.railway.app",
-    "tagline": "Building a Bunny with a Bazooka \u2014 the second game off the engine.",
+    "tagline": "Building a Bunny with a Bazooka — the second game off the engine.",
     "hero": "cartoon bunny",
-    "verb": "run \u00b7 jump \u00b7 shoot \u00b7 dive",
+    "verb": "run · jump · shoot · dive",
     "meta": {
       "hero": "Jazz, a light-blue cartoon bunny in an orange jumpsuit",
-      "verb": "run \u00b7 jump \u00b7 shoot \u00b7 dive \u00b7 stomp",
+      "verb": "run · jump · shoot · dive · stomp",
       "worlds": [
         "Carrot Caverns",
         "Sunset Strip",
@@ -51,7 +57,7 @@
       "levelCount": 13,
       "controls": "joystick + jump + dive + fire",
       "art": "bold-outline Saturday-morning cartoon (Gemini, model-sheet-locked)",
-      "music": "Lyria \u2014 a score per world",
+      "music": "Lyria — a score per world",
       "diff": {
         "uniqueness": 81,
         "feelSimilarity": 94
@@ -73,19 +79,25 @@
         "book": "done",
         "loop": "done"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/jazz/1.png",
+      "/shots/jazz/2.png",
+      "/shots/jazz/3.png",
+      "/shots/jazz/4.png"
+    ]
   },
   {
     "id": "deepfin",
     "name": "Deepfin",
     "repo": "agadabanka/deepfin",
     "url": "https://web-production-d3a35.up.railway.app",
-    "tagline": "Swim the sunken reefs \u2014 an axolotl odyssey, every fathom AI-playtested.",
+    "tagline": "Swim the sunken reefs — an axolotl odyssey, every fathom AI-playtested.",
     "hero": "Pearl, a rose-pink axolotl",
-    "verb": "swim \u00b7 dart \u00b7 bubble",
+    "verb": "swim · dart · bubble",
     "meta": {
       "hero": "Pearl, a rose-pink axolotl with a golden conch-shell bubble blaster",
-      "verb": "swim \u00b7 dart \u00b7 dive \u00b7 bubble",
+      "verb": "swim · dart · dive · bubble",
       "worlds": [
         "Shallows",
         "Kelp Forest",
@@ -96,7 +108,7 @@
       "levelCount": 5,
       "controls": "joystick + stroke + dive + bubble",
       "art": "bold-outline underwater cartoon (Gemini, model-sheet-locked)",
-      "music": "Lyria \u2014 a score per fathom",
+      "music": "Lyria — a score per fathom",
       "engine": "game-engine",
       "builder": "/build.html",
       "designLens": "/design.html",
@@ -114,14 +126,20 @@
         "book": "done",
         "loop": "done"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/deepfin/1.png",
+      "/shots/deepfin/2.png",
+      "/shots/deepfin/3.png",
+      "/shots/deepfin/4.png"
+    ]
   },
   {
     "id": "ember-depths",
     "name": "Ember Depths",
     "repo": "agadabanka/ember-depths",
     "url": "https://ember-depths-production.up.railway.app",
-    "tagline": "Hop the lava, ride the embers \u2014 descend the molten cave.",
+    "tagline": "Hop the lava, ride the embers — descend the molten cave.",
     "hero": "Ember",
     "verb": "run, hop lava & stomp",
     "meta": {
@@ -157,14 +175,20 @@
         "book": "todo",
         "loop": "todo"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/ember-depths/1.png",
+      "/shots/ember-depths/2.png",
+      "/shots/ember-depths/3.png",
+      "/shots/ember-depths/4.png"
+    ]
   },
   {
     "id": "nimbus-climb",
     "name": "Nimbus Climb",
     "repo": "agadabanka/nimbus-climb",
     "url": "https://nimbus-climb-production.up.railway.app",
-    "tagline": "Ride the updrafts, dodge the storms \u2014 climb the sky to the Sun Bell.",
+    "tagline": "Ride the updrafts, dodge the storms — climb the sky to the Sun Bell.",
     "hero": "Nimbi",
     "verb": "climb, float updrafts & time the gusts",
     "meta": {
@@ -187,7 +211,13 @@
         "music": "done",
         "deploy": "done"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/nimbus-climb/1.png",
+      "/shots/nimbus-climb/2.png",
+      "/shots/nimbus-climb/3.png",
+      "/shots/nimbus-climb/4.png"
+    ]
   },
   {
     "id": "starlance",
@@ -196,14 +226,14 @@
     "url": "https://starlance-production.up.railway.app",
     "tagline": "Climb the five veils of the nebula to the Hollow Star.",
     "hero": "a lone crystalline interceptor",
-    "verb": "fly \u00b7 dodge \u00b7 blast",
+    "verb": "fly · dodge · blast",
     "meta": {
       "hero": "a lone crystalline interceptor",
-      "verb": "fly \u00b7 dodge \u00b7 blast",
+      "verb": "fly · dodge · blast",
       "levelCount": 5,
-      "controls": "\u2190 \u2192 move \u00b7 auto-fire (joystick on touch)",
+      "controls": "← → move · auto-fire (joystick on touch)",
       "art": "painterly synthwave space (Gemini)",
-      "music": "Lyria \u2014 a drive per veil",
+      "music": "Lyria — a drive per veil",
       "engine": "game-engine (studio/phaser-4)",
       "archetype": "shooter",
       "stages": {
@@ -217,26 +247,32 @@
         "music": "done",
         "deploy": "done"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/starlance/1.png",
+      "/shots/starlance/2.png",
+      "/shots/starlance/3.png",
+      "/shots/starlance/4.png"
+    ]
   },
   {
     "id": "roadwar",
     "name": "Roadwar",
     "repo": "agadabanka/roadwar",
     "url": "https://roadwar-production.up.railway.app",
-    "tagline": "Build your convoy, crush the warlord \u2014 a toon car RTS.",
+    "tagline": "Build your convoy, crush the warlord — a toon car RTS.",
     "hero": "a convoy of toon battle-cars",
-    "verb": "build \u00b7 rally \u00b7 ram",
+    "verb": "build · rally · ram",
     "meta": {
       "hero": "a convoy of toon battle-cars",
-      "verb": "build \u00b7 rally \u00b7 ram",
+      "verb": "build · rally · ram",
       "levelCount": 5,
-      "controls": "click a lane \u00b7 build cars (1/2/3) \u00b7 auto-rally",
+      "controls": "click a lane · build cars (1/2/3) · auto-rally",
       "art": "toon cel-shaded top-down cars (Gemini)",
-      "music": "Lyria \u2014 a battle anthem per ground",
+      "music": "Lyria — a battle anthem per ground",
       "engine": "game-engine (studio/phaser-4)",
       "archetype": "rts",
-      "designLens": "FUN 86.3 via MDA + Schell lenses; intensity escalates 9\u219245 to a Warlord boss finale",
+      "designLens": "FUN 86.3 via MDA + Schell lenses; intensity escalates 9→45 to a Warlord boss finale",
       "stages": {
         "scaffold": "done",
         "identity": "done",
@@ -248,19 +284,25 @@
         "music": "done",
         "deploy": "done"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/roadwar/1.png",
+      "/shots/roadwar/2.png",
+      "/shots/roadwar/3.png",
+      "/shots/roadwar/4.png"
+    ]
   },
   {
     "id": "starsweeper",
     "name": "Starsweeper",
     "repo": "agadabanka/starsweeper",
     "url": "https://game-production-3243.up.railway.app",
-    "tagline": "A Little Astronaut's Long Way Home \u2014 a low-gravity space platformer.",
+    "tagline": "A Little Astronaut's Long Way Home — a low-gravity space platformer.",
     "hero": "Pip, a junior orbital sweeper in an orange EVA suit",
-    "verb": "run \u00b7 float-jump \u00b7 dive \u00b7 blast",
+    "verb": "run · float-jump · dive · blast",
     "meta": {
       "hero": "Pip, a junior orbital sweeper in an orange EVA suit",
-      "verb": "run \u00b7 float-jump \u00b7 dive \u00b7 blast",
+      "verb": "run · float-jump · dive · blast",
       "worlds": [
         "Cold Start",
         "Drift",
@@ -271,7 +313,7 @@
       "levelCount": 5,
       "controls": "joystick + float-jump + dive + blast (on-screen + keyboard)",
       "art": "bespoke space backdrops per zone + a generated astronaut hero (Pip) + key art (Gemini)",
-      "music": "original Lyria score \u2014 a distinct space track per zone + title",
+      "music": "original Lyria score — a distinct space track per zone + title",
       "engine": "game-engine",
       "builder": "/build.html",
       "designLens": "/design.html",
@@ -288,7 +330,15 @@
         "videos": "done",
         "book": "done",
         "loop": "done"
-      }
+      },
+      "videos": {
+        "zone-1-cold-start": "https://youtu.be/35KPCJCvTZk",
+        "zone-2-drift": "https://youtu.be/-mfbgoH9MJ8",
+        "zone-3-vent": "https://youtu.be/AIQWHxdsTgE",
+        "zone-4-salvage": "https://youtu.be/s8PiT0fVy9U",
+        "zone-5-the-warden": "https://youtu.be/bcWDfPZPIsE"
+      },
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtSOR3X3GbQXZxxc3HSoxjg"
     }
   },
   {
@@ -296,19 +346,19 @@
     "name": "Roadwar Iso",
     "repo": "agadabanka/roadwar-iso",
     "url": "https://roadwar-iso-production.up.railway.app",
-    "tagline": "Build your convoy, crush the warlord \u2014 an isometric 2.5D car RTS.",
+    "tagline": "Build your convoy, crush the warlord — an isometric 2.5D car RTS.",
     "hero": "a convoy of toon battle-cars, in iso",
-    "verb": "deploy \u00b7 rally \u00b7 ram",
+    "verb": "deploy · rally · ram",
     "meta": {
       "hero": "a convoy of toon battle-cars, in iso",
-      "verb": "deploy \u00b7 rally \u00b7 ram",
+      "verb": "deploy · rally · ram",
       "levelCount": 5,
-      "controls": "click the field to deploy \u00b7 1/2/3 pick a car \u00b7 4 refinery",
+      "controls": "click the field to deploy · 1/2/3 pick a car · 4 refinery",
       "art": "toon cel-shaded ISOMETRIC cars (Gemini)",
-      "music": "Lyria \u2014 a battle anthem per ground",
+      "music": "Lyria — a battle anthem per ground",
       "engine": "game-engine (studio/phaser-4)",
       "archetype": "isorts",
-      "designLens": "FUN 91.7; tension auto-balanced 0.34\u21920.71 to a BRUTAL boss finale; 89% strategic diversity",
+      "designLens": "FUN 91.7; tension auto-balanced 0.34→0.71 to a BRUTAL boss finale; 89% strategic diversity",
       "stages": {
         "scaffold": "done",
         "identity": "done",
@@ -320,23 +370,29 @@
         "music": "done",
         "deploy": "done"
       }
-    }
+    },
+    "screenshots": [
+      "/shots/roadwar-iso/1.png",
+      "/shots/roadwar-iso/2.png",
+      "/shots/roadwar-iso/3.png",
+      "/shots/roadwar-iso/4.png"
+    ]
   },
   {
     "id": "grovekeep",
     "name": "Grovekeep",
     "repo": "agadabanka/grovekeep",
     "url": "https://grovekeep-production.up.railway.app",
-    "tagline": "Grow a tiny forest village \u2014 gather, build, and shelter the rootlings.",
+    "tagline": "Grow a tiny forest village — gather, build, and shelter the rootlings.",
     "hero": "the rootlings of the grove",
-    "verb": "gather \u00b7 build \u00b7 grow",
+    "verb": "gather · build · grow",
     "meta": {
       "hero": "the rootlings of the grove",
-      "verb": "gather \u00b7 build \u00b7 grow",
+      "verb": "gather · build · grow",
       "levelCount": 5,
-      "controls": "click a card \u00b7 click a tile to place \u00b7 R roster",
+      "controls": "click a card · click a tile to place · R roster",
       "art": "PIXEL ART via the pixelize tool (20 characters)",
-      "music": "Lyria \u2014 a woodland theme per glade",
+      "music": "Lyria — a woodland theme per glade",
       "engine": "game-engine (studio/phaser-4)",
       "archetype": "builder",
       "designLens": "the 5th genre; Studio.UI kit showcase; win-by-construction plans (lint 29/29)",

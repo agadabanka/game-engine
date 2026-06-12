@@ -256,21 +256,34 @@ window.playVideo = function (id) {
   h.innerHTML = '<iframe src="' + ytEmbed(id) + '" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
   document.querySelectorAll('.shot').forEach((s) => s.classList.toggle('active', s.dataset.id === id));
 };
+window.showShot = function (src) {
+  const img = document.getElementById('heroImg'); if (img) img.src = src;
+  document.querySelectorAll('.shot').forEach((s) => s.classList.toggle('active', s.dataset.shot === src));
+};
 function heroBlock(g){
-  const vs = g.videos || [], base = g.url ? g.url.replace(/\/$/, '') : null;
-  if (!vs.length) {
-    return `<div class="hero" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#16213f,#0a1124)">
-      ${base ? `<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span class="pbtn">▶</span></a>` : '<span class="muted">no preview yet</span>'}</div>`;
+  const vs = g.videos || [], shots = g.screenshots || [], base = g.url ? g.url.replace(/\/$/, '') : null;
+  // 1) videos → a featured player + a clip strip (click to play inline)
+  if (vs.length) {
+    const feat = vs.find((v) => v.montage) || vs[0];
+    const strip = vs.map((v) => `<div class="shot ${v === feat ? 'active' : ''}" data-id="${esc(v.id)}" onclick="event.stopPropagation();playVideo('${esc(v.id)}')">
+      <img loading="lazy" src="${esc(v.thumb)}" alt="${esc(v.title)}" onerror="this.style.opacity=.2" />
+      <div class="st">${v.montage ? '▣ ' : ''}${esc(v.title)}</div></div>`).join('');
+    return `<div class="hero" id="hero">
+        <img src="${esc(feat.thumb)}" alt="${esc(feat.title)}" onerror="this.style.opacity=.25" />
+        <div class="play" onclick="event.stopPropagation();playVideo('${esc(feat.id)}')"><span class="pbtn">▶</span></div>
+      </div>
+      <div class="shots">${strip}</div>`;
   }
-  const feat = vs.find((v) => v.montage) || vs[0];
-  const shots = vs.map((v) => `<div class="shot ${v === feat ? 'active' : ''}" data-id="${esc(v.id)}" onclick="event.stopPropagation();playVideo('${esc(v.id)}')">
-    <img loading="lazy" src="${esc(v.thumb)}" alt="${esc(v.title)}" onerror="this.style.opacity=.2" />
-    <div class="st">${v.montage ? '▣ ' : ''}${esc(v.title)}</div></div>`).join('');
-  return `<div class="hero" id="hero">
-      <img src="${esc(feat.thumb)}" alt="${esc(feat.title)}" onerror="this.style.opacity=.25" />
-      <div class="play" onclick="event.stopPropagation();playVideo('${esc(feat.id)}')"><span class="pbtn">▶</span></div>
-    </div>
-    <div class="shots">${shots}</div>`;
+  // 2) screenshots → a featured image + a screenshot strip (click to swap)
+  if (shots.length) {
+    const strip = shots.map((s, i) => `<div class="shot ${i === 0 ? 'active' : ''}" data-shot="${esc(s)}" onclick="event.stopPropagation();showShot('${esc(s)}')">
+      <img loading="lazy" src="${esc(s)}" alt="screenshot" /></div>`).join('');
+    return `<div class="hero"><img id="heroImg" src="${esc(shots[0])}" alt="screenshot" /></div>
+      <div class="shots">${strip}</div>`;
+  }
+  // 3) nothing yet → a Play panel
+  return `<div class="hero" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#16213f,#0a1124)">
+      ${base ? `<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span class="pbtn">▶</span></a>` : '<span class="muted">no preview yet</span>'}</div>`;
 }
 function ctaBlock(g){
   const base = g.url ? g.url.replace(/\/$/, '') : null, m = g.meta || {}, a = [];
