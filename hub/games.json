@@ -321,5 +321,36 @@
         "deploy": "done"
       }
     }
+  },
+  {
+    "id": "grovekeep",
+    "name": "Grovekeep",
+    "repo": "agadabanka/grovekeep",
+    "url": "https://grovekeep-production.up.railway.app",
+    "tagline": "Grow a tiny forest village \u2014 gather, build, and shelter the rootlings.",
+    "hero": "the rootlings of the grove",
+    "verb": "gather \u00b7 build \u00b7 grow",
+    "meta": {
+      "hero": "the rootlings of the grove",
+      "verb": "gather \u00b7 build \u00b7 grow",
+      "levelCount": 5,
+      "controls": "click a card \u00b7 click a tile to place \u00b7 R roster",
+      "art": "PIXEL ART via the pixelize tool (20 characters)",
+      "music": "Lyria \u2014 a woodland theme per glade",
+      "engine": "game-engine (studio/phaser-4)",
+      "archetype": "builder",
+      "designLens": "the 5th genre; Studio.UI kit showcase; win-by-construction plans (lint 29/29)",
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done"
+      }
+    }
   }
 ]
