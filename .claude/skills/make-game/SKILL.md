@@ -33,11 +33,15 @@ session and end with links.
 2. **Identity** — name, tagline, roster/hero defs, worlds list → GAME_META.json.
 3. **Levels** — 5 themed levels/arenas as data (`src/game/levels.js`).
 4. **Gate** — extend `eval.mjs` to the genre's win contract. The bar:
-   deterministic (two identical runs), the autopilot WINS every level
-   (0 deaths / flawless / plan-complete — genre-appropriate), non-black readback,
-   BOTH renderers (webgl + canvas). Iterate with trace/autopsy tooling; for
-   rng-driven genres, seed-scan (`scan.mjs` pattern) and bake authored seeds
-   into level data — determinism makes a clean seed reproducible forever.
+   deterministic (two identical runs), the autopilot WINS every level, AND the
+   run **maximizes fun, not perfection** — score the match/run with a felt-fun
+   model (`Studio.Brawl.fun` pattern: action/flow/arc/closeness/variety) and
+   gate on FUN ≥ 70. Owner's standing rule: losing a few times is fine —
+   comebacks beat sweeps; never gate on 0-death alone when a fun score fits the
+   genre better. Non-black readback, BOTH renderers (webgl + canvas). Iterate
+   with trace/autopsy tooling; for rng-driven genres, seed-scan (`scan.mjs`
+   pattern) and bake the highest-FUN winning seeds into level data —
+   determinism makes them reproducible forever.
 5. **Feel** — animation states on every actor, hitstop/shake/flash tuned, HUD.
 6. **Art** — Gemini backdrops per world + title keyart via `tools/art.mjs`
    (GEMINI_SA_JSON). Bottom third must stay gameplay-clean. NO text in images.

@@ -826,6 +826,50 @@
       scrapper: { aggro: 0.34, caution: 0.22, itemLove: 0.3, jumpy: 0.35, center: 0 },
       bruiser: { aggro: 0.45, caution: 0.3, itemLove: 0.4, jumpy: 0.45, center: 0 },
       champion: { aggro: 0.62, caution: 0.75, itemLove: 0.7, jumpy: 0.6, center: 0.45 }
+    },
+    // ---- the Brawl felt-fun model. A match is FUN when the action never goes
+    // quiet (flow), the climax lands late (arc), the win is earned not swept
+    // (closeness + comeback), and the systems all showed up (variety). Pure
+    // function of the deterministic event log → the score replays too.
+    //   events: [{t:'hit',f,a,v,dmg,kb} | {t:'ko',f,who,by,stocks} |
+    //            {t:'item',f,who,type} | {t:'special',f,who} | {t:'sudden',f}]
+    //   ctx: { playerKey, frame, falls, stocks, won, fightStart }
+    fun: function (events, ctx) {
+      var start = ctx.fightStart != null ? ctx.fightStart : 180;
+      var durF = Math.max(1, ctx.frame - start), dur = durF / 60;
+      var clamp = function (v) { return Math.max(0, Math.min(1, v)); };
+      var hits = events.filter(function (e) { return e.t === 'hit'; });
+      var kos = events.filter(function (e) { return e.t === 'ko'; });
+      // ACTION — hits per second of fight time (saturates at ~0.8/s)
+      var action = clamp((hits.length / dur) / 0.8);
+      // FLOW — no dead air between beats (KOs + heavy launches)
+      var beats = events.filter(function (e) { return e.t === 'ko' || (e.t === 'hit' && e.kb > 480); })
+        .map(function (e) { return e.f; }).sort(function (a, b) { return a - b; });
+      var maxGap = 0, prev = start;
+      beats.concat([ctx.frame]).forEach(function (f) { maxGap = Math.max(maxGap, f - prev); prev = f; });
+      var flow = clamp(1 - ((maxGap / 60) - 8) / 20);
+      // ARC — the last KO should land late (the climax)
+      var lastKo = kos.length ? kos[kos.length - 1].f : start;
+      var arc = clamp((((lastKo - start) / durF) - 0.5) / 0.35);
+      // CLOSENESS — an earned win beats a sweep; comebacks count extra
+      var left = ctx.stocks - ctx.falls;
+      var closeness = ctx.won ? (left <= 1 ? 1 : left === 2 ? 0.85 : 0.55) : 0.3;
+      var peak = 0;
+      hits.forEach(function (e) { if (e.v === ctx.playerKey && e.dmg > peak) peak = e.dmg; });
+      if (peak >= 90) closeness = clamp(closeness + 0.15);
+      // VARIETY — specials flew, items mattered, KOs were shared around
+      var specials = events.filter(function (e) { return e.t === 'special'; }).length;
+      var items = events.filter(function (e) { return e.t === 'item'; }).length;
+      var scorers = {};
+      kos.forEach(function (e) { if (e.by) scorers[e.by] = 1; });
+      var variety = (clamp(specials / 5) + clamp(items / 3) + clamp(Object.keys(scorers).length / 3)) / 3;
+      var fun = 100 * (0.24 * action + 0.22 * flow + 0.18 * arc + 0.2 * closeness + 0.16 * variety);
+      if (events.some(function (e) { return e.t === 'sudden'; })) fun *= 0.85; // needed the anti-stall = wasn't flowing
+      return {
+        fun: Math.round(fun * 10) / 10,
+        parts: { action: +action.toFixed(2), flow: +flow.toFixed(2), arc: +arc.toFixed(2), closeness: +closeness.toFixed(2), variety: +variety.toFixed(2) },
+        hits: hits.length, kos: kos.length, durS: Math.round(dur), peakDmg: peak
+      };
     }
   };
 
