@@ -33,6 +33,11 @@ session and end with links.
 2. **Identity** — name, tagline, roster/hero defs, worlds list → GAME_META.json.
 3. **Levels** — 5 themed levels/arenas as data (`src/game/levels.js`).
 4. **Gate** — extend `eval.mjs` to the genre's win contract. The bar:
+   **the eval must exercise the human path too, not just `?level=N` gameplay**:
+   a menu smoke-test (Title → Select → Play + real keyboard movement, 0 page
+   errors) — the autopilot boots straight into a level and will happily pass a
+   game whose menus are broken (Phaser 4 does NOT bind plain-object scene config
+   methods to the instance; put menu logic in `create()` closures). Beyond that:
    deterministic (two identical runs), the autopilot WINS every level, AND the
    run **maximizes fun, not perfection** — score the match/run with a felt-fun
    model (`Studio.Brawl.fun` pattern: action/flow/arc/closeness/variety) and
