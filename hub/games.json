@@ -373,9 +373,10 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/starlance/releases/assets/446630670",
         "title": "Rose Veil",
-        "biome": "Rose Veil"
+        "biome": "Rose Veil",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/starlance/releases/assets/446746535"
       }
     ]
   },
@@ -421,9 +422,10 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/roadwar/releases/assets/446630674",
         "title": "Desert Highway",
-        "biome": "Desert Highway"
+        "biome": "Desert Highway",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/roadwar/releases/assets/446746563"
       }
     ]
   },
@@ -538,9 +540,10 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/roadwar-iso/releases/assets/446630704",
         "title": "Desert Highway",
-        "biome": "Desert Highway"
+        "biome": "Desert Highway",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/roadwar-iso/releases/assets/446746596"
       }
     ]
   },
@@ -586,9 +589,22 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/grovekeep/releases/assets/446630711",
         "title": "Dawn Meadow",
-        "biome": "Dawn Meadow"
+        "biome": "Dawn Meadow",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/grovekeep/releases/assets/446746610"
+      },
+      {
+        "title": "Riverbend",
+        "biome": "Riverbend",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/grovekeep/releases/assets/446746629"
+      },
+      {
+        "title": "Ancient Heartwood",
+        "biome": "Ancient Heartwood",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/grovekeep/releases/assets/446746632"
       }
     ]
   },

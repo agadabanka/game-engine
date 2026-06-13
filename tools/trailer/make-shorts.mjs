@@ -38,11 +38,14 @@ const PLAN = {
   // the remaining studio games (shooter/RTS/builder boots) still need the same
   // patch in their archetype boot → one distinct short each until then.
   'nimbus-climb':  { mode: 'levels', levels: [1, 3, 5], music: (l) => `assets/music/level-${l}.mp3` },
-  roadwar:         { mode: 'single', music: () => 'assets/music/ground-1.mp3' },
-  'roadwar-iso':   { mode: 'single', music: () => 'assets/music/ground-1.mp3' },
-  grovekeep:       { mode: 'single', music: () => 'assets/music/glade-1.mp3' },
+  // grovekeep exposes gotoLevel → multi-level like ember/nimbus.
+  grovekeep:       { mode: 'levels', levels: [1, 3, 5], music: () => 'assets/music/glade-1.mp3' },
   'ember-depths':  { mode: 'levels', levels: [1, 3, 5], music: () => 'assets/music/cave.mp3' },
-  starlance:       { mode: 'single', music: () => 'assets/music/drive.mp3' },
+  // driving/shooter shells gate play behind a "PRESS SPACE TO PLAY" title and
+  // expose neither ?level nor gotoLevel → menuStart taps space to launch (L1 only).
+  roadwar:         { mode: 'single', menuStart: true, music: () => 'assets/music/ground-1.mp3' },
+  'roadwar-iso':   { mode: 'single', menuStart: true, music: () => 'assets/music/ground-1.mp3' },
+  starlance:       { mode: 'single', menuStart: true, music: () => 'assets/music/drive.mp3' },
 };
 
 function label(g, lv) {
@@ -70,7 +73,7 @@ async function music(base, rel) {
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox', '--force-color-profile=srgb'] });
 
 // record `frames` capture-frames starting after `skip` sim steps. NO reset().
-async function record(base, lv, skip, frames, out) {
+async function record(base, lv, skip, frames, out, menuStart) {
   const page = await browser.newPage({ viewport: { width: 960, height: 540 }, deviceScaleFactor: 1, ignoreHTTPSErrors: true });
   await page.goto(`${base}/?r=canvas&level=${lv}&inputs=0&mute=1`, { waitUntil: 'load', timeout: 45000 });
   await page.waitForFunction(() => window.__rec, { timeout: 20000 }).catch(() => {});
@@ -84,6 +87,12 @@ async function record(base, lv, skip, frames, out) {
   // (the-platformer/jazz) where ?level is already honored and gotoLevel is absent.
   // lv>100 = platformer showcase convention → strip back to the real 1-based level.
   await page.evaluate((lv) => { try { var n = lv > 100 ? lv - 100 : lv; if (window.__game && window.__game.gotoLevel) window.__game.gotoLevel(n - 1); } catch (e) {} }, lv);
+  // Some shells (driving/shooter boots) gate play behind a "PRESS SPACE TO PLAY"
+  // title and expose neither ?level nor gotoLevel — tap space to launch into L1.
+  if (menuStart) for (let k = 0; k < 6; k++) {
+    await page.evaluate(() => { ['keydown', 'keyup'].forEach(t => window.dispatchEvent(new KeyboardEvent(t, { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true }))); });
+    for (let i = 0; i < 12; i++) await page.evaluate(() => { try { window.__rec.step(1); } catch (e) {} });
+  }
   // autopilot ONLY — never reset (reset restarts at level 1 and ignores ?level)
   await page.evaluate(() => { try { window.__game.autopilot(true); } catch (e) {} try { window.__game.showcase && window.__game.showcase(true); } catch (e) {} try { window.__game.collect && window.__game.collect(true); } catch (e) {} });
   for (let i = 0; i < skip; i++) await page.evaluate(() => { try { window.__rec.step(1); } catch (e) {} });
@@ -134,14 +143,15 @@ for (const g of targets) {
   const plan = PLAN[g.id]; if (!plan) { console.log(`no plan for ${g.id}`); continue; }
   const gdir = path.join(OUT, g.id); fs.rmSync(gdir, { recursive: true, force: true }); fs.mkdirSync(gdir, { recursive: true });
   console.log(`\n${g.name} (${g.id}) — ${plan.mode}`);
-  const jobs = plan.mode === 'levels' ? plan.levels.map(l => ({ lv: PLATFORMER.has(g.id) ? 100 + l : l, n: l, skip: 160, lab: label(g, l), track: plan.music(l) }))
-    : plan.mode === 'windows' ? plan.windows.map((w, i) => ({ lv: PLATFORMER.has(g.id) ? 101 : 1, n: i + 1, skip: w, lab: (plan.labels[i] || `Run ${i + 1}`).toUpperCase(), track: plan.music(i + 1) }))
-    : [{ lv: PLATFORMER.has(g.id) ? 101 : 1, n: 1, skip: 160, lab: label(g, 1), track: plan.music(1) }];
+  const ms = !!plan.menuStart;
+  const jobs = plan.mode === 'levels' ? plan.levels.map(l => ({ lv: PLATFORMER.has(g.id) ? 100 + l : l, n: l, skip: 160, lab: label(g, l), track: plan.music(l), menuStart: ms }))
+    : plan.mode === 'windows' ? plan.windows.map((w, i) => ({ lv: PLATFORMER.has(g.id) ? 101 : 1, n: i + 1, skip: w, lab: (plan.labels[i] || `Run ${i + 1}`).toUpperCase(), track: plan.music(i + 1), menuStart: ms }))
+    : [{ lv: PLATFORMER.has(g.id) ? 101 : 1, n: 1, skip: 160, lab: label(g, 1), track: plan.music(1), menuStart: ms }];
   for (const j of jobs) {
     const clip = path.join(WORK, `${g.id}-${j.n}-raw.mp4`), ov = path.join(WORK, `${g.id}-${j.n}-ov.png`);
     const out = path.join(gdir, `${g.id}-${j.n}.mp4`);
     process.stdout.write(`  ● ${g.id} #${j.n} (${j.lab})… rec`);
-    const n = await record(base, j.lv, j.skip, FPS * SHORT, clip);
+    const n = await record(base, j.lv, j.skip, FPS * SHORT, clip, j.menuStart);
     const track = await music(base, j.track);
     process.stdout.write(`(${n}f, music:${track ? 'real' : 'bed'}) compose`);
     await overlayPNG(ov, g.name, j.lab, ACCENT[g.id] || '#ffd166', g.url);
