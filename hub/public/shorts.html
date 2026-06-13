@@ -83,20 +83,33 @@
     function play(i){ const v=vid(i); if(!v) return; load(i);
       v.muted = !audioOn;
       const p = v.play();
-      if (p && p.catch) p.catch(()=>{ v.muted = true; v.play().catch(()=>{}); });  // sound-autoplay blocked → muted retry
+      if (p && p.catch) p.catch(()=>{
+        // Two distinct failure modes — never silently mute a short the user wants sound on:
+        //  • pre-gesture: autoplay-WITH-sound is blocked → fall back to muted autoplay.
+        //  • post-gesture (audioOn): sound is already permitted, so a reject here is just
+        //    buffering/interrupt — keep sound ON and retry once the element can play.
+        if (audioOn) { v.muted = false; v.addEventListener('canplay', ()=>{ if (cur===i) v.play().catch(()=>{}); }, {once:true}); }
+        else { v.muted = true; v.play().catch(()=>{}); }
+      });
       pl(i).classList.remove('paused');
     }
     function pause(i){ const v=vid(i); if(v){ v.pause(); pl(i).classList.add('paused'); } }
-    // single source of truth for audio: browsers block autoplay-WITH-sound until a
-    // gesture, so we start muted and flip ON at the first tap (or the button).
+    // single source of truth for audio. Browsers block autoplay-WITH-sound until a
+    // gesture, so we start muted and flip ON at the first interaction. Turning sound
+    // on (re)plays the CURRENT short with audio through the robust play() path.
+    let armedAt = 0;     // time of the gesture that first enabled sound
     function setAudio(on){ audioOn = on;
-      document.querySelectorAll('video').forEach(v=>v.muted=!on);
+      document.querySelectorAll('video').forEach(v=>{ if (v.src) v.muted = !on; });
       document.getElementById('mute').textContent = on ? '🔊 Sound on' : '🔇 Tap for sound';
-      const v=vid(cur); if(v){ if(on) v.muted=false; v.play().catch(()=>{}); }
+      if (on) play(cur);
     }
-    // tap a player: first tap turns sound ON; after that, taps toggle play/pause
+    function armAudio(){ if (!audioOn) { setAudio(true); armedAt = Date.now(); } }
+    // tap a player: the FIRST tap only ENABLES sound — it must NOT also pause. (The
+    // glitch: pointerdown armed audio, then this click immediately paused it, so the
+    // first short went silent.) Subsequent taps toggle play/pause.
     secs.forEach((sec,i)=>{ pl(i).addEventListener('click', ()=>{
-      if(!audioOn){ setAudio(true); return; }
+      if (!audioOn) { armAudio(); return; }
+      if (Date.now() - armedAt < 500) return;   // the click that just enabled sound → don't pause
       const v=vid(i); if(v && v.paused){ play(i); } else { pause(i); }
     }); });
     // play the most-visible short, pause others, preload neighbours
@@ -117,7 +130,7 @@
     // best-effort: turn sound on at the first tap anywhere (except the mute button,
     // which toggles it explicitly). Desktop/Android honor this immediately; iOS
     // needs the tap to land on the player, which the per-player handler covers.
-    document.addEventListener('pointerdown', e=>{ if(audioOn) return; if(e.target.closest('#mute')) return; setAudio(true); }, {passive:true});
+    document.addEventListener('pointerdown', e=>{ if(audioOn) return; if(e.target.closest('#mute')) return; armAudio(); }, {passive:true});
 
     const go = d=>{ cur=Math.max(0,Math.min(secs.length-1,cur+d)); secs[cur].scrollIntoView({behavior:'smooth'}); };
     document.getElementById('down').onclick=()=>go(1);
