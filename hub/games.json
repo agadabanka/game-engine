@@ -38,8 +38,26 @@
         "level-7": "https://youtu.be/FXYBADgA8lk",
         "level-8": "https://youtu.be/7_4d2KbiDeo"
       },
-      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsWvjJuyesu8u4izuV6b38I"
-    }
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsWvjJuyesu8u4izuV6b38I",
+      "shortsPlaylist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEs599LjX0GyI1fpN65jK4ty"
+    },
+    "shorts": [
+      {
+        "id": "GxZqhPU4M0Y",
+        "title": "Level 1",
+        "biome": "Level 1"
+      },
+      {
+        "id": "5gjVLchgmzM",
+        "title": "Level 3",
+        "biome": "Level 3"
+      },
+      {
+        "id": "i-6ncQREslE",
+        "title": "Level 5",
+        "biome": "Level 5"
+      }
+    ]
   },
   {
     "id": "jazz",
@@ -92,7 +110,24 @@
         "level-5": "https://youtu.be/7p3hNlvDogM"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsUjgVSH77BURDcccTv804T"
-    }
+    },
+    "shorts": [
+      {
+        "id": "F8brvHGOJ00",
+        "title": "Carrot Caverns",
+        "biome": "Carrot Caverns"
+      },
+      {
+        "id": "63Jp-8TMvGg",
+        "title": "Level 13",
+        "biome": "Level 13"
+      },
+      {
+        "id": "vWM9CGnCMU4",
+        "title": "Level 7",
+        "biome": "Level 7"
+      }
+    ]
   },
   {
     "id": "deepfin",
@@ -140,8 +175,26 @@
         "level-4": "https://youtu.be/gEBp1CsLMNk",
         "level-5": "https://youtu.be/O9myDmog_ew"
       },
-      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsA-QrkOOxfdO_DaCU8Xp_W"
-    }
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsA-QrkOOxfdO_DaCU8Xp_W",
+      "shortsPlaylist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEuGTvrLXE0sDLrdoCoLvezG"
+    },
+    "shorts": [
+      {
+        "id": "lvvDp6-v9Ak",
+        "title": "Shallows",
+        "biome": "Shallows"
+      },
+      {
+        "id": "_ZFORO0KhLQ",
+        "title": "The Wreck",
+        "biome": "The Wreck"
+      },
+      {
+        "id": "MzPCEc8nT4E",
+        "title": "The Maw",
+        "biome": "The Maw"
+      }
+    ]
   },
   {
     "id": "ember-depths",
@@ -193,7 +246,24 @@
         "ember-depths-montage": "https://youtu.be/0tr6NyryrS0"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtCv9dMhUcwN3adrfLUiugC"
-    }
+    },
+    "shorts": [
+      {
+        "id": "YL2j3IEWIQU",
+        "title": "Molten Shallows",
+        "biome": "Molten Shallows"
+      },
+      {
+        "id": "kKjDxImMRto",
+        "title": "Ember Vents",
+        "biome": "Ember Vents"
+      },
+      {
+        "id": "6ZPILqx5id0",
+        "title": "The Core",
+        "biome": "The Core"
+      }
+    ]
   },
   {
     "id": "nimbus-climb",
@@ -233,7 +303,24 @@
         "nimbus-climb-montage": "https://youtu.be/c3bcV58B6Pw"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtrD3sZUsALudmWfRGI0FCJ"
-    }
+    },
+    "shorts": [
+      {
+        "id": "DVPqBM13PDQ",
+        "title": "Foothill Puffs",
+        "biome": "Foothill Puffs"
+      },
+      {
+        "id": "dvX6dpgyGoY",
+        "title": "Mistspire",
+        "biome": "Mistspire"
+      },
+      {
+        "id": "uzq0cy-GtQw",
+        "title": "The Sun Bell",
+        "biome": "The Sun Bell"
+      }
+    ]
   },
   {
     "id": "starlance",
@@ -273,7 +360,24 @@
         "starlance-montage": "https://youtu.be/AlXweJtR7vI"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEvbFlBIKjfMpB99kCD_QdB3"
-    }
+    },
+    "shorts": [
+      {
+        "id": "ZrEp0iZtnRI",
+        "title": "Rose Veil",
+        "biome": "Rose Veil"
+      },
+      {
+        "id": "YZB-pSkeaeI",
+        "title": "Storm Veil",
+        "biome": "Storm Veil"
+      },
+      {
+        "id": "gSlqnwa1IY8",
+        "title": "The Hollow Star",
+        "biome": "The Hollow Star"
+      }
+    ]
   },
   {
     "id": "roadwar",
@@ -314,7 +418,24 @@
         "roadwar-montage": "https://youtu.be/p_tEOLN24xw"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEts80WDYiLOv3lFSuDI71zl"
-    }
+    },
+    "shorts": [
+      {
+        "id": "q1Bi8KzmuDM",
+        "title": "Desert Highway",
+        "biome": "Desert Highway"
+      },
+      {
+        "id": "EcGg5xRamBs",
+        "title": "Neon Strip",
+        "biome": "Neon Strip"
+      },
+      {
+        "id": "HUeUO9WfD6Y",
+        "title": "Warlord S Gate",
+        "biome": "Warlord S Gate"
+      }
+    ]
   },
   {
     "id": "starsweeper",
@@ -363,7 +484,24 @@
         "level-5": "https://youtu.be/2WVAGWzL2-s"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtSOR3X3GbQXZxxc3HSoxjg"
-    }
+    },
+    "shorts": [
+      {
+        "id": "eLyFEU1ENs4",
+        "title": "Cold Start",
+        "biome": "Cold Start"
+      },
+      {
+        "id": "NZxUVVglCYU",
+        "title": "Vent",
+        "biome": "Vent"
+      },
+      {
+        "id": "sMTjcOSbn4w",
+        "title": "The Warden",
+        "biome": "The Warden"
+      }
+    ]
   },
   {
     "id": "roadwar-iso",
@@ -404,7 +542,24 @@
         "roadwar-iso-montage": "https://youtu.be/Jr7B_5JUVGE"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsKkQXhCP4fLWRP0d3i1n5x"
-    }
+    },
+    "shorts": [
+      {
+        "id": "cMlIVNI-X28",
+        "title": "Desert Highway",
+        "biome": "Desert Highway"
+      },
+      {
+        "id": "20vtw0Z-Ggg",
+        "title": "Neon Strip",
+        "biome": "Neon Strip"
+      },
+      {
+        "id": "9zhVNv5FoGo",
+        "title": "Warlord S Gate",
+        "biome": "Warlord S Gate"
+      }
+    ]
   },
   {
     "id": "grovekeep",
@@ -445,7 +600,24 @@
         "deploy": "done",
         "videos": "done"
       }
-    }
+    },
+    "shorts": [
+      {
+        "id": "KW3sJw5R-OA",
+        "title": "Dawn Meadow",
+        "biome": "Dawn Meadow"
+      },
+      {
+        "id": "wxid7ROLd54",
+        "title": "Riverbend",
+        "biome": "Riverbend"
+      },
+      {
+        "id": "wX4eYeovLO8",
+        "title": "Ancient Heartwood",
+        "biome": "Ancient Heartwood"
+      }
+    ]
   },
   {
     "id": "biome-bash",
