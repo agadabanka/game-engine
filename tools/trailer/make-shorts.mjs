@@ -41,7 +41,7 @@ const PLAN = {
   roadwar:         { mode: 'single', music: () => 'assets/music/ground-1.mp3' },
   'roadwar-iso':   { mode: 'single', music: () => 'assets/music/ground-1.mp3' },
   grovekeep:       { mode: 'single', music: () => 'assets/music/glade-1.mp3' },
-  'ember-depths':  { mode: 'windows', windows: [180, 1080, 1980], labels: ['Molten Shallows', 'Ember Vents', 'The Core'], music: () => 'assets/music/cave.mp3' },
+  'ember-depths':  { mode: 'single', music: () => 'assets/music/cave.mp3' },
   starlance:       { mode: 'single', music: () => 'assets/music/drive.mp3' },
 };
 
