@@ -61,7 +61,12 @@
   // ----------------------------------------------------------- TextureFactory
   // Procedural art: shaded, outlined sprites + gradient ground (no AI required).
   Studio.Textures = {
+    // Set Studio._headless before boot (no renderer) to skip ALL texture
+    // generation: generateTexture needs a renderer, but a sim-only run (scan/
+    // gate) never shows pixels — Phaser falls back to a placeholder texture and
+    // the deterministic sim is byte-identical. ~20x faster than rendering.
     bake: function (scene, key, w, h, draw) {
+      if (Studio._headless) { return key; }
       if (scene.textures.exists(key)) scene.textures.remove(key);
       var g = scene.add.graphics(); draw(g, w, h); g.generateTexture(key, w, h); g.destroy(); return key;
     },
@@ -1019,6 +1024,16 @@
   // + window.__run / window.__gate, given game + hooks. This is the eval contract.
   Studio.harness = {
     install: function (game, hooks) {
+      // Headless (sim-only) has no renderer, but game.step() calls
+      // renderer.preRender/postRender — stub them to no-ops so the update loop
+      // (physics + game logic + the event log) runs without pixels. The sim is
+      // byte-identical to a rendered run, just ~20x faster (scan/gate).
+      if (Studio._headless && !game.renderer) {
+        game.renderer = {
+          preRender: function () {}, postRender: function () {}, render: function () {},
+          resize: function () {}, resetTextures: function () {}, gl: null, type: 0, width: game.scale.width, height: game.scale.height
+        };
+      }
       root.__rec = {
         on: false, t: 0, dt: 1000 / 60,
         begin: function () { if (this.on) return; game.loop.sleep(); this.on = true; this.t = 1000; },

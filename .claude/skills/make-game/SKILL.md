@@ -41,7 +41,10 @@ session and end with links.
    genre better. Non-black readback, BOTH renderers (webgl + canvas). Iterate
    with trace/autopsy tooling; for rng-driven genres, seed-scan (`scan.mjs`
    pattern) and bake the highest-FUN winning seeds into level data —
-   determinism makes them reproducible forever.
+   determinism makes them reproducible forever. **Scan in headless**
+   (`?r=headless`, `Studio._headless`): sim-only, no render pass, ~70x faster —
+   a full multi-arena scan drops from hours to minutes, and the sim is
+   byte-identical to a rendered run, so winning seeds reproduce exactly.
 5. **Feel** — animation states on every actor, hitstop/shake/flash tuned, HUD.
 6. **Art** — Gemini backdrops per world + title keyart via `tools/art.mjs`
    (GEMINI_SA_JSON). Bottom third must stay gameplay-clean. NO text in images.
