@@ -17,6 +17,12 @@
   button{ font:inherit; font-size:13px; background:#1b2747; color:var(--ink); border:1px solid var(--line);
     border-radius:9px; padding:7px 13px; cursor:pointer; } button:hover{ background:#23315a; }
   button.go{ background:#2a6df0; border-color:#3a7dff; } button.go:hover{ background:#3a7dff; }
+  /* coherent header action pills (links + buttons look identical) */
+  header .hact{ font:inherit; font-size:13px; font-weight:600; background:#1b2747; color:var(--ink); border:1px solid var(--line);
+    border-radius:9px; padding:7px 13px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; line-height:1; }
+  header .hact:hover{ background:#23315a; }
+  header .hact.primary{ background:#2a6df0; border-color:#3a7dff; color:#fff; }
+  header .hact.primary:hover{ background:#3a7dff; }
   .wrap{ max-width:1180px; margin:0 auto; padding:20px 24px 80px; }
   .totals{ display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:12px; margin-bottom:22px; }
   @media (max-width:760px){ .totals{ grid-template-columns:repeat(3,1fr); } }
@@ -149,10 +155,10 @@
 <header>
   <h1>🎛 Game Engine</h1><span class="sub">mission control — look <b>across</b> every game, click any one to look <b>inside</b></span>
   <span class="sp"></span>
-  <a href="/shorts.html" class="go" style="font-size:13px;text-decoration:none;padding:7px 12px;border-radius:8px">📱 Shorts</a>
-  <button id="add">+ register game</button>
-  <button class="go" id="refresh">↻ refresh</button>
-  <a href="https://github.com/agadabanka/game-engine" style="font-size:13px">repo ↗</a>
+  <a href="/shorts.html" class="hact">📱 Shorts</a>
+  <button class="hact" id="add">+ register game</button>
+  <button class="hact primary" id="refresh">↻ refresh</button>
+  <a href="https://github.com/agadabanka/game-engine" class="hact" target="_blank" rel="noopener">repo ↗</a>
 </header>
 <div class="wrap">
   <div class="totals" id="totals"></div>

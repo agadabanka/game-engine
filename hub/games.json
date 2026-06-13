@@ -637,29 +637,34 @@
     ],
     "shorts": [
       {
-        "id": "gP8718WaX7c",
+        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short1-clouds.mp4",
         "title": "Cumulus Courtyard",
-        "biome": "Clouds"
+        "biome": "Clouds",
+        "yt": "gP8718WaX7c"
       },
       {
-        "id": "-sMUJwY5j6E",
+        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short2-jungle.mp4",
         "title": "Canopy Clash",
-        "biome": "Jungle"
+        "biome": "Jungle",
+        "yt": "-sMUJwY5j6E"
       },
       {
-        "id": "v7Ra7rqzqvE",
+        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short3-volcano.mp4",
         "title": "Caldera Rim",
-        "biome": "Volcano"
+        "biome": "Volcano",
+        "yt": "v7Ra7rqzqvE"
       },
       {
-        "id": "Ywx88MZYCj4",
+        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short4-glacier.mp4",
         "title": "Glacier Shelf",
-        "biome": "Glacier"
+        "biome": "Glacier",
+        "yt": "Ywx88MZYCj4"
       },
       {
-        "id": "ioWi6of4X3o",
+        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short5-neon-city.mp4",
         "title": "Neon Rooftops",
-        "biome": "Neon City"
+        "biome": "Neon City",
+        "yt": "ioWi6of4X3o"
       }
     ],
     "meta": {
