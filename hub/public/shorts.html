@@ -72,9 +72,11 @@
     secs = [...feed.querySelectorAll('.snap')];
     document.getElementById('count').textContent = `1 / ${items.length}`;
 
-    function load(i){ const v=vid(i); if(v && !v.src && v.dataset.src){ v.src = proxy(v.dataset.src);
+    const AHEAD = 3;          // buffer this many shorts ahead so the next ones play instantly
+    function load(i){ const v=vid(i); if(v && !v.src && v.dataset.src){ v.preload='auto'; v.src = proxy(v.dataset.src);
       v.addEventListener('loadeddata', ()=>pl(i).classList.remove('loading'), {once:true});
       v.addEventListener('error', ()=>{ pl(i).classList.remove('loading'); }, {once:true}); } }
+    function unload(i){ const v=vid(i); if(v && v.src){ v.removeAttribute('src'); v.load(); pl(i).classList.add('loading'); } }
     function play(i){ const v=vid(i); if(!v) return; load(i);
       v.muted = !wantSound;
       const p = v.play();
@@ -92,8 +94,11 @@
       ents.forEach(e=>{ const i=+e.target.dataset.i;
         if (e.isIntersecting && e.intersectionRatio>0.6){
           cur=i; document.getElementById('count').textContent = `${i+1} / ${items.length}`;
-          load(i); load(i+1); load(i-1); play(i);
-          secs.forEach((_,j)=>{ if(j!==i) pause(j); });
+          // preload a window [i-1 .. i+AHEAD] so scrolling forward plays instantly;
+          // unload everything outside [i-2 .. i+AHEAD+1] to cap memory on mobile.
+          for (let k=-1; k<=AHEAD; k++) load(i+k);
+          play(i);
+          secs.forEach((_,j)=>{ if(j!==i) pause(j); if(j < i-2 || j > i+AHEAD+1) unload(j); });
         }
       });
     }, { threshold:[0,0.6,1] });
@@ -109,8 +114,8 @@
     document.getElementById('up').onclick=()=>go(-1);
     document.getElementById('mute').onclick=()=>{ wantSound=!wantSound; applyMute(); const v=vid(cur); if(v&&wantSound) v.play().catch(()=>{}); };
     addEventListener('keydown',e=>{ if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();go(1);} if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();go(-1);} if(e.key==='m'){document.getElementById('mute').click();} });
-    // start the first one (muted autoplay; first gesture turns sound on)
-    setTimeout(()=>{ load(0); play(0); }, 150);
+    // start the first one + buffer the opening window (muted autoplay; first gesture turns sound on)
+    setTimeout(()=>{ for(let k=0;k<=AHEAD;k++) load(k); play(0); }, 150);
   }).catch(()=>{ document.getElementById('feed').innerHTML='<div class="empty">could not load shorts</div>'; });
 </script>
 </body>
