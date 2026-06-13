@@ -184,6 +184,9 @@ export async function snapshotGame(game, { ghToken } = {}) {
     || null;
   // true only for a real multi-video YouTube playlist (drives the "Watch all" label)
   out.hasPlaylist = Boolean(out.meta && out.meta.playlist && /[?&]list=/.test(out.meta.playlist));
+  // vertical Shorts (a scroll-down feed on the hub): [{ id, title, biome }]
+  out.shorts = (Array.isArray(game.shorts) && game.shorts) || (out.meta && Array.isArray(out.meta.shorts) && out.meta.shorts) || [];
+  out.shortsPlaylist = (out.meta && out.meta.shortsPlaylist) || null;
   out.ok = out.live || out.diary.count > 0;
   if (!out.ok) out.error = base ? 'no response from deploy' : 'no deploy url and no DIARY.md on GitHub';
   out.pipeline = resolveStages(out);   // where this game is in the dev pipeline

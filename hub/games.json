@@ -463,6 +463,13 @@
       "https://biome-bash-production.up.railway.app/diary-shots/arena5.png",
       "https://biome-bash-production.up.railway.app/diary-shots/title.png"
     ],
+    "shorts": [
+      { "id": "gP8718WaX7c", "title": "Cumulus Courtyard", "biome": "Clouds" },
+      { "id": "-sMUJwY5j6E", "title": "Canopy Clash", "biome": "Jungle" },
+      { "id": "v7Ra7rqzqvE", "title": "Caldera Rim", "biome": "Volcano" },
+      { "id": "Ywx88MZYCj4", "title": "Glacier Shelf", "biome": "Glacier" },
+      { "id": "ioWi6of4X3o", "title": "Neon Rooftops", "biome": "Neon City" }
+    ],
     "meta": {
       "hero": "Puff, Mango, Cinder, Glacia, Volt — one toony fighter per biome",
       "verb": "brawl · launch · KO",

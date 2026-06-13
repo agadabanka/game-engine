@@ -37,13 +37,34 @@
   h2{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
     border-bottom:1px solid var(--line); padding-bottom:7px; margin:28px 0 14px; }
   .cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
-  .card{ background:var(--panel); border:1px solid var(--line); border-radius:15px; padding:16px 17px; position:relative;
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:15px; padding:0; position:relative; overflow:hidden;
     cursor:pointer; transition:border-color .12s, transform .12s; }
-  .card:hover{ border-color:#3a7dff; transform:translateY(-2px); }
-  .card .peek{ font-size:11px; color:var(--dim); margin-top:10px; text-align:right; }
-  .card:hover .peek{ color:#9fd6ff; }
-  .card .top{ display:flex; align-items:center; gap:9px; }
-  .card .nm{ font-size:17px; font-weight:800; } .card .tag{ color:var(--dim); font-size:12px; margin:3px 0 10px; }
+  .card:hover{ border-color:#3a7dff; transform:translateY(-3px); }
+  /* visual storefront cover */
+  .card .cover{ position:relative; aspect-ratio:16/9; background:linear-gradient(135deg,#16213f,#0a1124); overflow:hidden; }
+  .card .cover>img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform .35s ease; }
+  .card:hover .cover>img{ transform:scale(1.06); }
+  .card .cover .grad{ position:absolute; inset:0; background:linear-gradient(to top, rgba(8,12,22,.95) 2%, rgba(8,12,22,.35) 42%, transparent 68%); }
+  .card .cover .ctitle{ position:absolute; left:15px; right:15px; bottom:11px; display:flex; align-items:flex-end; gap:9px; flex-wrap:wrap; }
+  .card .cover .ctitle .nm{ font-size:22px; font-weight:900; color:#fff; text-shadow:0 2px 14px rgba(0,0,0,.95); line-height:1.05; }
+  .card .cover .carch{ font-size:10px; text-transform:uppercase; letter-spacing:.09em; padding:2px 9px; border-radius:20px; background:rgba(58,125,255,.25); border:1px solid #3a7dff; color:#bcd6ff; }
+  .card .cover .cdot{ position:absolute; top:11px; left:11px; width:11px; height:11px; }
+  .card .cover .cbadges{ position:absolute; top:10px; right:10px; display:flex; gap:6px; }
+  .card .cover .vbadge{ font-size:11px; font-weight:800; background:rgba(8,12,22,.78); border:1px solid var(--line); color:#ffd166; border-radius:20px; padding:3px 9px; }
+  .card .cover .shbadge{ font-size:11px; font-weight:800; background:rgba(255,77,143,.22); border:1px solid #ff4d8f; color:#ffd6e6; border-radius:20px; padding:3px 9px; text-decoration:none; }
+  .card .cover .shbadge:hover{ filter:brightness(1.2); }
+  .card .cover .playov{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s; }
+  .card:hover .cover .playov{ opacity:1; }
+  .card .cover .playov span{ width:62px; height:62px; border-radius:50%; background:rgba(8,12,22,.6); border:2px solid #fff; color:#fff; font-size:24px; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+  .card .body{ padding:12px 15px 14px; }
+  .card .body .tag{ color:#c5d2ee; font-size:12.5px; margin:0 0 8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:34px; }
+  .card .body .facts{ font-size:11px; color:var(--dim); letter-spacing:.02em; margin-bottom:11px; }
+  .card .cta{ display:flex; gap:8px; }
+  .card .cta a{ flex:1; text-align:center; font-size:13px; font-weight:800; padding:9px 10px; border-radius:9px; border:1px solid var(--line); transition:filter .12s; }
+  .card .cta a:hover{ filter:brightness(1.12); }
+  .card .cta .play{ background:var(--gold,#ffd166); color:#1a1205; border-color:transparent; }
+  .card .cta .det{ background:#16213f; color:#cfe0ff; }
+  .card .peek{ display:none; }
   .dot{ width:9px; height:9px; border-radius:50%; flex:none; } .dot.live{ background:var(--green); box-shadow:0 0 8px var(--green); }
   .dot.idle{ background:var(--gold); } .dot.off{ background:var(--red); }
   .badge{ font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; padding:2px 7px; border-radius:20px;
@@ -128,6 +149,7 @@
 <header>
   <h1>🎛 Game Engine</h1><span class="sub">mission control — look <b>across</b> every game, click any one to look <b>inside</b></span>
   <span class="sp"></span>
+  <a href="/shorts.html" class="go" style="font-size:13px;text-decoration:none;padding:7px 12px;border-radius:8px">📱 Shorts</a>
   <button id="add">+ register game</button>
   <button class="go" id="refresh">↻ refresh</button>
   <a href="https://github.com/agadabanka/game-engine" style="font-size:13px">repo ↗</a>
@@ -171,47 +193,46 @@ function statRow(t){ return `
   <div class="stat"><div class="n" style="color:var(--violet)">${t.diaryEntries}</div><div class="l">diary entries</div></div>`;
 }
 
+// storefront cover for a game: the hub's self-hosted gameplay still
+// (/covers/<id>.jpg, downloaded from the game's montage) with a fallback chain
+// to a committed screenshot then the youtube thumb, then a gradient if all fail.
+function cardImage(g){
+  if (Array.isArray(g.screenshots) && g.screenshots.length) return g.screenshots[0];
+  const vs = g.videos || []; const v = vs.find((x) => x.montage) || vs[0];
+  return v ? v.thumb : null;
+}
 function card(g){
   const m = g.meta || {};
   const status = g.live ? 'live' : (g.diary.count ? 'idle' : 'off');
-  const dlabel = g.live ? 'live' : (g.diary.source === 'github' ? 'diary via github' : 'registered');
-  const hero = m.hero || g.hero || '—';
-  const verb = m.verb || g.verb || '—';
-  const worlds = (Array.isArray(m.worlds) ? m.worlds : []).map((w) => `<span class="chip">${esc(w)}</span>`).join('');
-  const kv = [
-    ['hero', hero], ['verb', verb],
-    m.controls ? ['controls', m.controls] : null,
-    m.art ? ['art', m.art] : null,
-    m.music ? ['music', m.music] : null,
-  ].filter(Boolean).map(([k,v]) => `<div class="k">${k}</div><div class="v">${esc(v)}</div>`).join('');
-  const diff = m.diff || {};
-  const nVid = (g.videos || []).length;
-  const metrics = `<div class="metrics">
-    <div class="metric notes"><div class="mn">${g.notes.open}<span style="font-size:12px;color:var(--dim)">/${g.notes.total}</span></div><div class="ml">open notes</div></div>
-    ${m.levelCount != null ? `<div class="metric"><div class="mn">${m.levelCount}</div><div class="ml">levels</div></div>` : ''}
-    ${nVid ? `<div class="metric"><div class="mn" style="color:var(--pink)">${nVid}</div><div class="ml">videos</div></div>` : ''}
-    ${diff.uniqueness != null ? `<div class="metric uniq"><div class="mn">${diff.uniqueness}</div><div class="ml">unique</div></div>` : ''}
-    ${diff.feelSimilarity != null ? `<div class="metric feel"><div class="mn">${diff.feelSimilarity}</div><div class="ml">feel</div></div>` : ''}
-  </div>`;
-  const latest = g.diary.latest ? `<div class="diaryline"><b>latest diary:</b> ${esc(g.diary.latest.title)}</div>` : '';
-  // consistent chip set on every card: play · diary · builder (when live) + repo (always)
   const base = g.url ? g.url.replace(/\/$/, '') : null;
-  const links = [
-    base ? [base, '▶ play'] : null,
-    base ? [base + '/diary.html', '📖 diary'] : null,
-    base ? [base + (m.builder || '/build.html'), '🧱 builder'] : null,
-    g.repo ? ['https://github.com/' + g.repo, 'repo ↗'] : null,
-  ].filter(Boolean).map(([h,t]) => `<a href="${esc(h)}" target="_blank" onclick="event.stopPropagation()">${t}</a>`).join('');
+  const fb = cardImage(g);                       // screenshot/youtube fallback
+  const cover = `/covers/${esc(g.id)}.jpg`;      // self-hosted (preferred)
+  const nVid = (g.videos || []).length;
+  const arch = m.archetype ? `<span class="carch">${esc(m.archetype)}</span>` : '';
+  const facts = [
+    m.levelCount != null ? `${m.levelCount} levels` : null,
+    nVid ? `${nVid} videos` : null,
+    g.pipeline ? `${g.pipeline.pct}% built` : null,
+  ].filter(Boolean).join('  ·  ');
+  const onerr = fb ? `if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb='';}else{this.remove();}` : `this.remove()`;
+  const cover_img = `<img loading="lazy" src="${cover}"${fb ? ` data-fb="${esc(fb)}"` : ''} alt="${esc(g.name)}" onerror="${onerr}" />`;
   return `<div class="card" onclick="openGame('${esc(g.id)}')">
-    <div class="top"><span class="dot ${status}"></span><span class="nm">${esc(g.name)}</span><span class="badge">${dlabel}</span></div>
-    <div class="tag">${esc(g.tagline || m.tagline || '')}</div>
-    <div class="kv">${kv}</div>
-    ${worlds ? `<div class="chips">${worlds}</div>` : ''}
-    ${metrics}
-    ${pipelineHTML(g)}
-    ${latest}
-    <div class="links">${links}</div>
-    <div class="peek">look inside →</div>
+    <div class="cover">
+      ${cover_img}
+      <div class="grad"></div>
+      <span class="cdot dot ${status}" title="${status}"></span>
+      <span class="cbadges">${(g.shorts || []).length ? `<a class="shbadge" href="/shorts.html?game=${esc(g.id)}" onclick="event.stopPropagation()" title="${(g.shorts || []).length} shorts">📱 ${g.shorts.length}</a>` : ''}${nVid ? `<span class="vbadge">▶ ${nVid}</span>` : ''}</span>
+      <div class="playov"><span>▶</span></div>
+      <div class="ctitle"><span class="nm">${esc(g.name)}</span>${arch}</div>
+    </div>
+    <div class="body">
+      <div class="tag">${esc(g.tagline || m.tagline || '')}</div>
+      <div class="facts">${facts || 'in development'}</div>
+      <div class="cta">
+        ${base ? `<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Play</a>` : ''}
+        <a class="det" onclick="event.stopPropagation();openGame('${esc(g.id)}')">View details</a>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -292,6 +313,7 @@ function ctaBlock(g){
   const base = g.url ? g.url.replace(/\/$/, '') : null, m = g.meta || {}, a = [];
   if (base) a.push(`<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Play</a>`);
   if (g.playlist) a.push(`<a class="watch" href="${esc(g.playlist)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ ${g.hasPlaylist ? 'Watch all on YouTube' : 'Watch the montage'}</a>`);
+  if ((g.shorts || []).length) a.push(`<a class="sec" href="${esc(g.shortsPlaylist || ('/shorts.html?game=' + g.id))}" ${g.shortsPlaylist ? 'target="_blank" rel="noopener"' : ''} onclick="event.stopPropagation()">📱 Shorts (${g.shorts.length})</a>`);
   if (base) a.push(`<a class="sec" href="${esc(base + (m.builder || '/build.html'))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧱 Builder</a>`);
   if (base) a.push(`<a class="sec" href="${esc(base + '/diary.html')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📖 Diary</a>`);
   if (g.repo) a.push(`<a class="sec" href="https://github.com/${esc(g.repo)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🐙 Repo</a>`);
