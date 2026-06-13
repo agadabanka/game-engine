@@ -173,10 +173,17 @@ export async function snapshotGame(game, { ghToken } = {}) {
   }
 
   out.videos = normalizeVideos(out.meta);   // the uploaded AI-playthrough gallery
-  // a single "watch all" playlist link: the game's own meta.playlist if it has
-  // one, else synthesize YouTube's anonymous watch_videos playlist from the ids.
+  // a single "watch" link: the game's own meta.playlist if it has a real YouTube
+  // playlist, else the montage video (the watch-it-all-in-one), else the first
+  // clip. NOTE: never synthesize youtube.com/watch_videos — that endpoint was
+  // retired and now 302s to a bot-check page (the old fallback shipped a dead link).
+  const montageVid = out.videos.find((v) => v.montage);
   out.playlist = (out.meta && out.meta.playlist)
-    || (out.videos.length > 1 ? 'https://www.youtube.com/watch_videos?video_ids=' + out.videos.map((v) => v.id).join(',') : (out.videos[0] && out.videos[0].url) || null);
+    || (montageVid && montageVid.url)
+    || (out.videos[0] && out.videos[0].url)
+    || null;
+  // true only for a real multi-video YouTube playlist (drives the "Watch all" label)
+  out.hasPlaylist = Boolean(out.meta && out.meta.playlist && /[?&]list=/.test(out.meta.playlist));
   out.ok = out.live || out.diary.count > 0;
   if (!out.ok) out.error = base ? 'no response from deploy' : 'no deploy url and no DIARY.md on GitHub';
   out.pipeline = resolveStages(out);   // where this game is in the dev pipeline

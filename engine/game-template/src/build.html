@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Level Select &amp; Builder</title>
+<style>
+  :root { --bg:#0b1020; --card:#141a2c; --line:#2b3a57; --ink:#e8eefc; --dim:#9fb3e0; --accent:#ffd34d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,Segoe UI,Roboto,sans-serif; line-height:1.5; }
+  header { padding:18px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; position:sticky; top:0; background:rgba(11,16,32,.96); z-index:5; }
+  header h1 { font-size:20px; margin:0; }
+  header a { color:#9fd6ff; text-decoration:none; font-size:14px; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px; }
+  h2 { font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:30px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-top:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:transform .12s, border-color .12s; }
+  .card:hover { transform:translateY(-3px); border-color:#3f5688; }
+  .card .shot { width:100%; aspect-ratio:16/9; object-fit:cover; background:#0c1224; display:block; }
+  .card .body { padding:12px 14px; }
+  .card .nm { font-weight:700; font-size:16px; }
+  .card .bi { font-size:12px; color:var(--dim); margin-top:2px; }
+  .card a.play { display:inline-block; margin-top:10px; background:var(--accent); color:#1a1205; font-weight:700; text-decoration:none; padding:7px 14px; border-radius:8px; font-size:13px; }
+  .roster { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; margin-top:14px; }
+  .fighter { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center; }
+  .fighter .fn { font-weight:700; font-size:15px; }
+  .fighter .bi { font-size:11px; color:var(--dim); }
+  .fighter a.play { display:inline-block; margin-top:9px; font-size:12px; color:#9fd6ff; text-decoration:none; }
+  .lead { color:var(--dim); font-size:14px; margin:6px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">🧱 Level Select &amp; Builder</h1>
+  <a href="/">← back to the game</a>
+</header>
+<div class="wrap">
+  <p class="lead">Jump straight into any level. Each boots the authored AI run used for the gate and the videos.</p>
+  <h2>Levels</h2>
+  <div id="levels" class="grid"></div>
+  <div id="rosterWrap" style="display:none"><h2>Roster</h2><div id="roster" class="roster"></div></div>
+</div>
+<script src="./game/levels.js"></script>
+<script>
+  // load characters.js if the game ships one (optional — platformers don't)
+  (function(){ var s=document.createElement('script'); s.src='./game/characters.js'; s.onload=render; s.onerror=render; document.head.appendChild(s); })();
+  function render(){
+    const hex = n => '#' + ('00000'+(n>>>0).toString(16)).slice(-6);
+    const levels = window.ARENAS || window.LEVELS || [];
+    const chars = window.CHARACTERS || [];
+    document.getElementById('levels').innerHTML = levels.map((a,i)=>{
+      const n=i+1, shot='diary-shots/arena'+n+'.png';
+      const sub = a.biome ? a.biome.toUpperCase() : (a.name ? '' : 'Level '+n);
+      return `<div class="card">
+        <img class="shot" src="${shot}" alt="${a.name||('Level '+n)}" onerror="this.style.display='none'" />
+        <div class="body">
+          <div class="nm">${a.name||('Level '+n)}</div>
+          <div class="bi">${sub}</div>
+          <a class="play" href="/?level=${n}" target="_blank" rel="noopener">▶ Play this level</a>
+        </div></div>`;
+    }).join('') || '<p class="lead">No levels found.</p>';
+    if (chars.length){
+      document.getElementById('rosterWrap').style.display='';
+      document.getElementById('roster').innerHTML = chars.map((c,i)=>`<div class="fighter">
+        <div class="fn" style="color:${hex(c.tint||0xffffff)}">${c.name}</div>
+        <div class="bi">${c.biome||''}${c.special?' · '+c.special.name:''}</div>
+        <a class="play" href="/?level=${i+1}&char=${c.key}" target="_blank" rel="noopener">▶ Play as ${c.name}</a>
+      </div>`).join('');
+    }
+  }
+  fetch('/api/meta').then(r=>r.json()).then(m=>{ if(m&&m.name){ document.getElementById('title').innerHTML='🧱 '+m.name+' — Level Select'; document.title=m.name+' — Level Select'; } }).catch(()=>{});
+</script>
+</body>
+</html>

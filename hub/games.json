@@ -455,6 +455,14 @@
     "tagline": "Five toony fighters, five wild biomes — last toon standing.",
     "hero": "a roster of five toony brawlers (pick one; AI runs the rest)",
     "verb": "brawl · launch · KO",
+    "screenshots": [
+      "https://biome-bash-production.up.railway.app/diary-shots/arena1.png",
+      "https://biome-bash-production.up.railway.app/diary-shots/arena2.png",
+      "https://biome-bash-production.up.railway.app/diary-shots/arena3.png",
+      "https://biome-bash-production.up.railway.app/diary-shots/arena4.png",
+      "https://biome-bash-production.up.railway.app/diary-shots/arena5.png",
+      "https://biome-bash-production.up.railway.app/diary-shots/title.png"
+    ],
     "meta": {
       "hero": "Puff, Mango, Cinder, Glacia, Volt — one toony fighter per biome",
       "verb": "brawl · launch · KO",

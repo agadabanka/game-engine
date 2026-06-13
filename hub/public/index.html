@@ -108,6 +108,9 @@
   .shot.active{ border-color:#3a7dff; } .shot:hover{ border-color:#6fb6f0; }
   .shot img{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
   .shot .st{ font-size:10.5px; padding:4px 8px; color:#cfe0ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .shotgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:9px; }
+  .shotgrid img{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; border:1px solid var(--line); border-radius:9px; }
+  .shotgrid a:hover img{ border-color:#6fb6f0; }
   .cta{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:16px 0 2px; }
   .cta a{ font-size:14px; font-weight:700; padding:10px 18px; border-radius:10px; }
   .cta a:hover{ text-decoration:none; }
@@ -288,7 +291,7 @@ function heroBlock(g){
 function ctaBlock(g){
   const base = g.url ? g.url.replace(/\/$/, '') : null, m = g.meta || {}, a = [];
   if (base) a.push(`<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Play</a>`);
-  if (g.playlist) a.push(`<a class="watch" href="${esc(g.playlist)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Watch all on YouTube</a>`);
+  if (g.playlist) a.push(`<a class="watch" href="${esc(g.playlist)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ ${g.hasPlaylist ? 'Watch all on YouTube' : 'Watch the montage'}</a>`);
   if (base) a.push(`<a class="sec" href="${esc(base + (m.builder || '/build.html'))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧱 Builder</a>`);
   if (base) a.push(`<a class="sec" href="${esc(base + '/diary.html')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📖 Diary</a>`);
   if (g.repo) a.push(`<a class="sec" href="https://github.com/${esc(g.repo)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🐙 Repo</a>`);
@@ -321,10 +324,17 @@ function notesLoop(g){
   return `<div class="sect"><h4>📝 Notes → issues → fixes${head}</h4>
     ${rows ? `<div class="nlist">${rows}</div>` : '<p class="muted">No playtest notes yet — in the live game, ⏸ Pause → 📝 drops a note that files a GitHub issue automatically.</p>'}</div>`;
 }
+function shotsBlock(g){
+  const shots = g.screenshots || []; if (!shots.length) return '';
+  const cells = shots.map((s) => `<a href="${esc(s)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><img loading="lazy" src="${esc(s)}" alt="screenshot" onerror="this.closest('a').style.display='none'" /></a>`).join('');
+  return `<div class="sect"><h4>🖼 Screenshots<span class="cnt">${shots.length}</span></h4><div class="shotgrid">${cells}</div></div>`;
+}
 function diaryBlock(g){
   const es = (g.diary && g.diary.entries) || []; if (!es.length) return '';
   const rows = es.map((e) => `<div class="diaryline"><b>${esc(e.title)}</b>${e.bullets ? ` · ${e.bullets} notes` : ''}</div>`).join('');
-  return `<div class="sect"><h4>📔 Build diary<span class="cnt">${g.diary.count} entries</span></h4>${rows}</div>`;
+  const base = g.url ? g.url.replace(/\/$/, '') : null;
+  const more = base ? ` <a href="${esc(base + '/diary.html')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">read full diary ↗</a>` : '';
+  return `<div class="sect"><h4>📔 Build diary<span class="cnt">${g.diary.count} entries${more}</span></h4>${rows}</div>`;
 }
 function scoreBlock(g){
   const m = g.meta || {}, out = [];
@@ -349,6 +359,7 @@ function detailHTML(g){
       ${heroBlock(g)}
       ${ctaBlock(g)}
       ${aboutBlock(g)}
+      ${shotsBlock(g)}
       ${phaseBlock(g)}
       ${notesLoop(g)}
       ${diaryBlock(g)}

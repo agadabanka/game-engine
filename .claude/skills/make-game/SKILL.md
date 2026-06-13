@@ -65,7 +65,12 @@ session and end with links.
    music muxed in; build a montage; upload ALL of them to YouTube
    (`tools/yt-upload.mjs`, YT_CLIENT_ID/SECRET/REFRESH_TOKEN in env) and create
    the playlist (`tools/yt-playlist.mjs`). Links go into GAME_META.json
-   (`videos` + `playlist`), the diary, and the hub registry.
+   (`videos` + `playlist`), the diary, and the hub registry. Also capture a few
+   gameplay stills into `src/diary-shots/` and add a `screenshots` array (deployed
+   URLs) to the hub registry entry — the hub detail shows a screenshot gallery and
+   the diary embeds them. If a real playlist can't be created (the saved token may
+   be upload-scoped only), that's fine — the hub falls back to the montage link
+   (never the retired `watch_videos` endpoint).
 10. **Loop closed** — register the game in `hub/games.json` (game-engine repo)
     with meta/stages/videos; push the game repo (main) AND the engine branch;
     final reply lists: repo · live URL · playlist · diary path.

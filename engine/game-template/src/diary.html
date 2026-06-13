@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Build Diary &amp; Notes</title>
+<style>
+  :root { --bg:#0b1020; --card:#121826; --line:#2b3a57; --ink:#e8eefc; --dim:#9fb3e0; --accent:#ffd34d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,Segoe UI,Roboto,sans-serif; line-height:1.55; }
+  header { padding:18px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; position:sticky; top:0; background:rgba(11,16,32,.95); backdrop-filter:blur(6px); z-index:5; }
+  header h1 { font-size:20px; margin:0; }
+  header a { color:#9fd6ff; text-decoration:none; font-size:14px; }
+  .wrap { max-width:1040px; margin:0 auto; padding:22px; display:grid; grid-template-columns:1.15fr .85fr; gap:24px; }
+  @media (max-width:860px){ .wrap{ grid-template-columns:1fr; } }
+  .col h2 { font-size:15px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:8px; }
+  .diary h3 { margin:22px 0 6px; font-size:17px; color:#fff; }
+  .diary p { margin:7px 0; color:#cdd9f5; }
+  .diary code { background:#0c1020; padding:1px 5px; border-radius:5px; color:#ffe08a; font-size:.92em; }
+  .diary hr { border:0; border-top:1px solid var(--line); margin:16px 0; }
+  .diary a { color:#9fd6ff; }
+  .diary table { border-collapse:collapse; margin:10px 0; font-size:13px; width:100%; }
+  .diary th, .diary td { border:1px solid var(--line); padding:5px 9px; text-align:left; }
+  .diary th { background:#16203a; color:#cfe1ff; }
+  .diary img { display:block; margin:12px 0; max-width:100%; border-radius:10px; border:1px solid var(--line); box-shadow:0 6px 20px rgba(0,0,0,.35); }
+  .diary blockquote { margin:8px 0; padding:6px 14px; border-left:3px solid var(--accent); color:#c8d6f5; background:#101a30; border-radius:0 8px 8px 0; }
+  .note { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:12px; }
+  .note .meta { font-size:12px; color:var(--dim); display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+  .note .tag { background:#1c2740; border-radius:6px; padding:1px 7px; }
+  .note .txt { white-space:pre-wrap; }
+  .note img { margin-top:8px; max-width:100%; border-radius:8px; border:1px solid var(--line); }
+  .empty { color:var(--dim); font-style:italic; }
+  .count { color:var(--dim); font-size:13px; font-weight:400; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">📖 Build Diary &amp; Notes</h1>
+  <a href="/">← back to the game</a>
+</header>
+<div class="wrap">
+  <div class="col">
+    <h2>Build diary</h2>
+    <div id="diary" class="diary"><p class="empty">loading…</p></div>
+  </div>
+  <div class="col">
+    <h2>Notes left in‑game <span id="ncount" class="count"></span></h2>
+    <div id="notes"><p class="empty">loading…</p></div>
+  </div>
+</div>
+<script>
+  // markdown → HTML: headings, hr, images, links, bold, code, lists, tables,
+  // blockquotes, paragraphs. Image paths are normalized so diary screenshots
+  // committed under src/diary-shots/ resolve from the deployed root.
+  function md(src){
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const fixSrc = u => u.replace(/^(\.\/)?src\//,'/').replace(/^(?!https?:|\/)/,'/');
+    const inline = s => esc(s)
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,(_,a,u)=>`<img src="${fixSrc(u.trim())}" alt="${a}">`)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/`(.+?)`/g,'<code>$1</code>');
+    const lines = src.split('\n'); let out=[], inList=false, tbl=null;
+    const flushList=()=>{ if(inList){out.push('</ul>');inList=false;} };
+    const flushTbl=()=>{ if(tbl){ out.push('<table>'+tbl.map((r,i)=>{const c=r.split('|').slice(1,-1).map(x=>x.trim());const tag=i===0?'th':'td';return '<tr>'+c.map(x=>`<${tag}>${inline(x)}</${tag}>`).join('')+'</tr>';}).join('')+'</table>'); tbl=null; } };
+    for (let ln of lines){
+      if(/^\|(.+)\|\s*$/.test(ln)){ if(/^\|[\s:|-]+\|\s*$/.test(ln)){continue;} if(!tbl)tbl=[]; tbl.push(ln); continue; } else flushTbl();
+      if(/^###\s+/.test(ln)){ flushList(); out.push('<h3>'+inline(ln.replace(/^###\s+/,''))+'</h3>'); }
+      else if(/^##\s+/.test(ln)){ flushList(); out.push('<h3>'+inline(ln.replace(/^##\s+/,''))+'</h3>'); }
+      else if(/^#\s+/.test(ln)){ /* page title — handled separately */ }
+      else if(/^>\s?/.test(ln)){ flushList(); out.push('<blockquote>'+inline(ln.replace(/^>\s?/,''))+'</blockquote>'); }
+      else if(/^---\s*$/.test(ln)){ flushList(); out.push('<hr>'); }
+      else if(/^\s*[-*]\s+/.test(ln)){ if(!inList){out.push('<ul>');inList=true;} out.push('<li>'+inline(ln.replace(/^\s*[-*]\s+/,''))+'</li>'); }
+      else if(/^\s*$/.test(ln)){ flushList(); }
+      else { flushList(); out.push('<p>'+inline(ln)+'</p>'); }
+    }
+    flushTbl(); flushList();
+    return out.join('\n');
+  }
+  // title from meta
+  fetch('/api/meta').then(r=>r.json()).then(m=>{ if(m&&m.name){ document.getElementById('title').innerHTML='📖 '+m.name+' — Build Diary &amp; Notes'; document.title=m.name+' — Build Diary'; } }).catch(()=>{});
+  fetch('/api/diary').then(r=>r.text()).then(t=>{ document.getElementById('diary').innerHTML = md(t); })
+    .catch(()=>{ document.getElementById('diary').innerHTML='<p class="empty">no diary yet</p>'; });
+  fetch('/api/notes').then(r=>r.json()).then(({notes})=>{
+    const el = document.getElementById('notes');
+    notes = (notes||[]).slice().reverse();
+    document.getElementById('ncount').textContent = notes.length ? '· '+notes.length : '';
+    if(!notes.length){ el.innerHTML='<p class="empty">No notes yet. In the game, hit ⏸ Pause → 📝 Leave a note, click a spot and type.</p>'; return; }
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    el.innerHTML = notes.map(n=>{
+      const when = n.created_at ? new Date(n.created_at).toLocaleString() : '';
+      const where = [];
+      if(n.level!=null) where.push('Level '+n.level);
+      if(n.kind) where.push(n.kind);
+      return '<div class="note"><div class="meta">'+where.map(w=>'<span class="tag">'+esc(w)+'</span>').join('')+'<span>'+when+'</span></div>'+
+             '<div class="txt">'+esc(n.text)+'</div>'+(n.shot?'<img src="'+n.shot+'" alt="screenshot">':'')+'</div>';
+    }).join('');
+  }).catch(()=>{ document.getElementById('notes').innerHTML='<p class="empty">could not load notes</p>'; });
+</script>
+</body>
+</html>
