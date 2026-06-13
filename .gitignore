@@ -6,3 +6,4 @@ data/
 book/img/_work/
 _*.mjs
 trailer-build/
+out/
