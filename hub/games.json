@@ -42,19 +42,22 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446630555",
         "title": "Level 1",
-        "biome": "Level 1"
+        "biome": "Level 1",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446734509"
       },
       {
-        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446630558",
-        "title": "Level 4",
-        "biome": "Level 4"
+        "title": "Level 3",
+        "biome": "Level 3",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446734513"
       },
       {
-        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446630563",
-        "title": "Level 7",
-        "biome": "Level 7"
+        "title": "Level 5",
+        "biome": "Level 5",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446734516"
       }
     ]
   },
@@ -112,19 +115,22 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446630577",
         "title": "Carrot Caverns",
-        "biome": "Carrot Caverns"
+        "biome": "Carrot Caverns",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446734535"
       },
       {
-        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446630581",
+        "title": "Dustbowl Dunes",
+        "biome": "Dustbowl Dunes",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446734541"
+      },
+      {
         "title": "Thunder Dome",
-        "biome": "Thunder Dome"
-      },
-      {
-        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446630610",
-        "title": "Level 9",
-        "biome": "Level 9"
+        "biome": "Thunder Dome",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446734549"
       }
     ]
   },
@@ -247,9 +253,22 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/ember-depths/releases/assets/446630649",
         "title": "Molten Shallows",
-        "biome": "Molten Shallows"
+        "biome": "Molten Shallows",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/ember-depths/releases/assets/446734570"
+      },
+      {
+        "title": "Ember Vents",
+        "biome": "Ember Vents",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/ember-depths/releases/assets/446734580"
+      },
+      {
+        "title": "The Core",
+        "biome": "The Core",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/ember-depths/releases/assets/446734585"
       }
     ]
   },
@@ -294,9 +313,22 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/nimbus-climb/releases/assets/446630664",
         "title": "Foothill Puffs",
-        "biome": "Foothill Puffs"
+        "biome": "Foothill Puffs",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/nimbus-climb/releases/assets/446734596"
+      },
+      {
+        "title": "Mistspire",
+        "biome": "Mistspire",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/nimbus-climb/releases/assets/446734600"
+      },
+      {
+        "title": "The Sun Bell",
+        "biome": "The Sun Bell",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/nimbus-climb/releases/assets/446734609"
       }
     ]
   },
@@ -445,19 +477,22 @@
     },
     "shorts": [
       {
-        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446630678",
         "title": "Cold Start",
-        "biome": "Cold Start"
+        "biome": "Cold Start",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446739392"
       },
       {
-        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446630686",
         "title": "Vent",
-        "biome": "Vent"
+        "biome": "Vent",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446739398"
       },
       {
-        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446630692",
         "title": "The Warden",
-        "biome": "The Warden"
+        "biome": "The Warden",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446739401"
       }
     ]
   },

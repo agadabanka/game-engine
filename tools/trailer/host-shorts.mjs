@@ -27,9 +27,14 @@ function label(g, lv) {
   return `Level ${lv}`;
 }
 
+// Optional CLI filter: `node host-shorts.mjs <id> [id...]` re-hosts only those
+// games (each re-host rotates the release's asset IDs, so scope it to the games
+// you actually re-recorded and leave the rest of the registry untouched).
+const ONLY = process.argv.slice(2);
 const hosted = {};
 for (const g of GAMES) {
   if (g.id === 'biome-bash') continue;
+  if (ONLY.length && !ONLY.includes(g.id)) continue;
   const dir = path.join(SHORTS, g.id);
   if (!fs.existsSync(dir)) continue;
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.mp4')).sort();
@@ -52,7 +57,10 @@ for (const g of GAMES) {
     const a = await r.json();
     if (!a.browser_download_url) { console.log(`\n  ! ${f}: ${JSON.stringify(a).slice(0, 100)}`); continue; }
     const lab = label(g, lv);
-    arr.push({ mp4: a.browser_download_url, title: lab, biome: lab });
+    // a.url is the api.github.com asset URL — the ONLY reliably-streamable form for
+    // PRIVATE repos (browser_download_url 404s w/o a session). The hub /v proxy
+    // adds the auth token + Accept: octet-stream. Keep browser_download_url for ref.
+    arr.push({ mp4: a.url, browser: a.browser_download_url, level: lv, title: lab, biome: lab });
     process.stdout.write('·');
   }
   hosted[g.id] = arr;

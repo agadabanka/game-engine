@@ -78,6 +78,12 @@ async function record(base, lv, skip, frames, out) {
   for (let i = 0; i < 200; i++) { if (await page.evaluate(() => !!window.__game)) break;
     await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true })));
     await page.evaluate(() => { try { window.__rec.step(1); } catch (e) {} }); }
+  // Boot-lineage games (Studio.Game.boot) render a level-select TITLE on top of
+  // the ?level-loaded world, so a naive capture films the menu. gotoLevel() clears
+  // that menu and force-loads the requested level. No-op on game-template games
+  // (the-platformer/jazz) where ?level is already honored and gotoLevel is absent.
+  // lv>100 = platformer showcase convention → strip back to the real 1-based level.
+  await page.evaluate((lv) => { try { var n = lv > 100 ? lv - 100 : lv; if (window.__game && window.__game.gotoLevel) window.__game.gotoLevel(n - 1); } catch (e) {} }, lv);
   // autopilot ONLY — never reset (reset restarts at level 1 and ignores ?level)
   await page.evaluate(() => { try { window.__game.autopilot(true); } catch (e) {} try { window.__game.showcase && window.__game.showcase(true); } catch (e) {} try { window.__game.collect && window.__game.collect(true); } catch (e) {} });
   for (let i = 0; i < skip; i++) await page.evaluate(() => { try { window.__rec.step(1); } catch (e) {} });

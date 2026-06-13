@@ -87,3 +87,21 @@ session and end with links.
   accepted) — every game must honor it (the template does) so levels can be
   deep-linked and recorded distinctly. Don't gate it behind a clickable menu only.
 - `?level=N` boots straight into gameplay for eval/recording; menus otherwise.
+  PITFALL (cost a re-record): loading the level but STILL drawing the title menu
+  on top films the menu, not the level. If a game has a level-select shell, gate
+  the title on `mode !== 'play'` — the `?level` boot sets `mode='play'`, so the
+  title is skipped and you start in-game. (Brawl/Toon template is already clean;
+  the legacy `Studio.Game.boot` shell needed this fix in ember/nimbus.)
+- A menu game must also expose `window.__game.gotoLevel(i)` (0-based): clear the
+  menu, `mode='play'`, `loadLevel(i)`. The shorts recorder calls it as a belt-and-
+  suspenders so a stale deploy still records the right level; it's a no-op (guarded)
+  on template games where `?level` alone suffices.
+- "Unlock all levels": a level-select shell should open EVERY card (set the
+  selectable count to `LEVELS.length`), not gate behind progression — players and
+  deep-links can jump anywhere. Keep the default cursor on the highest reached.
+- Shorts pipeline (engine ability): `tools/trailer/make-shorts.mjs <id|all>` records
+  per-level vertical clips off the LIVE deploy (honors `?level`, muxes each game's
+  real music), `host-shorts.mjs <id...>` uploads them as GitHub Release assets
+  (`shorts` tag) and emits api.github.com asset URLs for the hub `/v` proxy. Record
+  DISTINCT levels (1/3/5) and verify a mid-clip frame per level shows GAMEPLAY (not
+  a menu) before hosting.
