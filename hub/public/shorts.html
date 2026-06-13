@@ -85,27 +85,48 @@
       // 'error' clears it too so a short never hangs on the loading frame forever.
       ['loadedmetadata','loadeddata','canplay','playing','error'].forEach(ev=>v.addEventListener(ev, ()=>clearLoading(i), {once:true})); } }
     function unload(i){ const v=vid(i); if(v && v.src){ v.removeAttribute('src'); v.load(); pl(i).classList.add('loading'); } }
-    let playGen = 0;          // bumped on each play/pause so stale retries cancel themselves
-    function play(i){ const v=vid(i); if(!v) return; load(i);
+    let playGen = 0;            // bumped on each play/pause so stale retries cancel themselves
+    let pausedByUser = false;   // the user explicitly paused the CURRENT short → don't auto-resume it
+    // Get short i ROLLING. Try WITH sound (if enabled); if the browser rejects unmuted
+    // autoplay — iOS, once its tap-activation lapses — fall back to MUTED, which is
+    // always allowed, so the frame never hangs. A tap then lifts the mute.
+    function kick(i){ const v=vid(i); if(!v) return; load(i);
       const gen = ++playGen; let tries = 0;
-      // Always get the VIDEO rolling so it never hangs on the loading frame. Try WITH
-      // sound first (if enabled); if iOS rejects unmuted autoplay — its transient
-      // activation expires a few seconds after the last tap — fall back to MUTED play,
-      // which is always allowed. The short still plays; a tap then lifts the mute.
       const attempt = (forceMuted)=>{
-        if (cur !== i || gen !== playGen) return;          // scrolled away or superseded by a newer play/pause
+        if (cur !== i || gen !== playGen) return;          // scrolled away or superseded
         v.muted = forceMuted || !audioOn;
         const p = v.play();
         if (p && p.catch) p.catch(()=>{
           if (cur !== i || gen !== playGen) return;
-          if (!v.muted) { attempt(true); return; }                 // unmuted blocked → play muted (no stuck frame)
-          if (++tries <= 12) setTimeout(()=>attempt(true), 300);   // even muted failed (buffering) → retry
+          if (!v.muted) { attempt(true); return; }                // unmuted blocked → play muted (no stuck frame)
+          if (++tries <= 8) setTimeout(()=>attempt(true), 300);   // buffering → brief retry (the watchdog covers the rest)
         });
       };
       attempt(false);
-      pl(i).classList.remove('paused');
     }
+    function play(i){ pausedByUser = false; kick(i); pl(i).classList.remove('paused'); }
     function pause(i){ playGen++; const v=vid(i); if(v){ v.pause(); pl(i).classList.add('paused'); } }
+    // WATCHDOG — the automatic version of "tap and it starts". A short can sit on the
+    // loading frame when iOS quietly drops a play() (decoder/activation contention) or a
+    // proxy fetch stalls. So we poll the CURRENT short: if the user hasn't paused it and
+    // it isn't advancing, re-kick it; if it has NO data at all after a beat, hard-reload
+    // to restart the fetch. This is what makes the feed self-heal without a tap.
+    let lastT = -1, wedged = 0, lastCur = -1;
+    setInterval(()=>{
+      if (document.hidden) return;
+      const v = vid(cur); if (!v) return;
+      if (cur !== lastCur) { lastCur = cur; lastT = -1; wedged = 0; }    // moved to a new short → reset
+      if (pausedByUser) { lastT = v.currentTime; return; }
+      if (!v.src) { load(cur); }
+      const advancing = v.currentTime > lastT + 0.05;
+      if (!v.paused && advancing) { wedged = 0; }
+      else {
+        wedged++;
+        if (wedged >= 5 && v.readyState === 0) { unload(cur); load(cur); wedged = 0; }  // fetch dead → restart it
+        kick(cur);
+      }
+      lastT = v.currentTime;
+    }, 700);
     // single source of truth for audio. Browsers block autoplay-WITH-sound until a
     // gesture, so we start muted and flip ON at the first interaction. Turning sound
     // on (re)plays the CURRENT short with audio through the robust play() path.
@@ -125,7 +146,7 @@
       const v=vid(i); if(!v) return;
       if (v.paused) { play(i); }                // resume
       else if (v.muted) { v.muted = false; }    // playing but muted (iOS blocked auto-unmute) → this tap lifts it
-      else { pause(i); }                        // playing with sound → pause
+      else { pausedByUser = true; pause(i); }   // playing with sound → user pause (watchdog leaves it alone)
     }); });
     // play the most-visible short, pause others, preload neighbours
     const io = new IntersectionObserver(ents=>{
@@ -141,6 +162,11 @@
       });
     }, { threshold:[0,0.6,1] });
     secs.forEach(s=>io.observe(s));
+    // A scroll is a touch gesture (fresh autoplay activation on iOS), so kick the
+    // current short the moment scrolling settles — landing the play() inside the
+    // gesture window gives it a chance to start WITH sound instead of falling to muted.
+    let scrollT = null;
+    feed.addEventListener('scroll', ()=>{ clearTimeout(scrollT); scrollT = setTimeout(()=>{ if (!pausedByUser) kick(cur); }, 120); }, {passive:true});
 
     // best-effort: turn sound on at the first tap anywhere (except the mute button,
     // which toggles it explicitly). Desktop/Android honor this immediately; iOS
