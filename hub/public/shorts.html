@@ -41,7 +41,7 @@
 <div class="bar">
   <a class="back" href="/">← engine</a>
   <h1 id="title">📱 Shorts</h1>
-  <button class="mute" id="mute">🔊 sound on</button>
+  <button class="mute" id="mute">🔇 Tap for sound</button>
 </div>
 <div id="feed" class="feed"><div class="empty">loading shorts…</div></div>
 <div class="nav"><button id="up" aria-label="previous">↑</button><button id="down" aria-label="next">↓</button></div>
@@ -51,13 +51,16 @@
   const only = new URLSearchParams(location.search).get('game');
   // same-origin proxy so GitHub-hosted mp4 play + seek reliably everywhere
   const proxy = u => '/v?src=' + encodeURIComponent(u);
-  let items = [], secs = [], cur = 0, wantSound = true;
+  let items = [], secs = [], cur = 0, audioOn = false;
   const vid = i => document.getElementById('v'+i);
   const pl = i => document.getElementById('pl'+i);
 
   fetch('/api/dashboard').then(r=>r.json()).then(d=>{
-    (d.games||[]).forEach(g=>{ if (only && g.id!==only) return;
-      (g.shorts||[]).forEach(s=>{ if (s.mp4) items.push({ mp4:s.mp4, yt:s.yt||s.id, game:g.name, url:g.url, title:s.title, biome:s.biome }); }); });
+    // interleave shorts across games (round-robin) so consecutive shorts are
+    // from DIFFERENT games — variety instead of all-of-one-game-then-the-next.
+    const lists = (d.games||[]).filter(g=>!only||g.id===only)
+      .map(g=>(g.shorts||[]).filter(s=>s.mp4).map(s=>({ mp4:s.mp4, yt:s.yt||s.id, game:g.name, url:g.url, title:s.title, biome:s.biome })));
+    let more=true; while(more){ more=false; for(const L of lists){ const s=L.shift(); if(s){ items.push(s); more=true; } } }
     const feed = document.getElementById('feed');
     if (!items.length){ feed.innerHTML='<div class="empty">No shorts yet.</div>'; return; }
     if (only && items[0]) document.getElementById('title').textContent = '📱 ' + items[0].game + ' — Shorts';
@@ -78,17 +81,24 @@
       v.addEventListener('error', ()=>{ pl(i).classList.remove('loading'); }, {once:true}); } }
     function unload(i){ const v=vid(i); if(v && v.src){ v.removeAttribute('src'); v.load(); pl(i).classList.add('loading'); } }
     function play(i){ const v=vid(i); if(!v) return; load(i);
-      v.muted = !wantSound;
+      v.muted = !audioOn;
       const p = v.play();
-      if (p && p.catch) p.catch(()=>{ v.muted = true; v.play().catch(()=>{}); });  // sound-autoplay blocked → muted
+      if (p && p.catch) p.catch(()=>{ v.muted = true; v.play().catch(()=>{}); });  // sound-autoplay blocked → muted retry
       pl(i).classList.remove('paused');
     }
     function pause(i){ const v=vid(i); if(v){ v.pause(); pl(i).classList.add('paused'); } }
-    function applyMute(){ document.querySelectorAll('video').forEach(v=>v.muted=!wantSound);
-      document.getElementById('mute').textContent = wantSound ? '🔊 sound on' : '🔇 muted'; }
-
-    // tap a player to toggle play/pause
-    secs.forEach((sec,i)=>{ pl(i).addEventListener('click', ()=>{ const v=vid(i); if(v && v.paused){ play(i); } else { pause(i); } }); });
+    // single source of truth for audio: browsers block autoplay-WITH-sound until a
+    // gesture, so we start muted and flip ON at the first tap (or the button).
+    function setAudio(on){ audioOn = on;
+      document.querySelectorAll('video').forEach(v=>v.muted=!on);
+      document.getElementById('mute').textContent = on ? '🔊 Sound on' : '🔇 Tap for sound';
+      const v=vid(cur); if(v){ if(on) v.muted=false; v.play().catch(()=>{}); }
+    }
+    // tap a player: first tap turns sound ON; after that, taps toggle play/pause
+    secs.forEach((sec,i)=>{ pl(i).addEventListener('click', ()=>{
+      if(!audioOn){ setAudio(true); return; }
+      const v=vid(i); if(v && v.paused){ play(i); } else { pause(i); }
+    }); });
     // play the most-visible short, pause others, preload neighbours
     const io = new IntersectionObserver(ents=>{
       ents.forEach(e=>{ const i=+e.target.dataset.i;
@@ -104,15 +114,15 @@
     }, { threshold:[0,0.6,1] });
     secs.forEach(s=>io.observe(s));
 
-    // any first interaction → ensure sound is on for the current short (browser
-    // autoplay policy blocks sound until a gesture; this turns it on instantly)
-    const onGesture = ()=>{ if(wantSound){ const v=vid(cur); if(v){ v.muted=false; v.play().catch(()=>{}); } } };
-    ['pointerdown','touchstart','keydown','wheel'].forEach(ev=>document.addEventListener(ev, onGesture, {passive:true}));
+    // best-effort: turn sound on at the first tap anywhere (except the mute button,
+    // which toggles it explicitly). Desktop/Android honor this immediately; iOS
+    // needs the tap to land on the player, which the per-player handler covers.
+    document.addEventListener('pointerdown', e=>{ if(audioOn) return; if(e.target.closest('#mute')) return; setAudio(true); }, {passive:true});
 
     const go = d=>{ cur=Math.max(0,Math.min(secs.length-1,cur+d)); secs[cur].scrollIntoView({behavior:'smooth'}); };
     document.getElementById('down').onclick=()=>go(1);
     document.getElementById('up').onclick=()=>go(-1);
-    document.getElementById('mute').onclick=()=>{ wantSound=!wantSound; applyMute(); const v=vid(cur); if(v&&wantSound) v.play().catch(()=>{}); };
+    document.getElementById('mute').onclick=(e)=>{ e.stopPropagation(); setAudio(!audioOn); };
     addEventListener('keydown',e=>{ if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();go(1);} if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();go(-1);} if(e.key==='m'){document.getElementById('mute').click();} });
     // start the first one + buffer the opening window (muted autoplay; first gesture turns sound on)
     setTimeout(()=>{ for(let k=0;k<=AHEAD;k++) load(k); play(0); }, 150);
