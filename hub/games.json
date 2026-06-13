@@ -42,17 +42,17 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/the-platformer/releases/download/shorts/the-platformer-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446630555",
         "title": "Level 1",
         "biome": "Level 1"
       },
       {
-        "mp4": "https://github.com/agadabanka/the-platformer/releases/download/shorts/the-platformer-4.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446630558",
         "title": "Level 4",
         "biome": "Level 4"
       },
       {
-        "mp4": "https://github.com/agadabanka/the-platformer/releases/download/shorts/the-platformer-7.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/the-platformer/releases/assets/446630563",
         "title": "Level 7",
         "biome": "Level 7"
       }
@@ -112,17 +112,17 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/jazz/releases/download/shorts/jazz-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446630577",
         "title": "Carrot Caverns",
         "biome": "Carrot Caverns"
       },
       {
-        "mp4": "https://github.com/agadabanka/jazz/releases/download/shorts/jazz-5.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446630581",
         "title": "Thunder Dome",
         "biome": "Thunder Dome"
       },
       {
-        "mp4": "https://github.com/agadabanka/jazz/releases/download/shorts/jazz-9.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/jazz/releases/assets/446630610",
         "title": "Level 9",
         "biome": "Level 9"
       }
@@ -178,17 +178,17 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/deepfin/releases/download/shorts/deepfin-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/deepfin/releases/assets/446630622",
         "title": "Shallows",
         "biome": "Shallows"
       },
       {
-        "mp4": "https://github.com/agadabanka/deepfin/releases/download/shorts/deepfin-3.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/deepfin/releases/assets/446630626",
         "title": "The Wreck",
         "biome": "The Wreck"
       },
       {
-        "mp4": "https://github.com/agadabanka/deepfin/releases/download/shorts/deepfin-5.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/deepfin/releases/assets/446630633",
         "title": "The Maw",
         "biome": "The Maw"
       }
@@ -247,7 +247,7 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/ember-depths/releases/download/shorts/ember-depths-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/ember-depths/releases/assets/446630649",
         "title": "Molten Shallows",
         "biome": "Molten Shallows"
       }
@@ -294,7 +294,7 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/nimbus-climb/releases/download/shorts/nimbus-climb-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/nimbus-climb/releases/assets/446630664",
         "title": "Foothill Puffs",
         "biome": "Foothill Puffs"
       }
@@ -341,7 +341,7 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/starlance/releases/download/shorts/starlance-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/starlance/releases/assets/446630670",
         "title": "Rose Veil",
         "biome": "Rose Veil"
       }
@@ -389,7 +389,7 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/roadwar/releases/download/shorts/roadwar-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/roadwar/releases/assets/446630674",
         "title": "Desert Highway",
         "biome": "Desert Highway"
       }
@@ -445,17 +445,17 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/starsweeper/releases/download/shorts/starsweeper-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446630678",
         "title": "Cold Start",
         "biome": "Cold Start"
       },
       {
-        "mp4": "https://github.com/agadabanka/starsweeper/releases/download/shorts/starsweeper-3.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446630686",
         "title": "Vent",
         "biome": "Vent"
       },
       {
-        "mp4": "https://github.com/agadabanka/starsweeper/releases/download/shorts/starsweeper-5.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/starsweeper/releases/assets/446630692",
         "title": "The Warden",
         "biome": "The Warden"
       }
@@ -503,7 +503,7 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/roadwar-iso/releases/download/shorts/roadwar-iso-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/roadwar-iso/releases/assets/446630704",
         "title": "Desert Highway",
         "biome": "Desert Highway"
       }
@@ -551,7 +551,7 @@
     },
     "shorts": [
       {
-        "mp4": "https://github.com/agadabanka/grovekeep/releases/download/shorts/grovekeep-1.mp4",
+        "mp4": "https://api.github.com/repos/agadabanka/grovekeep/releases/assets/446630711",
         "title": "Dawn Meadow",
         "biome": "Dawn Meadow"
       }

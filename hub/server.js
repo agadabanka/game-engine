@@ -144,13 +144,24 @@ app.get('/api/games', async (_req, res) => res.json({ games: await getGames() })
 // <video> (attachment disposition + signed redirects → MEDIA_ERR 4 / black).
 // Proxy them SAME-ORIGIN here with proper video/mp4 + byte-range forwarding so
 // the shorts feed plays + seeks reliably everywhere.
-const VIDEO_HOSTS = /^https:\/\/(github\.com|objects\.githubusercontent\.com|release-assets\.githubusercontent\.com|raw\.githubusercontent\.com|media\.githubusercontent\.com|cdn\.jsdelivr\.net)\//;
+const VIDEO_HOSTS = /^https:\/\/(api\.github\.com|github\.com|objects\.githubusercontent\.com|release-assets\.githubusercontent\.com|raw\.githubusercontent\.com|media\.githubusercontent\.com|cdn\.jsdelivr\.net)\//;
+// the set of mp4 URLs the registry actually references — the proxy only serves
+// these, so the hub's token can't be used to pull arbitrary private content.
+async function allowedSrcs() {
+  const out = new Set();
+  for (const g of await getGames()) for (const s of (g.shorts || [])) if (s.mp4) out.add(s.mp4);
+  return out;
+}
 app.get('/v', async (req, res) => {
   const src = String(req.query.src || '');
   if (!VIDEO_HOSTS.test(src)) return res.status(400).end('bad src');
+  if (!(await allowedSrcs()).has(src)) return res.status(403).end('not allowed');
   try {
-    const range = req.headers.range;
-    const upstream = await fetch(src, { headers: range ? { Range: range } : {}, redirect: 'follow' });
+    const headers = {};
+    if (req.headers.range) headers.Range = req.headers.range;
+    // private-repo release assets must be pulled via the API with auth + octet-stream
+    if (src.startsWith('https://api.github.com/')) { headers.Authorization = `token ${GH_TOKEN}`; headers.Accept = 'application/octet-stream'; }
+    const upstream = await fetch(src, { headers, redirect: 'follow' });
     if (!upstream.ok && upstream.status !== 206) return res.status(upstream.status).end();
     res.status(upstream.status);
     res.setHeader('Content-Type', 'video/mp4');
