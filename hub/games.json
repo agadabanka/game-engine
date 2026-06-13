@@ -38,24 +38,23 @@
         "level-7": "https://youtu.be/FXYBADgA8lk",
         "level-8": "https://youtu.be/7_4d2KbiDeo"
       },
-      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsWvjJuyesu8u4izuV6b38I",
-      "shortsPlaylist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEs599LjX0GyI1fpN65jK4ty"
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsWvjJuyesu8u4izuV6b38I"
     },
     "shorts": [
       {
-        "id": "GxZqhPU4M0Y",
+        "mp4": "https://github.com/agadabanka/the-platformer/releases/download/shorts/the-platformer-1.mp4",
         "title": "Level 1",
         "biome": "Level 1"
       },
       {
-        "id": "5gjVLchgmzM",
-        "title": "Level 3",
-        "biome": "Level 3"
+        "mp4": "https://github.com/agadabanka/the-platformer/releases/download/shorts/the-platformer-4.mp4",
+        "title": "Level 4",
+        "biome": "Level 4"
       },
       {
-        "id": "i-6ncQREslE",
-        "title": "Level 5",
-        "biome": "Level 5"
+        "mp4": "https://github.com/agadabanka/the-platformer/releases/download/shorts/the-platformer-7.mp4",
+        "title": "Level 7",
+        "biome": "Level 7"
       }
     ]
   },
@@ -113,19 +112,19 @@
     },
     "shorts": [
       {
-        "id": "F8brvHGOJ00",
+        "mp4": "https://github.com/agadabanka/jazz/releases/download/shorts/jazz-1.mp4",
         "title": "Carrot Caverns",
         "biome": "Carrot Caverns"
       },
       {
-        "id": "63Jp-8TMvGg",
-        "title": "Level 13",
-        "biome": "Level 13"
+        "mp4": "https://github.com/agadabanka/jazz/releases/download/shorts/jazz-5.mp4",
+        "title": "Thunder Dome",
+        "biome": "Thunder Dome"
       },
       {
-        "id": "vWM9CGnCMU4",
-        "title": "Level 7",
-        "biome": "Level 7"
+        "mp4": "https://github.com/agadabanka/jazz/releases/download/shorts/jazz-9.mp4",
+        "title": "Level 9",
+        "biome": "Level 9"
       }
     ]
   },
@@ -175,22 +174,21 @@
         "level-4": "https://youtu.be/gEBp1CsLMNk",
         "level-5": "https://youtu.be/O9myDmog_ew"
       },
-      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsA-QrkOOxfdO_DaCU8Xp_W",
-      "shortsPlaylist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEuGTvrLXE0sDLrdoCoLvezG"
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsA-QrkOOxfdO_DaCU8Xp_W"
     },
     "shorts": [
       {
-        "id": "lvvDp6-v9Ak",
+        "mp4": "https://github.com/agadabanka/deepfin/releases/download/shorts/deepfin-1.mp4",
         "title": "Shallows",
         "biome": "Shallows"
       },
       {
-        "id": "_ZFORO0KhLQ",
+        "mp4": "https://github.com/agadabanka/deepfin/releases/download/shorts/deepfin-3.mp4",
         "title": "The Wreck",
         "biome": "The Wreck"
       },
       {
-        "id": "MzPCEc8nT4E",
+        "mp4": "https://github.com/agadabanka/deepfin/releases/download/shorts/deepfin-5.mp4",
         "title": "The Maw",
         "biome": "The Maw"
       }
@@ -249,19 +247,9 @@
     },
     "shorts": [
       {
-        "id": "YL2j3IEWIQU",
+        "mp4": "https://github.com/agadabanka/ember-depths/releases/download/shorts/ember-depths-1.mp4",
         "title": "Molten Shallows",
         "biome": "Molten Shallows"
-      },
-      {
-        "id": "kKjDxImMRto",
-        "title": "Ember Vents",
-        "biome": "Ember Vents"
-      },
-      {
-        "id": "6ZPILqx5id0",
-        "title": "The Core",
-        "biome": "The Core"
       }
     ]
   },
@@ -306,19 +294,9 @@
     },
     "shorts": [
       {
-        "id": "DVPqBM13PDQ",
+        "mp4": "https://github.com/agadabanka/nimbus-climb/releases/download/shorts/nimbus-climb-1.mp4",
         "title": "Foothill Puffs",
         "biome": "Foothill Puffs"
-      },
-      {
-        "id": "dvX6dpgyGoY",
-        "title": "Mistspire",
-        "biome": "Mistspire"
-      },
-      {
-        "id": "uzq0cy-GtQw",
-        "title": "The Sun Bell",
-        "biome": "The Sun Bell"
       }
     ]
   },
@@ -363,19 +341,9 @@
     },
     "shorts": [
       {
-        "id": "ZrEp0iZtnRI",
+        "mp4": "https://github.com/agadabanka/starlance/releases/download/shorts/starlance-1.mp4",
         "title": "Rose Veil",
         "biome": "Rose Veil"
-      },
-      {
-        "id": "YZB-pSkeaeI",
-        "title": "Storm Veil",
-        "biome": "Storm Veil"
-      },
-      {
-        "id": "gSlqnwa1IY8",
-        "title": "The Hollow Star",
-        "biome": "The Hollow Star"
       }
     ]
   },
@@ -421,19 +389,9 @@
     },
     "shorts": [
       {
-        "id": "q1Bi8KzmuDM",
+        "mp4": "https://github.com/agadabanka/roadwar/releases/download/shorts/roadwar-1.mp4",
         "title": "Desert Highway",
         "biome": "Desert Highway"
-      },
-      {
-        "id": "EcGg5xRamBs",
-        "title": "Neon Strip",
-        "biome": "Neon Strip"
-      },
-      {
-        "id": "HUeUO9WfD6Y",
-        "title": "Warlord S Gate",
-        "biome": "Warlord S Gate"
       }
     ]
   },
@@ -487,17 +445,17 @@
     },
     "shorts": [
       {
-        "id": "eLyFEU1ENs4",
+        "mp4": "https://github.com/agadabanka/starsweeper/releases/download/shorts/starsweeper-1.mp4",
         "title": "Cold Start",
         "biome": "Cold Start"
       },
       {
-        "id": "NZxUVVglCYU",
+        "mp4": "https://github.com/agadabanka/starsweeper/releases/download/shorts/starsweeper-3.mp4",
         "title": "Vent",
         "biome": "Vent"
       },
       {
-        "id": "sMTjcOSbn4w",
+        "mp4": "https://github.com/agadabanka/starsweeper/releases/download/shorts/starsweeper-5.mp4",
         "title": "The Warden",
         "biome": "The Warden"
       }
@@ -545,19 +503,9 @@
     },
     "shorts": [
       {
-        "id": "cMlIVNI-X28",
+        "mp4": "https://github.com/agadabanka/roadwar-iso/releases/download/shorts/roadwar-iso-1.mp4",
         "title": "Desert Highway",
         "biome": "Desert Highway"
-      },
-      {
-        "id": "20vtw0Z-Ggg",
-        "title": "Neon Strip",
-        "biome": "Neon Strip"
-      },
-      {
-        "id": "9zhVNv5FoGo",
-        "title": "Warlord S Gate",
-        "biome": "Warlord S Gate"
       }
     ]
   },
@@ -603,19 +551,9 @@
     },
     "shorts": [
       {
-        "id": "KW3sJw5R-OA",
+        "mp4": "https://github.com/agadabanka/grovekeep/releases/download/shorts/grovekeep-1.mp4",
         "title": "Dawn Meadow",
         "biome": "Dawn Meadow"
-      },
-      {
-        "id": "wxid7ROLd54",
-        "title": "Riverbend",
-        "biome": "Riverbend"
-      },
-      {
-        "id": "wX4eYeovLO8",
-        "title": "Ancient Heartwood",
-        "biome": "Ancient Heartwood"
       }
     ]
   },
