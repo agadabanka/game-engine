@@ -464,16 +464,42 @@
       "https://biome-bash-production.up.railway.app/diary-shots/title.png"
     ],
     "shorts": [
-      { "id": "gP8718WaX7c", "title": "Cumulus Courtyard", "biome": "Clouds" },
-      { "id": "-sMUJwY5j6E", "title": "Canopy Clash", "biome": "Jungle" },
-      { "id": "v7Ra7rqzqvE", "title": "Caldera Rim", "biome": "Volcano" },
-      { "id": "Ywx88MZYCj4", "title": "Glacier Shelf", "biome": "Glacier" },
-      { "id": "ioWi6of4X3o", "title": "Neon Rooftops", "biome": "Neon City" }
+      {
+        "id": "gP8718WaX7c",
+        "title": "Cumulus Courtyard",
+        "biome": "Clouds"
+      },
+      {
+        "id": "-sMUJwY5j6E",
+        "title": "Canopy Clash",
+        "biome": "Jungle"
+      },
+      {
+        "id": "v7Ra7rqzqvE",
+        "title": "Caldera Rim",
+        "biome": "Volcano"
+      },
+      {
+        "id": "Ywx88MZYCj4",
+        "title": "Glacier Shelf",
+        "biome": "Glacier"
+      },
+      {
+        "id": "ioWi6of4X3o",
+        "title": "Neon Rooftops",
+        "biome": "Neon City"
+      }
     ],
     "meta": {
       "hero": "Puff, Mango, Cinder, Glacia, Volt — one toony fighter per biome",
       "verb": "brawl · launch · KO",
-      "worlds": ["Cumulus Courtyard (Clouds)", "Canopy Clash (Jungle)", "Caldera Rim (Volcano)", "Glacier Shelf (Glacier)", "Neon Rooftops (Neon City)"],
+      "worlds": [
+        "Cumulus Courtyard (Clouds)",
+        "Canopy Clash (Jungle)",
+        "Caldera Rim (Volcano)",
+        "Glacier Shelf (Glacier)",
+        "Neon Rooftops (Neon City)"
+      ],
       "levelCount": 5,
       "controls": "←→ move · ↑/SPACE jump (multi) · Z attack · X heavy · C special · V shield",
       "art": "Gemini biome backdrops + keyart; characters are procedural Studio.Toon rigs (17 animation states)",
@@ -507,7 +533,9 @@
         "music": "done",
         "deploy": "done",
         "videos": "done"
-      }
+      },
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEucK9QdWMT8sWajbwyiWSco",
+      "shortsPlaylist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtxagXluixgIOSHFSiccd4S"
     }
   }
 ]
