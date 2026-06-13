@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"/>
-<title>Game Engine — Hit New Game and Go</title>
+<title>Game Engine — Skills and Machines</title>
 <style>
   @page { size: A4; margin: 0; }
   *{ box-sizing:border-box; }
@@ -11,204 +11,252 @@
   .scrim{ position:absolute; inset:0; }
   .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; padding:15mm 14mm; }
   .kicker{ text-transform:uppercase; letter-spacing:.22em; font-size:8.5pt; font-weight:800; color:#9fd6ff; text-shadow:0 2px 8px rgba(0,0,0,.8); }
-  h2{ font-size:24pt; margin:2px 0 11px; line-height:1.05; color:#fff; text-shadow:0 3px 16px rgba(0,0,0,.9); }
-  .card{ background:rgba(9,15,32,.74); border:1px solid rgba(255,255,255,.13); border-radius:12px; padding:13px 15px; backdrop-filter:blur(2px); box-shadow:0 10px 30px rgba(0,0,0,.4); }
+  h2{ font-size:23pt; margin:2px 0 10px; line-height:1.05; color:#fff; text-shadow:0 3px 16px rgba(0,0,0,.9); }
+  .card{ background:rgba(9,15,32,.76); border:1px solid rgba(255,255,255,.13); border-radius:12px; padding:13px 15px; backdrop-filter:blur(2px); box-shadow:0 10px 30px rgba(0,0,0,.4); }
   .card.tight{ padding:10px 13px; }
-  p{ margin:6px 0; font-size:10.4pt; line-height:1.5; color:#e9eeff; }
-  .lead{ font-size:11.6pt; color:#fff; }
-  h3{ font-size:11pt; margin:11px 0 3px; color:#9fd6ff; }
-  ul{ margin:5px 0; padding-left:17px; } li{ margin:3px 0; font-size:9.8pt; line-height:1.45; color:#e9eeff; }
-  code{ font-family:"SF Mono",Menlo,Consolas,monospace; background:rgba(120,150,220,.2); color:#cfe0ff; padding:1px 5px; border-radius:4px; font-size:8.6pt; }
+  p{ margin:6px 0; font-size:10.2pt; line-height:1.48; color:#e9eeff; }
+  .lead{ font-size:11.4pt; color:#fff; }
+  h3{ font-size:10.8pt; margin:10px 0 3px; color:#9fd6ff; }
+  ul{ margin:5px 0; padding-left:17px; } li{ margin:3px 0; font-size:9.7pt; line-height:1.42; color:#e9eeff; }
+  code{ font-family:"SF Mono",Menlo,Consolas,monospace; background:rgba(120,150,220,.2); color:#cfe0ff; padding:1px 5px; border-radius:4px; font-size:8.5pt; }
   b.h{ color:#ffd98a; }
   .foot{ margin-top:auto; }
   .pageno{ position:absolute; bottom:8mm; right:12mm; font-size:8pt; color:#aebbe0; }
   /* cover */
   .cover .wrap{ justify-content:flex-start; }
-  .cover .titlebox{ margin:6mm auto 0; max-width:160mm; text-align:center;
+  .cover .titlebox{ margin:6mm auto 0; max-width:164mm; text-align:center;
     background:rgba(8,12,28,.62); border:1px solid rgba(255,255,255,.16); border-radius:16px;
     padding:13px 22px 17px; backdrop-filter:blur(3px); box-shadow:0 14px 44px rgba(0,0,0,.5); }
   .cover .titlebox .small{ font-size:10pt; color:#9fd6ff; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
-  .cover .titlebox h1{ font-size:42pt; margin:5px 0 0; color:#fff; letter-spacing:.02em; line-height:1;
-    text-shadow:0 2px 12px rgba(0,0,0,.6); }
-  .cover .titlebox .sub{ font-size:13.5pt; color:#ffd98a; margin-top:8px; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,.6); }
-  /* architecture diagram */
-  .diap .wrap{ padding:12mm 11mm; }
-  .diagram{ display:flex; gap:6px; margin-top:7px; flex:1; }
-  .spine{ width:9mm; display:flex; flex-direction:column; align-items:center; justify-content:space-between;
-    border-radius:8px; background:linear-gradient(180deg,rgba(196,166,255,.18),rgba(111,182,240,.18));
-    border:1px solid rgba(255,255,255,.1); padding:6px 0; }
-  .spine .ar{ font-size:15pt; color:#cfe0ff; } .spine .lab{ writing-mode:vertical-rl; transform:rotate(180deg);
-    font-size:7.5pt; letter-spacing:.14em; text-transform:uppercase; color:#aebbe0; font-weight:700; }
-  .layers{ flex:1; display:flex; flex-direction:column; gap:6px; }
-  .layer{ display:flex; gap:7px; align-items:stretch; flex:1; }
-  .lname{ width:33mm; flex:none; border-radius:9px; padding:7px 8px; display:flex; flex-direction:column; justify-content:center; border:1px solid; }
-  .lname .lt{ font-size:9pt; font-weight:800; line-height:1.08; }
-  .lname .ls{ font-size:6.6pt; color:#c3cdea; margin-top:3px; letter-spacing:.04em; text-transform:uppercase; }
-  .lboxes{ flex:1; display:flex; flex-wrap:wrap; gap:5px; align-content:center; }
-  .box{ background:rgba(10,16,34,.84); border:1px solid rgba(255,255,255,.14); border-left:3px solid;
-    border-radius:8px; padding:5px 8px; min-width:40mm; flex:1 1 0; }
-  .box b{ font-size:8.4pt; color:#fff; } .box span{ display:block; font-size:6.8pt; color:#b9c4e6; margin-top:1px; line-height:1.3; }
-  code.k{ font-family:"SF Mono",Menlo,Consolas,monospace; font-size:7.4pt; background:none; padding:0; color:inherit; }
-  .Lpub{ background:rgba(255,138,176,.13); border-color:rgba(255,138,176,.5); } .Lpub .lt{ color:#ff8ab0; } .layer.pub .box{ border-left-color:#ff8ab0; }
-  .Lloop{ background:rgba(255,177,77,.13); border-color:rgba(255,177,77,.5); } .Lloop .lt{ color:#ffb14d; } .layer.loop .box{ border-left-color:#ffb14d; }
-  .Leval{ background:rgba(95,214,110,.13); border-color:rgba(95,214,110,.5); } .Leval .lt{ color:#5fd66e; } .layer.eval .box{ border-left-color:#5fd66e; }
-  .Lcont{ background:rgba(185,139,255,.13); border-color:rgba(185,139,255,.5); } .Lcont .lt{ color:#c4a6ff; } .layer.cont .box{ border-left-color:#c4a6ff; }
-  .Leng{ background:rgba(95,214,192,.13); border-color:rgba(95,214,192,.5); } .Leng .lt{ color:#5fd6c0; } .layer.eng .box{ border-left-color:#5fd6c0; }
-  .Lplat{ background:rgba(111,182,240,.13); border-color:rgba(111,182,240,.5); } .Lplat .lt{ color:#6fb6f0; } .layer.plat .box{ border-left-color:#6fb6f0; }
-  .Lfound{ background:rgba(255,211,77,.13); border-color:rgba(255,211,77,.5); } .Lfound .lt{ color:#ffd34d; } .layer.found .box{ border-left-color:#ffd34d; }
+  .cover .titlebox h1{ font-size:40pt; margin:5px 0 0; color:#fff; letter-spacing:.02em; line-height:1; text-shadow:0 2px 12px rgba(0,0,0,.6); }
+  .cover .titlebox .sub{ font-size:13pt; color:#ffd98a; margin-top:8px; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  /* two-column split table */
+  .split{ display:flex; gap:9px; margin-top:8px; }
+  .col{ flex:1; border-radius:11px; padding:10px 12px; border:1px solid; }
+  .col.skill{ background:rgba(255,177,77,.12); border-color:rgba(255,177,77,.45); }
+  .col.prog{ background:rgba(95,214,192,.12); border-color:rgba(95,214,192,.45); }
+  .col .ct{ font-size:11pt; font-weight:800; } .col.skill .ct{ color:#ffb14d; } .col.prog .ct{ color:#5fd6c0; }
+  .col .cs{ font-size:7.6pt; text-transform:uppercase; letter-spacing:.08em; color:#b9c4e6; margin:1px 0 7px; }
+  .col li{ font-size:8.9pt; margin:3px 0; }
+  .col code{ font-size:7.7pt; }
+  /* migration rows */
+  .mig{ margin-top:7px; }
+  .row{ display:flex; align-items:center; gap:8px; background:rgba(10,16,34,.7); border:1px solid rgba(255,255,255,.1); border-radius:9px; padding:7px 10px; margin:5px 0; }
+  .row .was{ flex:1; font-size:8.8pt; color:#ffcf9a; } .row .arr{ color:#9fd6ff; font-size:11pt; }
+  .row .now{ flex:1; font-size:8.8pt; color:#bdeede; text-align:right; }
+  .row .now code, .row .was code{ font-size:7.7pt; }
+  .ribbon{ display:inline-block; font-size:7.4pt; font-weight:800; letter-spacing:.1em; text-transform:uppercase; padding:2px 7px; border-radius:20px; }
+  .ribbon.s{ background:rgba(255,177,77,.2); color:#ffce8a; } .ribbon.p{ background:rgba(95,214,192,.2); color:#9ff0dd; }
 </style></head><body>
 
 <!-- COVER -->
 <section class="page cover" style="background-image:url('img/art/cover.jpg')">
-  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.12),rgba(6,10,22,.04) 36%,rgba(6,10,22,.55))"></div>
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.12),rgba(6,10,22,.04) 36%,rgba(6,10,22,.58))"></div>
   <div class="wrap">
     <div class="titlebox">
-      <div class="small">A make-of field guide · built with Claude Code</div>
+      <div class="small">A field guide to the engine · built with Claude Code</div>
       <h1>GAME ENGINE</h1>
-      <div class="sub">Hit "New Game" and Go</div>
-      <p style="color:#dfe8ff;font-size:10.5pt;max-width:128mm;margin:9px auto 0">The reusable rig that ties together everything learned building <b class="h">the-platformer</b> (a working game) and <b class="h">Jazz</b> (a second game off it) — one command scaffolds a new game wired to the whole stack, and one dashboard watches them all.</p>
+      <div class="sub">Skills and Machines — what the AI decides vs what the code does</div>
+      <p style="color:#dfe8ff;font-size:10.3pt;max-width:138mm;margin:9px auto 0">Eleven games now run on one rig. This edition reads the engine through a single lens: which capabilities live as <b class="h">skills</b> (recipes Claude runs by hand) and which have hardened into <b class="h">programmatic machines</b> (code that runs itself the same way every time) — and how to keep moving the line.</p>
     </div>
     <div class="foot"><div class="card tight" style="text-align:center">
-      <p style="margin:0;font-size:9.5pt;color:#cfe0ff">the <b class="h">new-game</b> button · the <b class="h">mission-control</b> hub · every game's notes &amp; diaries, one board</p>
+      <p style="margin:0;font-size:9.4pt;color:#cfe0ff">the <b class="h">new-game</b> button · the <b class="h">Studio SDK</b> · the <b class="h">fun-gate</b> · the <b class="h">video pipeline</b> · the <b class="h">mission-control</b> hub</p>
     </div></div>
   </div>
 </section>
 
-<!-- CH1 — what it is -->
+<!-- CH1 — what exists now -->
 <section class="page" style="background-image:url('img/art/ch1.jpg')">
-  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.78),rgba(6,10,22,.24) 44%,rgba(6,10,22,.8))"></div>
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.8),rgba(6,10,22,.26) 44%,rgba(6,10,22,.82))"></div>
   <div class="wrap">
-    <div class="kicker">Chapter 1</div><h2>Everything into one</h2>
+    <div class="kicker">Chapter 1 · the state of things</div><h2>One rig, eleven games, six genres</h2>
     <div class="card">
-      <p class="lead">Two games came before this: <b class="h">the-platformer</b>, a working Phaser game on a deploy-ready skeleton, and <b class="h">Jazz</b>, a cartoon run-and-gun built on top of it. Building the second proved the same engine and discipline could carry a brand-new skin and verb.</p>
-      <p>The lesson Jazz left behind: don't keep rebuilding the bottom. Lift the <b class="h">platform</b>, the <b class="h">engine</b>, and the <b class="h">evaluation</b> tiers into one place, so the third game — and the tenth — starts wired to all of it on day one.</p>
-      <h3>So this repo is two things</h3>
+      <p class="lead">It started as two games — <b class="h">the-platformer</b> and <b class="h">Jazz</b> — and a promise: don't rebuild the bottom. It is now a constellation: a brawler, a runner, a vertical climber, a shooter, two car-RTSs, a builder, an axolotl swimmer, an astronaut platformer — all off one engine.</p>
+      <p>What makes a tenth game cheap is that almost everything is <b class="h">inherited, not rebuilt</b>. A new game is mostly a re-skin of a shared machine, plus a few hundred lines of its own level data and identity.</p>
+      <h3>Two materials make up the rig</h3>
       <ul>
-        <li><b>The <code>new-game</code> button</b> — one command turns "I want to build X" into a fresh, playable, deploy-ready game repo.</li>
-        <li><b>The mission-control hub</b> — one deployed dashboard that watches every game's live notes, build diaries, and meta.</li>
+        <li><b class="h">Machines</b> — deterministic code every game runs verbatim: the <code>Studio</code> SDK, the scaffolder, the eval gate, the recorder, the hub.</li>
+        <li><b class="h">Skills</b> — prose recipes in <code>.claude/skills/</code> that Claude reads and performs: scaffold a game, make a game end-to-end, cut a trailer, rebuild this book.</li>
       </ul>
-      <p>Not a framework you learn. A rig you inherit.</p>
+      <p>The health of the engine is the <b class="h">ratio</b> between them, and which way it's moving.</p>
     </div>
     <div class="pageno">1</div>
   </div>
 </section>
 
-<!-- CH2 — the new-game button -->
+<!-- CH2 — the button (programmatic) -->
 <section class="page" style="background-image:url('img/art/ch2.jpg')">
   <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.8),rgba(6,10,22,.26) 46%,rgba(6,10,22,.82))"></div>
   <div class="wrap">
-    <div class="kicker">Chapter 2</div><h2>The button</h2>
+    <div class="kicker">Chapter 2 · a machine in its purest form</div><h2>The button</h2>
     <div class="card">
-      <p class="lead">One command, six steps, a new game on GitHub and on the board:</p>
-      <p style="margin:8px 0"><code>node scripts/new-game.mjs "My Game" --hero "a robot ninja" --verb "dash · slash"</code></p>
+      <p class="lead">The cleanest machine in the repo is the one that makes the next game. It used to be a checklist a human followed. Now it is one command:</p>
+      <p style="margin:8px 0"><code>node scripts/new-game.mjs "My Game" --local --hero "…" --verb "…"</code></p>
       <ul>
-        <li><b class="h">clone</b> the proven base — a complete, playable platformer</li>
-        <li><b class="h">rebrand</b> name, description, README; start a fresh build diary</li>
+        <li><b class="h">clone</b> the de-branded base from <code>engine/game-template/</code></li>
+        <li><b class="h">rebrand</b> package, README, a fresh <code>DIARY.md</code></li>
         <li><b class="h">write</b> <code>GAME_META.json</code> so the hub shows a rich card</li>
-        <li><b class="h">create</b> the GitHub repo and <b class="h">push</b> (fresh history)</li>
-        <li><b class="h">register</b> it with the hub — it appears on mission control at once</li>
+        <li><b class="h">create</b> the GitHub repo, <b class="h">push</b>, <b class="h">register</b> with the hub</li>
       </ul>
-      <h3>What the new game already has</h3>
-      <p>Platform (server · store · Gemini · Lyria) · the Phaser engine (scenes · materials · the level DSL · campaign merge) · the canvas level builder · the full evaluation suite (0-death gate · felt-fun · recorder · vision judge · game-diff) · the notes→diary→issues loop. You don't rebuild any of it — you <b class="h">re-skin the surface</b> (hero, verb, art, music, worlds) and design levels.</p>
+      <p>This is the lesson in miniature: a recipe that stopped changing got <b class="h">frozen into code</b>. Now it can't drift, runs in seconds, and is the same for game one and game eleven. The whole book is about doing this on purpose, everywhere it's safe.</p>
     </div>
     <div class="pageno">2</div>
   </div>
 </section>
 
-<!-- ARCHITECTURE SPREAD -->
-<section class="page diap" style="background-image:url('img/art/stack.jpg')">
-  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.62),rgba(6,10,22,.44) 45%,rgba(6,10,22,.74))"></div>
+<!-- CH3 — two kinds of capability -->
+<section class="page" style="background-image:url('img/art/dual.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.74),rgba(6,10,22,.3) 45%,rgba(6,10,22,.8))"></div>
   <div class="wrap">
-    <div class="kicker">The stack · field map</div>
-    <h2 style="margin-bottom:2px">What a new game stands on</h2>
-    <p style="font-size:9pt;color:#cfe0ff;margin:2px 0 0">Read it bottom-up: two inherited <b class="h">foundations</b> at the base, each tier built on the one beneath. A new game reuses the bottom whole and re-skins the top.</p>
-    <div class="diagram">
-      <div class="spine"><span class="ar">▲</span><span class="lab">builds on</span><span class="ar" style="opacity:.5">base</span></div>
-      <div class="layers">
-        <div class="layer pub"><div class="lname Lpub"><div class="lt">Publish &amp; ship</div><div class="ls">on the platform</div></div>
-          <div class="lboxes">
-            <div class="box"><b>YouTube playlists</b><span>record → upload</span></div>
-            <div class="box"><b>Railway deploy</b><span>push <code class="k">main</code> → live</span></div>
-          </div></div>
-        <div class="layer loop"><div class="lname Lloop"><div class="lt">Feedback loop</div><div class="ls">+ the hub</div></div>
-          <div class="lboxes">
-            <div class="box"><b>In-game notes</b><span>pause → pin → <code class="k">/api/notes</code></span></div>
-            <div class="box"><b>Notes → issues</b><span>GitHub on session start</span></div>
-            <div class="box"><b>Build diary</b><span><code class="k">DIARY.md</code> → <code class="k">/diary.html</code></span></div>
-          </div></div>
-        <div class="layer eval"><div class="lname Leval"><div class="lt">Evaluation</div><div class="ls">the AI playtester</div></div>
-          <div class="lboxes">
-            <div class="box"><b>0-death gate</b><span><code class="k">wincheck</code> — the ship bar</span></div>
-            <div class="box"><b>Felt-fun + recorder</b><span><code class="k">feel</code> · deterministic <code class="k">record</code></span></div>
-            <div class="box"><b>Vision judge · diff</b><span><code class="k">judge</code> · game-diff · feel-judge</span></div>
-          </div></div>
-        <div class="layer cont"><div class="lname Lcont"><div class="lt">Content &amp; authoring</div><div class="ls">worlds + assets</div></div>
-          <div class="lboxes">
-            <div class="box"><b>Art pipeline</b><span>model sheet → refs → chroma-key</span></div>
-            <div class="box"><b>Lyria music</b><span>a score per world</span></div>
-            <div class="box"><b>Level builder</b><span>paint on a grid · <code class="k">/build.html</code></span></div>
-          </div></div>
-        <div class="layer eng"><div class="lname Leng"><div class="lt">Engine (Phaser)</div><div class="ls">AI-first</div></div>
-          <div class="lboxes">
-            <div class="box"><b>Scenes + controls</b><span>Boot · Title · Play · UI</span></div>
-            <div class="box"><b>Materials / elements</b><span>look + footing + grounding</span></div>
-            <div class="box"><b>levelkit + merge</b><span>the DSL · campaign merge</span></div>
-          </div></div>
-        <div class="layer plat"><div class="lname Lplat"><div class="lt">Platform (shared rig)</div><div class="ls">always-on</div></div>
-          <div class="lboxes">
-            <div class="box"><b>server · store</b><span>Express · volume KV</span></div>
-            <div class="box"><b>gemini · Lyria</b><span>image · vision · text · music</span></div>
-            <div class="box"><b>Railway</b><span>click-to-deploy</span></div>
-          </div></div>
-        <div class="layer found"><div class="lname Lfound"><div class="lt">Foundations</div><div class="ls">inherited base</div></div>
-          <div class="lboxes">
-            <div class="box"><b>the-harness</b><span>the method: story levels · 0-death · felt-fun</span></div>
-            <div class="box"><b>the-platformer / the-rig</b><span>a working game + a deploy skeleton</span></div>
-          </div></div>
+    <div class="kicker">Chapter 3 · the lens</div><h2>Recipes and machines</h2>
+    <div class="card">
+      <p class="lead">Every capability in this system lives in one of two forms, and they behave very differently.</p>
+      <div class="split">
+        <div class="col skill">
+          <div class="ct">A skill</div><div class="cs">prose · run by Claude</div>
+          <ul>
+            <li>A recipe in <code>SKILL.md</code> the model reads and performs.</li>
+            <li><b>Flexible</b> — adapts to a new genre, a weird game, a fresh idea.</li>
+            <li><b>Re-judged every run</b> — so it can drift, vary, or mis-step.</li>
+            <li>Costs model time; quality tracks the model.</li>
+          </ul>
+        </div>
+        <div class="col prog">
+          <div class="ct">A machine</div><div class="cs">code · runs itself</div>
+          <ul>
+            <li>A tool/script/SDK function with a fixed contract.</li>
+            <li><b>Deterministic</b> — identical inputs, identical output, forever.</li>
+            <li><b>Testable & fast</b> — an eval can guard it; it runs in seconds.</li>
+            <li>Inherited verbatim by every game; no judgment spent.</li>
+          </ul>
+        </div>
       </div>
+      <p style="margin-top:9px">Skills are where a capability <b class="h">lives while it's still being figured out</b>. Machines are where it goes <b class="h">once the recipe stops surprising you</b>. The art is knowing which is which — and moving capabilities across the line as they mature.</p>
     </div>
     <div class="pageno">3</div>
   </div>
 </section>
 
-<!-- CH4 — the hub -->
-<section class="page" style="background-image:url('img/art/ch4.jpg')">
-  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.78),rgba(6,10,22,.26) 44%,rgba(6,10,22,.82))"></div>
+<!-- CH4 — the current split (the map) -->
+<section class="page" style="background-image:url('img/art/split.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.78),rgba(6,10,22,.4) 45%,rgba(6,10,22,.82))"></div>
   <div class="wrap">
-    <div class="kicker">Chapter 3</div><h2>Mission control</h2>
-    <div class="card">
-      <p class="lead">The one tier that's new here: a layer <i>above</i> all games. It doesn't run any game — it <b class="h">observes</b> them.</p>
-      <p>Because every game built on the engine exposes the same surface, the hub pulls them all into one board with a single shape:</p>
-      <ul>
-        <li><code>/api/notes</code> — live playtest feedback (open vs. closed)</li>
-        <li><code>/api/diary</code> — the build log, parsed into entries</li>
-        <li><code>/api/meta</code> — hero, verb, worlds, level count, art, music, diff scores</li>
-      </ul>
-      <h3>Pull-model, so nothing else has to change</h3>
-      <p>Existing games (the-platformer, Jazz) work unchanged. And a game that isn't deployed yet still shows up — the hub reads <code>DIARY.md</code> and <code>GAME_META.json</code> straight from its GitHub repo. The result: per-game cards, one aggregated <b class="h">notes-triage</b> feed, and the combined diary timeline — the state of <i>every</i> game at a glance.</p>
+    <div class="kicker">Chapter 4 · the inventory</div><h2>Where the line sits today</h2>
+    <div class="card tight">
+      <p style="font-size:9.6pt;margin:2px 0 0">A faithful map of the engine as it stands — every major capability sorted by its current form.</p>
+      <div class="split" style="margin-top:7px">
+        <div class="col prog">
+          <div class="ct">Machines today</div><div class="cs">programmatic · in code</div>
+          <ul>
+            <li><b>Studio SDK</b> — <code>engine/sdk/studio.js</code>: Materials, Textures, Toon rigs, Brawl, RNG, Juice, Audio, Cam, the harness.</li>
+            <li><b>The gate</b> — per-game <code>eval.mjs</code>: determinism + win + non-black, both renderers.</li>
+            <li><b>The fun model</b> — <code>Studio.Brawl.fun</code>: action/flow/arc/closeness/variety, scored.</li>
+            <li><b>Headless sim</b> — <code>Studio._headless</code>: ~70× faster seed-scans.</li>
+            <li><b>Scaffolder</b> — <code>new-game.mjs</code>. <b>Recorder/shorts</b> — <code>record · make-shorts · host-shorts · wire-shorts</code>. <b>Hub</b> — <code>server · aggregate · store</code>.</li>
+          </ul>
+        </div>
+        <div class="col skill">
+          <div class="ct">Skills today</div><div class="cs">recipes · run by Claude</div>
+          <ul>
+            <li><b>new-game</b> — drive the scaffolder, then finish the deploy.</li>
+            <li><b>make-game</b> — the whole concept→shipped arc, by hand, stage by stage.</li>
+            <li><b>trailer</b> — assemble a montage across games.</li>
+            <li><b>book</b> — author + rebuild this PDF.</li>
+            <li><i>and the judgment that can't be code:</i> the concept, art direction, what a level should feel like, whether it's fun.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:8px;font-size:9.5pt">The mechanics have largely crossed into code. What remains a skill is <b class="h">orchestration</b> (the make-game pipeline still runs stage-by-stage by hand) and <b class="h">creative judgment</b> (which should never be code).</p>
     </div>
     <div class="pageno">4</div>
   </div>
 </section>
 
-<!-- CH5 — the loop + closing -->
+<!-- CH5 — the migration, skills → code -->
+<section class="page" style="background-image:url('img/art/forge.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.76),rgba(6,10,22,.32) 45%,rgba(6,10,22,.82))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 5 · the direction of travel</div><h2>Forging skills into machines</h2>
+    <div class="card tight">
+      <p class="lead" style="font-size:10.8pt">The engine matures by one repeated move: when a step in a skill stops needing judgment, harden it into a tool. Things that have already crossed:</p>
+      <div class="mig">
+        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“follow the scaffold checklist”</div><div class="arr">→</div><div class="now"><code>new-game.mjs</code> &nbsp;<span class="ribbon p">machine</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“record each level, mux music, upload”</div><div class="arr">→</div><div class="now"><code>record · make-shorts · host-shorts</code> &nbsp;<span class="ribbon p">machine</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“judge if it's fun”</div><div class="arr">→</div><div class="now"><code>Studio.Brawl.fun</code> (scored) &nbsp;<span class="ribbon p">machine</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“scan seeds for a good match”</div><div class="arr">→</div><div class="now"><code>?r=headless</code> + scan loop &nbsp;<span class="ribbon p">machine</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“deep-link a level per game”</div><div class="arr">→</div><div class="now"><code>?level=N</code> in the template &nbsp;<span class="ribbon p">machine</span></div></div>
+      </div>
+      <h3 style="margin-top:9px">What should cross next</h3>
+      <ul>
+        <li><b class="h">The make-game orchestration</b> → a <code>ship-game.mjs</code> that runs the deterministic stages (scaffold · gate · deploy · record · host · hub-wire) as one pipeline; the skill keeps only the creative top.</li>
+        <li><b class="h">Art &amp; music passes</b> → engine-level tools the scaffolder installs (a per-game brief in, assets out) instead of re-written per game.</li>
+        <li><b class="h">Diary · screenshots · registration</b> → a <code>publish.mjs</code> that captures stills, writes the scorecard, and registers the hub card.</li>
+      </ul>
+    </div>
+    <div class="pageno">5</div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE SPREAD -->
+<section class="page diap" style="background-image:url('img/art/stack.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.66),rgba(6,10,22,.46) 45%,rgba(6,10,22,.78))"></div>
+  <div class="wrap">
+    <div class="kicker">Reference · the stack</div>
+    <h2 style="margin-bottom:2px">What a new game stands on</h2>
+    <p style="font-size:9pt;color:#cfe0ff;margin:2px 0 6px">Bottom-up. The lower tiers are almost entirely <b style="color:#5fd6c0">machine</b>; the higher you go, the more <b style="color:#ffb14d">skill</b> (judgment) is mixed in.</p>
+    <div class="card">
+      <h3 style="margin-top:2px">Publish &amp; ship <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
+      <p style="font-size:9.3pt;margin:3px 0">Deterministic recorder → vertical shorts → GitHub-hosted, hub-proxied feed; Railway deploy on push. YouTube optional.</p>
+      <h3>Feedback loop <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
+      <p style="font-size:9.3pt;margin:3px 0">In-game note → <code>/api/notes</code> → GitHub issue on session start → fix → <code>DIARY.md</code> → the hub.</p>
+      <h3>Evaluation — the AI playtester <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
+      <p style="font-size:9.3pt;margin:3px 0">The win+fun gate, deterministic on both renderers; headless seed-scan bakes the highest-fun match into level data.</p>
+      <h3>Content &amp; authoring <span style="color:#ffb14d;font-size:8pt">· skill + machine</span></h3>
+      <p style="font-size:9.3pt;margin:3px 0">Gemini art &amp; Lyria music (judgment-led, tool-run); the level builder &amp; <code>?level=N</code> contract.</p>
+      <h3>Engine — Studio SDK on Phaser 4 <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
+      <p style="font-size:9.3pt;margin:3px 0">Toon rigs, archetypes (Brawl…), Materials, Juice, the deterministic stepper + observability harness.</p>
+      <h3>Platform · Foundations <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
+      <p style="font-size:9.3pt;margin:3px 0">Express · volume KV store · <code>gemini.js</code> · Lyria · Railway — and the-harness method beneath it all.</p>
+    </div>
+    <div class="pageno">6</div>
+  </div>
+</section>
+
+<!-- CH7 — the hub -->
+<section class="page" style="background-image:url('img/art/ch4.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.78),rgba(6,10,22,.26) 44%,rgba(6,10,22,.82))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 6 · the machine above the games</div><h2>Mission control</h2>
+    <div class="card">
+      <p class="lead">One tier sits above every game and runs none of them — it <b class="h">observes</b>. Because each game exposes the same surface, the hub pulls them all onto one board.</p>
+      <ul>
+        <li><code>/api/meta</code> — hero, verb, worlds, level count, scorecard, videos, shorts</li>
+        <li><code>/api/diary</code> — the build log, parsed into entries</li>
+        <li><code>/api/notes</code> — live playtest feedback, open vs. closed</li>
+      </ul>
+      <h3>A storefront, not a spreadsheet</h3>
+      <p>The board is now visual: a gameplay-cover card per game with one coherent button system, a deep-detail modal, and a vertical <b class="h">shorts feed</b> — 23 highlight reels streamed same-origin through the hub's video proxy so private-repo assets play everywhere. Pull-model throughout: a game that isn't deployed still shows up from its GitHub repo.</p>
+    </div>
+    <div class="pageno">7</div>
+  </div>
+</section>
+
+<!-- CH8 — the loop + closing thought -->
 <section class="page" style="background-image:url('img/art/ch5.jpg')">
   <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.8),rgba(6,10,22,.28) 46%,rgba(6,10,22,.82))"></div>
   <div class="wrap">
-    <div class="kicker">Chapter 4</div><h2>From "I felt something" to "it's fixed"</h2>
+    <div class="kicker">Chapter 7 · why the split matters</div><h2>From "I felt something" to "it's fixed"</h2>
     <div class="card">
-      <p class="lead">The engine closes the loop that usually breaks: the gap between a vague feeling while playing and an actual change in the code.</p>
+      <p class="lead">The reason to push mechanics into machines is to free the skill — Claude's judgment — for the part only it can do: feeling whether a game is good and changing it until it is.</p>
       <ul>
-        <li><b class="h">Feel it</b> — pause in-game, pin the exact spot, leave a note.</li>
-        <li><b class="h">File it</b> — on session start, each note becomes a GitHub issue.</li>
-        <li><b class="h">Fix it</b> — work the issues; the 0-death gate guards every change.</li>
-        <li><b class="h">Record it</b> — the why goes in the build diary; the hub shows it.</li>
+        <li><b class="h">Feel it</b> — pause in-game, pin the spot, leave a note.</li>
+        <li><b class="h">File it</b> — each note becomes a GitHub issue on session start.</li>
+        <li><b class="h">Fix it</b> — work the issues; the gate guards every change.</li>
+        <li><b class="h">Record it</b> — the why goes in the diary; the hub shows it.</li>
       </ul>
-      <p>One person can run all of it because the robot QA team — the gate, the felt-fun model, the vision judge — does the playtesting that used to take a room of people.</p>
-      <h3>The fast-follow</h3>
-      <p>Today the scaffolder's base is <code>the-platformer</code>. Next, a de-branded copy of the engine lifts into this repo, so game-engine owns the base outright and a new game depends on nothing else.</p>
+      <p>The owner gives a concept; the machines do the deterministic labour; the skill spends its judgment on art, feel, and fun. Every capability moved into code is one less thing to re-decide — and one more thing that can't break twice.</p>
     </div>
-    <div class="pageno">5</div>
+    <div class="pageno">8</div>
   </div>
 </section>
 
@@ -219,8 +267,8 @@
     <div class="foot" style="margin-top:auto">
       <div class="card" style="text-align:center">
         <div class="kicker" style="color:#9fd6ff">Game Engine</div>
-        <p class="lead" style="margin-top:6px">A constellation of games, one hub, one button.</p>
-        <p style="font-size:9.4pt;color:#cfe0ff">Built with Claude Code on the Railway rig. The method is <b class="h">the-harness</b>; the first games are <b class="h">the-platformer</b> and <b class="h">Jazz</b>; this is the rig that makes the next one cheap.</p>
+        <p class="lead" style="margin-top:6px">Skills decide. Machines do. The line keeps moving down.</p>
+        <p style="font-size:9.3pt;color:#cfe0ff">Eleven games, one hub, one button. Built with Claude Code on the Railway rig — the method is <b class="h">the-harness</b>; the discipline is to harden every recipe that stops surprising you, and spend the saved judgment on the next good game.</p>
       </div>
     </div>
   </div>

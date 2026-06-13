@@ -23,6 +23,10 @@ const JOBS = [
   // DARK backdrop for the architecture / tier-stack spread. Mostly empty navy so
   // the overlaid HTML diagram stays legible.
   ['stack', '2:3', 'A very DARK, calm engineering blueprint backdrop: deep navy-black field with faint glowing cyan grid lines and a subtle sense of horizontal layered strata/tiers stacked and receding into shadow, like a cross-section of a technology stack. Lots of empty dark space, soft vignette, the whole CENTER almost pure dark navy. Minimal, abstract, no characters, no objects, NO text.'],
+  // skills-vs-machines edition plates
+  ['dual', '2:3', 'A symmetrical diptych split down the middle. LEFT half: a glowing translucent scroll / recipe-blueprint of light being read, warm amber-gold light, soft and hand-drawn, a little improvisational — a "skill". RIGHT half: a precise glowing clockwork engine of teal-cyan light, gears and pistons interlocked, exact and self-running — a "machine". A faint seam of light down the center where they meet. Deep navy background. Keep a calm dark band across the top for a title. No text.'],
+  ['split', '2:3', 'A vast dark control-room wall organised into two glowing vertical columns of labelled module-cards floating in space: the left column tinted warm amber (loose, recipe-like), the right column tinted teal-cyan (crisp, machine-like), a soft luminous divider between them. Cross-section of a system inventory sorted into two kinds. Mostly dark navy, lots of calm empty space, soft vignette, calm dark area at top for a title. Abstract, no readable text.'],
+  ['forge', '2:3', 'A glowing forge in a dark workshop: a paper-thin sheet of amber-gold light (a recipe) being pressed and hammered on an anvil of cyan light, transforming into a solid precise glowing teal machine-part / gear that cools and settles onto a rack of finished parts. Sparks of light. The act of hardening a recipe into a machine. Deep navy, dramatic light, keep a calm dark band at the top for a title. No text, no readable words.'],
 ];
 
 const want = process.argv[2];
