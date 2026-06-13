@@ -75,25 +75,37 @@
     secs = [...feed.querySelectorAll('.snap')];
     document.getElementById('count').textContent = `1 / ${items.length}`;
 
-    const AHEAD = 3;          // buffer this many shorts ahead so the next ones play instantly
+    // iOS ignores <video preload> AND caps how many elements can hold a decoder at
+    // once, so a big preload window doesn't buffer ahead — it just starves later
+    // shorts of a decoder (stuck on "loading…" until tapped). Keep a TIGHT window.
+    const AHEAD = 2;          // keep cur-1 .. cur+2 loaded (4 elements); unload the rest
+    function clearLoading(i){ const p=pl(i); if (p) p.classList.remove('loading'); }
     function load(i){ const v=vid(i); if(v && !v.src && v.dataset.src){ v.preload='auto'; v.src = proxy(v.dataset.src);
-      v.addEventListener('loadeddata', ()=>pl(i).classList.remove('loading'), {once:true});
-      v.addEventListener('error', ()=>{ pl(i).classList.remove('loading'); }, {once:true}); } }
+      // clear the spinner on ANY ready/began signal (iOS is stingy about 'loadeddata');
+      // 'error' clears it too so a short never hangs on the loading frame forever.
+      ['loadedmetadata','loadeddata','canplay','playing','error'].forEach(ev=>v.addEventListener(ev, ()=>clearLoading(i), {once:true})); } }
     function unload(i){ const v=vid(i); if(v && v.src){ v.removeAttribute('src'); v.load(); pl(i).classList.add('loading'); } }
+    let playGen = 0;          // bumped on each play/pause so stale retries cancel themselves
     function play(i){ const v=vid(i); if(!v) return; load(i);
-      v.muted = !audioOn;
-      const p = v.play();
-      if (p && p.catch) p.catch(()=>{
-        // Two distinct failure modes — never silently mute a short the user wants sound on:
-        //  • pre-gesture: autoplay-WITH-sound is blocked → fall back to muted autoplay.
-        //  • post-gesture (audioOn): sound is already permitted, so a reject here is just
-        //    buffering/interrupt — keep sound ON and retry once the element can play.
-        if (audioOn) { v.muted = false; v.addEventListener('canplay', ()=>{ if (cur===i) v.play().catch(()=>{}); }, {once:true}); }
-        else { v.muted = true; v.play().catch(()=>{}); }
-      });
+      const gen = ++playGen; let tries = 0;
+      // Always get the VIDEO rolling so it never hangs on the loading frame. Try WITH
+      // sound first (if enabled); if iOS rejects unmuted autoplay — its transient
+      // activation expires a few seconds after the last tap — fall back to MUTED play,
+      // which is always allowed. The short still plays; a tap then lifts the mute.
+      const attempt = (forceMuted)=>{
+        if (cur !== i || gen !== playGen) return;          // scrolled away or superseded by a newer play/pause
+        v.muted = forceMuted || !audioOn;
+        const p = v.play();
+        if (p && p.catch) p.catch(()=>{
+          if (cur !== i || gen !== playGen) return;
+          if (!v.muted) { attempt(true); return; }                 // unmuted blocked → play muted (no stuck frame)
+          if (++tries <= 12) setTimeout(()=>attempt(true), 300);   // even muted failed (buffering) → retry
+        });
+      };
+      attempt(false);
       pl(i).classList.remove('paused');
     }
-    function pause(i){ const v=vid(i); if(v){ v.pause(); pl(i).classList.add('paused'); } }
+    function pause(i){ playGen++; const v=vid(i); if(v){ v.pause(); pl(i).classList.add('paused'); } }
     // single source of truth for audio. Browsers block autoplay-WITH-sound until a
     // gesture, so we start muted and flip ON at the first interaction. Turning sound
     // on (re)plays the CURRENT short with audio through the robust play() path.
@@ -110,18 +122,21 @@
     secs.forEach((sec,i)=>{ pl(i).addEventListener('click', ()=>{
       if (!audioOn) { armAudio(); return; }
       if (Date.now() - armedAt < 500) return;   // the click that just enabled sound → don't pause
-      const v=vid(i); if(v && v.paused){ play(i); } else { pause(i); }
+      const v=vid(i); if(!v) return;
+      if (v.paused) { play(i); }                // resume
+      else if (v.muted) { v.muted = false; }    // playing but muted (iOS blocked auto-unmute) → this tap lifts it
+      else { pause(i); }                        // playing with sound → pause
     }); });
     // play the most-visible short, pause others, preload neighbours
     const io = new IntersectionObserver(ents=>{
       ents.forEach(e=>{ const i=+e.target.dataset.i;
         if (e.isIntersecting && e.intersectionRatio>0.6){
           cur=i; document.getElementById('count').textContent = `${i+1} / ${items.length}`;
-          // preload a window [i-1 .. i+AHEAD] so scrolling forward plays instantly;
-          // unload everything outside [i-2 .. i+AHEAD+1] to cap memory on mobile.
+          // Free decoders FIRST (unload outside the tight keep-window) so the current
+          // short can always claim one on iOS, THEN (re)load the window and play.
+          secs.forEach((_,j)=>{ if (j < i-1 || j > i+AHEAD) unload(j); else if (j !== i) pause(j); });
           for (let k=-1; k<=AHEAD; k++) load(i+k);
           play(i);
-          secs.forEach((_,j)=>{ if(j!==i) pause(j); if(j < i-2 || j > i+AHEAD+1) unload(j); });
         }
       });
     }, { threshold:[0,0.6,1] });
