@@ -30,18 +30,18 @@ const ACCENT = { 'the-platformer': '#7CFC00', jazz: '#7cc6ff', deepfin: '#ff8fc8
 
 // per-game plan: which levels, and the music track for a given level (relative path on the deploy)
 const PLAN = {
-  'the-platformer': { mode: 'levels', levels: [1, 4, 7], music: () => null },
-  jazz:            { mode: 'levels', levels: [1, 5, 9], music: () => 'assets/music/title.mp3' },
+  'the-platformer': { mode: 'levels', levels: [1, 3, 5], music: () => null },
+  jazz:            { mode: 'levels', levels: [1, 3, 5], music: () => 'assets/music/title.mp3' },
   deepfin:         { mode: 'levels', levels: [1, 3, 5], music: () => 'assets/music/title.mp3' },
   starsweeper:     { mode: 'levels', levels: [1, 3, 5], music: () => 'assets/music/title.mp3' },
-  // studio RTS/builder/shooter games don't switch levels via ?level on their
-  // live build → one distinct short each (no repeats) until they're redeployed
-  // with the engine ?level contract. Ember chains depths, so it keeps 3 (windows).
-  'nimbus-climb':  { mode: 'single', music: () => 'assets/music/level-1.mp3' },
+  // ember + nimbus now honor ?level=N (patched SDK, redeployed) → 3 levels each.
+  // the remaining studio games (shooter/RTS/builder boots) still need the same
+  // patch in their archetype boot → one distinct short each until then.
+  'nimbus-climb':  { mode: 'levels', levels: [1, 3, 5], music: (l) => `assets/music/level-${l}.mp3` },
   roadwar:         { mode: 'single', music: () => 'assets/music/ground-1.mp3' },
   'roadwar-iso':   { mode: 'single', music: () => 'assets/music/ground-1.mp3' },
   grovekeep:       { mode: 'single', music: () => 'assets/music/glade-1.mp3' },
-  'ember-depths':  { mode: 'single', music: () => 'assets/music/cave.mp3' },
+  'ember-depths':  { mode: 'levels', levels: [1, 3, 5], music: () => 'assets/music/cave.mp3' },
   starlance:       { mode: 'single', music: () => 'assets/music/drive.mp3' },
 };
 
