@@ -446,5 +446,53 @@
         "videos": "done"
       }
     }
+  },
+  {
+    "id": "biome-bash",
+    "name": "Biome Bash",
+    "repo": "agadabanka/biome-bash",
+    "url": "https://biome-bash-production.up.railway.app",
+    "tagline": "Five toony fighters, five wild biomes — last toon standing.",
+    "hero": "a roster of five toony brawlers (pick one; AI runs the rest)",
+    "verb": "brawl · launch · KO",
+    "meta": {
+      "hero": "Puff, Mango, Cinder, Glacia, Volt — one toony fighter per biome",
+      "verb": "brawl · launch · KO",
+      "worlds": ["Cumulus Courtyard (Clouds)", "Canopy Clash (Jungle)", "Caldera Rim (Volcano)", "Glacier Shelf (Glacier)", "Neon Rooftops (Neon City)"],
+      "levelCount": 5,
+      "controls": "←→ move · ↑/SPACE jump (multi) · Z attack · X heavy · C special · V shield",
+      "art": "Gemini biome backdrops + keyart; characters are procedural Studio.Toon rigs (17 animation states)",
+      "music": "Lyria — a composed loop per biome + title",
+      "engine": "game-engine (studio/phaser-4)",
+      "archetype": "brawler",
+      "designLens": "the 6th genre; Studio.Brawl + fun-gate (WIN + felt-FUN>=70, comebacks beat sweeps); sim-only headless mode (~70x faster scan)",
+      "scorecard": {
+        "date": "2026-06-13",
+        "verdict": "10/10 PASS (5 arenas x webgl+canvas)",
+        "gate": "Brawl fun-gate — det + WIN + FUN>=70",
+        "campaignFun": 95.5,
+        "everyWinAComeback": true
+      },
+      "videos": {
+        "biome-bash-level-1-cumulus-courtyard": "https://youtu.be/2ucrDdId2A8",
+        "biome-bash-level-2-canopy-clash": "https://youtu.be/FtH1WD8GfsU",
+        "biome-bash-level-3-caldera-rim": "https://youtu.be/4zOxin986fo",
+        "biome-bash-level-4-glacier-shelf": "https://youtu.be/t5fkqv8BALU",
+        "biome-bash-level-5-neon-rooftops": "https://youtu.be/GvqKb5F_aN0",
+        "biome-bash-montage": "https://youtu.be/00oN2f5-sgI"
+      },
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "hero": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done",
+        "videos": "done"
+      }
+    }
   }
 ]
