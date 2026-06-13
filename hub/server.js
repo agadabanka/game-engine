@@ -10,6 +10,7 @@ import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { Readable } from 'node:stream';
 import * as store from './lib/store.js';
 import { snapshotAll } from './lib/aggregate.js';
 
@@ -137,6 +138,28 @@ app.post('/api/refresh', async (_req, res) => {
 });
 
 app.get('/api/games', async (_req, res) => res.json({ games: await getGames() }));
+
+// ── short-video proxy ──
+// GitHub Release / jsDelivr / raw URLs play inconsistently in cross-origin
+// <video> (attachment disposition + signed redirects → MEDIA_ERR 4 / black).
+// Proxy them SAME-ORIGIN here with proper video/mp4 + byte-range forwarding so
+// the shorts feed plays + seeks reliably everywhere.
+const VIDEO_HOSTS = /^https:\/\/(github\.com|objects\.githubusercontent\.com|release-assets\.githubusercontent\.com|raw\.githubusercontent\.com|media\.githubusercontent\.com|cdn\.jsdelivr\.net)\//;
+app.get('/v', async (req, res) => {
+  const src = String(req.query.src || '');
+  if (!VIDEO_HOSTS.test(src)) return res.status(400).end('bad src');
+  try {
+    const range = req.headers.range;
+    const upstream = await fetch(src, { headers: range ? { Range: range } : {}, redirect: 'follow' });
+    if (!upstream.ok && upstream.status !== 206) return res.status(upstream.status).end();
+    res.status(upstream.status);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=604800');
+    for (const h of ['content-range', 'content-length']) { const v = upstream.headers.get(h); if (v) res.setHeader(h, v); }
+    if (upstream.body) Readable.fromWeb(upstream.body).pipe(res); else res.end();
+  } catch (e) { console.error('video proxy', e); res.status(502).end('proxy error'); }
+});
 
 // register / update a game (used by the new-game scaffolder + the dashboard "add" form)
 app.post('/api/games', async (req, res) => {
