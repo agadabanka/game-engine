@@ -83,4 +83,7 @@ session and end with links.
   textures (`BAKE_CARD` pattern). `Studio.Toon.bake` is idempotent — never
   re-bake textures live rigs are using.
 - Snapshot contract keys for eval: x,y,vx,vy,frame,deaths,won,coins (+extras).
+- `?level=N` is the engine's uniform level-jump contract (1-based; 100+N also
+  accepted) — every game must honor it (the template does) so levels can be
+  deep-linked and recorded distinctly. Don't gate it behind a clickable menu only.
 - `?level=N` boots straight into gameplay for eval/recording; menus otherwise.

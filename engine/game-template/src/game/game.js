@@ -43,7 +43,12 @@
     key: 'Play',
     create: function () {
       scene = this;
-      var spec = window.LEVELS[0];
+      // ?level=N jumps straight to level N (1-based) — the engine's uniform
+      // level-jump contract, so any game can be deep-linked/recorded per level.
+      // (100+N is also accepted, the showcase-recorder convention.)
+      var _lv = parseInt(new URLSearchParams(location.search).get('level') || '1', 10) || 1;
+      if (_lv > 100) _lv -= 100;
+      var spec = window.LEVELS[Math.max(0, Math.min(window.LEVELS.length - 1, _lv - 1))];
       this.cameras.main.setBackgroundColor(spec.sky || 0x1d2b53);
       Studio.Backdrop(this, { top: 0x2a3a64, bottom: 0x0b1021, worldWidth: spec.width, layers: [{ color: 0x16203a, scroll: 0.25, amp: 90, y: spec.groundY - 30 }, { color: 0x222f4e, scroll: 0.5, amp: 55, y: spec.groundY }] });
       Studio.Textures.kit(this, { tile: T });
