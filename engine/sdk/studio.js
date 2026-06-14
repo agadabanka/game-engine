@@ -845,6 +845,35 @@
       if (world && world.crumble) world._crumbleCol = scene.physics.add.collider(player, world.crumble);
       return world && world._crumbleCol;
     },
+    // VISUAL telegraphs for the otherwise-invisible zone mechanics (crumble + one-way are already
+    // platforms). Baked textures only (no persistent Shapes/Graphics → Phaser-4-safe); call once in
+    // create() after install. Cosmetic — no bodies, so feel/determinism are untouched; headless skips.
+    decorate: function (scene, world) {
+      if (Studio._headless || !world) return;
+      var gy = world.groundY || 470;
+      if (!scene.textures.exists('mech_belt')) Studio.Textures.bake(scene, 'mech_belt', 48, 14, function (g) {
+        g.fillStyle(0x241b30, 1).fillRect(0, 0, 48, 14); g.fillStyle(0x3a2e4d, 1).fillRect(0, 11, 48, 3);
+        g.fillStyle(0xffe08a, 0.95); for (var i = 0; i < 2; i++) { var x = 8 + i * 22; g.fillTriangle(x, 3, x + 10, 7, x, 11); }
+      });
+      if (!scene.textures.exists('mech_dash')) Studio.Textures.bake(scene, 'mech_dash', 44, 20, function (g) {
+        g.fillStyle(0x06d6a0, 1).fillRoundedRect(0, 10, 44, 10, 4); g.fillStyle(0x1d1d28, 0.7).fillRect(0, 18, 44, 2);
+        g.fillStyle(0xffffff, 0.95); for (var i = 0; i < 2; i++) { var x = 9 + i * 15; g.fillTriangle(x, 1, x + 13, 8, x, 15); }
+      });
+      if (!scene.textures.exists('mech_field')) Studio.Textures.bake(scene, 'mech_field', 16, 16, function (g) { g.fillStyle(0xffffff, 1).fillRoundedRect(0, 0, 16, 16, 5); });
+      (world.conveyor || []).forEach(function (z) {
+        var w = z.x1 - z.x0, img = scene.add.tileSprite((z.x0 + z.x1) / 2, gy + 7, w, 14, 'mech_belt').setDepth(2);
+        if ((z.dir || 1) < 0) img.setFlipX(true);
+      });
+      (world.dashpad || []).forEach(function (d) {
+        var img = scene.add.image(d.x, gy - 1, 'mech_dash').setOrigin(0.5, 1).setDepth(2);
+        if ((d.dir || 1) < 0) img.setFlipX(true);
+      });
+      (world.fields || []).forEach(function (f) {
+        var tint = f.type === 'updraft' ? 0x9be7ff : 0xd7b3ff;
+        scene.add.image(f.x + f.w / 2, f.y + f.h / 2, 'mech_field').setDisplaySize(f.w, f.h).setTint(tint).setAlpha(0.16).setDepth(1);
+        for (var k = 0; k < 3; k++) scene.add.image(f.x + f.w * (0.3 + k * 0.2), f.y + f.h * (0.7 - k * 0.18), 'mech_field').setDisplaySize(7, 7).setTint(tint).setAlpha(0.5).setDepth(1);
+      });
+    },
     reset: function (world) {
       if (!world || !world.crumble) return;
       world.crumble.getChildren().forEach(function (c) {

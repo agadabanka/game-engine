@@ -61,6 +61,7 @@
       player = this.physics.add.sprite(spawn.x, spawn.y, 'hero');
       this.physics.add.collider(player, world.platforms);
       Studio.Mechanics.install(this, player, world);   // crumble collider + mechanic state (#30)
+      Studio.Mechanics.decorate(this, world);          // visual telegraphs for belt/dash/field zones
       this.physics.add.overlap(player, world.coins, function (p, c) {
         c.disableBody(true, true); coins++; Studio.Audio.sfx('coin');
         Studio.Juice.burst(scene, c.x, c.y, { n: 8, tint: 0xffd700, life: 380 }); hud();
