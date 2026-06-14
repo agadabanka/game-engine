@@ -376,6 +376,20 @@
     return image;
   };
 
+  // Keep a FIT-scaled game correctly sized on mobile. Real phones report the WRONG viewport
+  // size for a beat after load/rotate (address bar, 100dvh, safe-area insets) — Phaser fits to
+  // that stale size and the canvas ends up stretched (every circle an ellipse) until you rotate.
+  // Re-fit on resize / orientationchange / visualViewport + a few delayed refreshes after boot.
+  Studio.responsive = function (game) {
+    if (!game || !game.scale || typeof window === 'undefined') return game;
+    var refresh = function () { try { game.scale.refresh(); } catch (e) {} };
+    window.addEventListener('resize', refresh);
+    window.addEventListener('orientationchange', function () { setTimeout(refresh, 60); setTimeout(refresh, 350); });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', refresh);
+    [60, 250, 600, 1200].forEach(function (t) { setTimeout(refresh, t); });
+    return game;
+  };
+
   // ------------------------------------------------------------- Touch controls
   // ONE on-screen control overlay (analog joystick OR d-pad + action buttons) that drives a
   // shared input state AND reflects the driver's intent (so a recording's buttons match play).
@@ -424,7 +438,11 @@
         }
       }
       function teardown() { objs.forEach(function (o) { try { o.destroy(); } catch (e) {} }); objs = []; if (joy && joy._down) { scene.input.off('pointerdown', joy._down); scene.input.off('pointermove', joy._move); scene.input.off('pointerup', joy._up); } joy = null; viz = {}; }
-      function layout() { teardown(); build(); }
+      // Only rebuild on a REAL game-size change. Under Scale.FIT the game size is constant (960×540
+      // regardless of viewport), so a FIT re-fit / refresh must NOT tear down + rebuild the controls
+      // — that would drop an in-progress drag (the bug that made the touch gate flaky).
+      var lastW = scene.scale.width, lastH = scene.scale.height;
+      function layout() { var W = scene.scale.width, H = scene.scale.height; if (W === lastW && H === lastH) return; lastW = W; lastH = H; teardown(); build(); }
       build();
       scene.scale.on('resize', layout);
       return {

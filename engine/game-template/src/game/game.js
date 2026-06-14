@@ -132,4 +132,5 @@
   var r = new URLSearchParams(location.search).get('r');
   if (r === 'canvas') config.type = Phaser.CANVAS; else if (r === 'webgl') config.type = Phaser.WEBGL;
   window.game = new Phaser.Game(config);
+  Studio.responsive(window.game);   // re-fit after the mobile viewport settles (no stretched canvas)
 })();
