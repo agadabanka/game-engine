@@ -16,7 +16,7 @@
     "trailer": "node tools/trailer/make-trailer.mjs",
     "sync-sdk": "node scripts/sync-sdk.mjs",
     "eval:all": "node tools/eval-all.mjs",
-    "test": "node --test tools/lib/",
+    "test": "node --test tools/lib/*.test.mjs",
     "visual-qa": "node tools/visual-qa.mjs",
     "make-game": "node scripts/make-game.mjs"
   },

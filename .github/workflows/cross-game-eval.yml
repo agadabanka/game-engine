@@ -34,8 +34,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: SDK vendor copies in sync
         run: node scripts/sync-sdk.mjs --check
-      - name: Unit tests (build-event keystone)
-        run: node --test tools/lib/
+      - name: Unit tests (keystone · level-kit · gencache)
+        run: node --test tools/lib/*.test.mjs
       - name: Cross-game eval — golden set vs engine HEAD
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}

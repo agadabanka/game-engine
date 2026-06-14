@@ -27,14 +27,19 @@ The single foundation under 7.1's status checkmarks and 7.2's generated diary.
 - [x] Emits build events → live checkmarks, build board, and an augmented DIARY build-log.
       `--dry-run` demos the whole orchestration (incl. a gate auto-retry). Verified 11/11.
 
-## 7.2 — Skill → programmatic migration (prose → tested tools)
-- [ ] **Diary as generated artifact** — emit a build-log section from events; PRESERVE
-      the human narrative (augment, don't replace). *(decision pending owner — see note)*
-- [ ] **Art/music as cached tools** — hash prompt/params; skip regen when cached.
-- [ ] **Level-kit module** — reusable level-design heuristics (archetype scaffolds,
-      balance checks, FUN seed-scan) on top of the existing `Studio.Level` DSL.
-- [ ] **Stage-runner as code** — = 7.1.
-- [ ] Observability/logging surfaced in console + diary (= keystone).
+## 7.2 — Skill → programmatic migration (prose → tested tools)  ← DONE
+- [x] **Diary as generated artifact** — the stage-runner upserts a generated
+      `### Build log` section into DIARY.md (checks + timings) and PRESERVES the
+      narrative (augment, per owner's choice). Delivered in 7.1.
+- [x] **Art/music as cached tools** — `tools/lib/gencache.mjs`: content-addressed
+      `cached(kind, params, ext, gen)` so identical prompts never re-bill. Tested
+      (miss→store, hit→reuse, key-order independent). Per-game art/music tools wrap it.
+- [x] **Level-kit module** — `tools/lib/levelkit.mjs`: turns the "geometry rules that
+      keep the 0-death gate green" (was prose in level comments) into a tested `lintLevel`
+      (gap reachability, wall height + clearance, spawn/goal/enemy footing) + a
+      lint-clean `scaffoldLevel`. 9 tests incl. the shipped Green Run lints clean.
+- [x] **Stage-runner as code** — = 7.1.
+- [x] Observability/logging surfaced in console + diary (= keystone).
 
 ## 7.4 — Quality at scale (safety net BEFORE flooring throughput)  ← IN PROGRESS
 - [x] **SDK sync script + check** `scripts/sync-sdk.mjs` — propagate `engine/sdk/studio.js`
