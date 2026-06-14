@@ -412,6 +412,7 @@
           var scene = this, W = scene.scale.width, H = scene.scale.height, S = window.SHELL || {};
           var p = new URLSearchParams(location.search);
           if (p.get('level')) { scene.scene.start('Play'); return; }   // deep-link / eval → straight to Play
+          if (Studio.uistate) Studio.uistate.set(scene.game, 'menu');
           var accent = S.accent != null ? S.accent : 0xffd34d;
           var accCss = '#' + ('000000' + accent.toString(16)).slice(-6);
           if (scene.textures.exists('shell_title')) { var bg = scene.add.image(W / 2, H / 2, 'shell_title'); var src = bg.texture.getSourceImage(); bg.setScale(Math.max(W / src.width, H / src.height)); }
@@ -427,7 +428,7 @@
           scene._cards = [];
           var tag = scene.add.text(W / 2, cy + ch / 2 + 24, '', { fontFamily: 'Arial', fontSize: '15px', color: accCss }).setOrigin(0.5);
           function sel(i) { scene._sel = i; scene._cards.forEach(function (c, j) { var on = j === i; c.border.setStrokeStyle(4, accent, on ? 1 : 0); c.card.setScale(on ? 1.08 : 1); c.card.setDepth(on ? 5 : 0); c.name.setColor(on ? accCss : '#ffffff'); }); tag.setText(worlds[i] && worlds[i].tag ? '▸ ' + worlds[i].tag : (worlds[i] ? worlds[i].name : '')); }
-          function start() { if (scene._starting) return; scene._starting = true; window.__startLevel = scene._sel + 1; scene.cameras.main.fadeOut(220, 0, 0, 0); scene.time.delayedCall(240, function () { scene.scene.start('Play'); }); }
+          function start() { if (scene._starting) return; scene._starting = true; window.__startLevel = scene._sel + 1; if (Studio.uistate) Studio.uistate.set(scene.game, 'play'); scene.cameras.main.fadeOut(220, 0, 0, 0); scene.time.delayedCall(240, function () { scene.scene.start('Play'); }); }
           worlds.forEach(function (w, i) {
             var x = x0 + i * (cw + gap), card = scene.add.container(x, cy);
             var thumb = scene.textures.exists('shell_thumb' + i) ? scene.add.image(0, 0, 'shell_thumb' + i).setDisplaySize(cw, ch) : scene.add.rectangle(0, 0, cw, ch, w.color != null ? w.color : 0x2a2440);
@@ -456,6 +457,95 @@
         }
       };
     }
+  };
+
+  // ── Shell UI: intro cards · HUD · pause · win/lose overlays (attach to the Play scene) ──
+  var _accCss = function (a) { return '#' + ('000000' + (a >>> 0).toString(16)).slice(-6); };
+  // non-blocking per-level intro card: "WORLD N · NAME" + a story beat; fades in / holds / out.
+  Studio.Shell.intro = function (scene, opt) {
+    opt = opt || {}; var W = scene.scale.width, acc = opt.accent != null ? opt.accent : 0xffd34d;
+    var c = scene.add.container(W / 2, 92).setDepth(120).setScrollFactor(0).setAlpha(0);
+    var pw = Math.min(640, W - 40);
+    var panel = scene.add.rectangle(0, 0, pw, 92, 0x0a0710, 0.72).setStrokeStyle(3, acc, 0.9);
+    var head = scene.add.text(0, -24, (opt.world ? 'WORLD ' + opt.world + ' · ' : '') + (opt.name || ''), { fontFamily: 'Arial Black, Arial', fontSize: '22px', color: _accCss(acc) }).setOrigin(0.5);
+    var beat = scene.add.text(0, 12, opt.beat || '', { fontFamily: 'Arial', fontSize: '15px', color: '#ffffff', align: 'center', wordWrap: { width: pw - 50 } }).setOrigin(0.5);
+    c.add([panel, head, beat]);
+    scene.tweens.add({ targets: c, alpha: 1, duration: 280, yoyo: true, hold: (opt.hold || 1400), onComplete: function () { try { c.destroy(); } catch (e) {} } });
+    return c;
+  };
+  // a reusable HUD strip (top-left pills). fields:[{key,label,icon}] → returns { set(values), root }.
+  Studio.Shell.hud = function (scene, opt) {
+    opt = opt || {}; var fields = opt.fields || [{ key: 'coins', icon: '◆' }, { key: 'score', label: 'SCORE' }];
+    var pad = scene.add.rectangle(10, 8, 12 + fields.length * 118, 40, 0x10121f, 0.5).setOrigin(0, 0).setScrollFactor(0).setDepth(98);
+    var texts = {}; var x = 22;
+    fields.forEach(function (f) {
+      texts[f.key] = scene.add.text(x, 16, (f.icon ? f.icon + ' ' : '') + (f.label ? f.label + ' ' : '') + '0', { fontFamily: 'Arial Black, Arial', fontSize: '18px', color: opt.color || '#ffffff' }).setScrollFactor(0).setDepth(100);
+      x += 118;
+    });
+    pad.width = Math.max(12 + fields.length * 118, x - 4);
+    return { root: pad, set: function (v) { fields.forEach(function (f) { if (texts[f.key] && v[f.key] != null) texts[f.key].setText((f.icon ? f.icon + ' ' : '') + (f.label ? f.label + ' ' : '') + v[f.key]); }); } };
+  };
+  // a generic centered overlay (dim + panel + title + lines + buttons). buttons:[{label,onClick,accent}].
+  Studio.Shell.overlay = function (scene, opt) {
+    opt = opt || {}; var W = scene.scale.width, H = scene.scale.height, acc = opt.accent != null ? opt.accent : 0xffd34d;
+    var c = scene.add.container(0, 0).setDepth(200).setScrollFactor(0);
+    c.add(scene.add.rectangle(W / 2, H / 2, W, H, 0x05030a, 0.6).setInteractive());
+    var pw = Math.min(520, W - 60), ph = 120 + (opt.lines || []).length * 26 + (opt.buttons || []).length * 0;
+    c.add(scene.add.rectangle(W / 2, H / 2, pw, ph + 80, 0x14101e, 0.97).setStrokeStyle(3, acc, 0.9));
+    c.add(scene.add.text(W / 2, H / 2 - ph / 2 - 6, opt.title || '', { fontFamily: 'Arial Black, Arial', fontSize: '28px', color: _accCss(acc), stroke: '#000', strokeThickness: 4 }).setOrigin(0.5));
+    var y = H / 2 - ph / 2 + 34;
+    (opt.lines || []).forEach(function (ln) { c.add(scene.add.text(W / 2, y, ln, { fontFamily: 'Arial', fontSize: '15px', color: '#e8e2f0' }).setOrigin(0.5)); y += 26; });
+    var bw = 150, bg = 14, bs = (opt.buttons || []); var bx = W / 2 - (bs.length * bw + (bs.length - 1) * bg) / 2 + bw / 2, by = H / 2 + ph / 2 + 18;
+    bs.forEach(function (b) {
+      var col = b.accent != null ? b.accent : acc;
+      var box = scene.add.rectangle(bx, by, bw, 44, col, 0.95).setStrokeStyle(2, 0xffffff, 0.25).setInteractive({ useHandCursor: true });
+      var t = scene.add.text(bx, by, b.label, { fontFamily: 'Arial Black, Arial', fontSize: '15px', color: '#1a1020' }).setOrigin(0.5);
+      box.on('pointerover', function () { box.setScale(1.05); }); box.on('pointerout', function () { box.setScale(1); });
+      box.on('pointerdown', function () { try { b.onClick && b.onClick(); } catch (e) {} });
+      c.add([box, t]); bx += bw + bg;
+    });
+    c.destroy = (function (orig) { return function () { orig.call(c); }; })(c.destroy);
+    return c;
+  };
+  // pause: P/ESC + an on-screen ⏸ button → overlay (resume / restart / menu / diary). Sets window.__paused
+  // (the game's update() early-returns on it). opt: { accent, onMenu, onRestart, diary }.
+  Studio.Shell.pause = function (scene, opt) {
+    opt = opt || {}; var W = scene.scale.width, ov = null;
+    function close() { window.__paused = false; if (ov) { ov.destroy(); ov = null; } if (scene.scene && Studio.uistate) Studio.uistate.set(scene.game, 'play'); }
+    function open() {
+      if (ov || window.__won) return; window.__paused = true; if (Studio.uistate) Studio.uistate.set(scene.game, 'pause');
+      var btns = [{ label: '▶ RESUME', onClick: close }, { label: '↻ RESTART', onClick: function () { close(); (opt.onRestart || function () { scene.scene.start('Play'); })(); } }, { label: '☰ MENU', onClick: function () { window.__paused = false; (opt.onMenu || function () { scene.scene.start('Title'); })(); } }];
+      if (opt.diary !== false) btns.push({ label: '📖 DIARY', onClick: function () { window.location.href = (opt.diary || '/diary.html'); } });
+      ov = Studio.Shell.overlay(scene, { title: 'PAUSED', accent: opt.accent, buttons: btns });
+    }
+    var btn = scene.add.text(W - 18, 14, '⏸', { fontFamily: 'Arial', fontSize: '24px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(105).setInteractive({ useHandCursor: true });
+    btn.on('pointerdown', function () { ov ? close() : open(); });
+    scene.input.keyboard.on('keydown-P', function () { ov ? close() : open(); });
+    scene.input.keyboard.on('keydown-ESC', function () { ov ? close() : open(); });
+    return { open: open, close: close, isOpen: function () { return !!ov; } };
+  };
+  // win / lose banner. kind:'win'|'over'. opt:{ accent, rank, lines:[..], next, onNext, onReplay, onMenu }.
+  Studio.Shell.banner = function (scene, kind, opt) {
+    opt = opt || {}; window.__won = true; if (Studio.uistate) Studio.uistate.set(scene.game, kind === 'win' ? 'won' : 'over');
+    var title = kind === 'win' ? (opt.last ? '★ YOU WIN! ★' : 'WORLD CLEAR!') : 'OOPS!';
+    var lines = (opt.rank ? ['RANK  ' + opt.rank] : []).concat(opt.lines || []);
+    var btns = [];
+    if (kind === 'win' && opt.next != null) btns.push({ label: 'NEXT ▶', onClick: function () { window.__won = false; window.__startLevel = opt.next; (opt.onNext || function () { scene.scene.start('Play'); })(); } });
+    btns.push({ label: kind === 'win' ? '↻ REPLAY' : '↻ RETRY', onClick: function () { window.__won = false; (opt.onReplay || function () { scene.scene.start('Play'); })(); } });
+    btns.push({ label: '☰ MENU', onClick: function () { window.__won = false; (opt.onMenu || function () { scene.scene.start('Title'); })(); } });
+    return Studio.Shell.overlay(scene, { title: title, accent: opt.accent != null ? opt.accent : (kind === 'win' ? 0x06d6a0 : 0xff5d6c), lines: lines, buttons: btns });
+  };
+
+  // ── uistate: a tiny validated scene-state machine (boot→menu→play⇄pause→won/over→menu) ──
+  Studio.uistate = {
+    TRANS: { boot: ['menu', 'play'], menu: ['play'], play: ['pause', 'won', 'over', 'menu'], pause: ['play', 'menu'], won: ['play', 'menu'], over: ['play', 'menu'] },
+    set: function (game, to) {
+      var reg = game && game.registry; var from = (reg && reg.get('uistate')) || 'boot';
+      if (from !== to && (this.TRANS[from] || []).indexOf(to) < 0 && typeof console !== 'undefined') console.warn('[uistate] illegal transition', from, '→', to);
+      if (reg) reg.set('uistate', to);
+      return to;
+    },
+    get: function (game) { return (game && game.registry && game.registry.get('uistate')) || 'boot'; }
   };
 
   // ------------------------------------------------------------- Touch controls

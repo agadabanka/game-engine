@@ -37,7 +37,7 @@
   }
   function respawn() { player.setVelocity(0, 0); player.setPosition(spawn.x, spawn.y); jumpLatch = false; }
   function die() { deaths++; lastDeathX = Math.round(player.x); respawn(); }
-  function hud() { if (scene._hud) scene._hud.setText('coins ' + coins); }
+  function hud() { if (scene._hudObj) scene._hudObj.set({ coins: coins }); }
 
   var Play = {
     key: 'Play',
@@ -77,7 +77,7 @@
       Studio.Juice.vignette(this, 0.4);
       Studio.Juice.glow(player, 0xffe08a, 2);
 
-      scene._hud = this.add.text(12, 10, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setScrollFactor(0).setDepth(100);
+      scene._hudObj = Studio.Shell.hud(this, { fields: [{ key: 'coins', icon: '◆' }] });   // reusable HUD layer
       hud();
       this.cursors = this.input.keyboard.createCursorKeys();
       this._touch = Studio.Touch.create(this, { down: false });   // on-screen joystick + JUMP (mobile)
@@ -89,8 +89,14 @@
         reset: reset
       });
       window.__sense = function () { var og = player.body.blocked.down || player.body.touching.down; var s = sense(og); s.decision = Studio.Autopilot.platformer(s); return s; };
+      // shell: story intro card · pause (P/ESC + ⏸) · ui state
+      window.__paused = false; window.__won = false; scene._world = _lv;
+      Studio.Shell.intro(this, { world: _lv, name: spec.name });
+      this._pause = Studio.Shell.pause(this, {});
+      if (Studio.uistate) Studio.uistate.set(this.game, 'play');
     },
     update: function () {
+      if (window.__paused) return;
       if (!player) return; frame++;
       if (player.x > maxX) maxX = player.x;
       var b = player.body, onGround = b.blocked.down || b.touching.down;
@@ -110,7 +116,10 @@
         if (!e.active) return; e.x += e.dir * 0.6; if (Math.abs(e.x - e.homeX) > e.patrol) e.dir *= -1;
       });
 
-      if (!won && player.x >= levelGoalX - 8) { won = true; Studio.Audio.sfx('win'); Studio.Juice.flash(scene, 200, 6, 214, 160); }
+      if (!won && player.x >= levelGoalX - 8) {
+        won = true; Studio.Audio.sfx('win'); Studio.Juice.flash(scene, 200, 6, 214, 160);
+        if (!auto) { var nx = (scene._world || 1) + 1; Studio.Shell.banner(scene, 'win', { lines: ['◆ ' + coins + ' collected'], next: nx <= window.LEVELS.length ? nx : null, last: nx > window.LEVELS.length }); }
+      }
       if (player.y > scene.scale.height + 120) die();
     }
   };
