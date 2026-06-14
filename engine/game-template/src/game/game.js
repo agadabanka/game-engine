@@ -43,6 +43,16 @@
 
   var Play = {
     key: 'Play',
+    // manifest-driven assets: load any GENERATED art (window.SPRITES, written by tools/art-sprites.mjs).
+    // None yet on a fresh scaffold → Studio.Hero falls back to the Studio.Toon rig. Art-ready out of the box.
+    preload: function () {
+      var sc = this; var S = window.SPRITES;
+      if (S && S.hero) sc.load.spritesheet('hero_sheet', 'assets/' + S.hero.sheet, { frameWidth: S.hero.frameWidth, frameHeight: S.hero.frameHeight });
+      if (S && S.enemies) Object.keys(S.enemies).forEach(function (k) { var en = S.enemies[k]; sc.load.spritesheet('enemy_' + k, 'assets/' + en.sheet, { frameWidth: en.frameWidth, frameHeight: en.frameHeight }); });
+      if (S && S.tiles) Object.keys(S.tiles).forEach(function (k) { sc.load.image('tile_' + k, 'assets/' + S.tiles[k]); });
+      if (S && S.props) Object.keys(S.props).forEach(function (k) { sc.load.image('prop_' + k, 'assets/' + S.props[k]); });
+      sc.load.on('loaderror', function () {});   // missing art → silent fallback to baked/rig
+    },
     create: function () {
       scene = this;
       // ?level=N jumps straight to level N (1-based) — the engine's uniform
@@ -59,6 +69,8 @@
       this.add.image(levelGoalX, spec.groundY - 42, 'goal');
 
       player = this.physics.add.sprite(spawn.x, spawn.y, 'hero');
+      player.setVisible(false);   // the baked body is the physics proxy; Studio.Hero draws the actor
+      this._hero = Studio.Hero.create(this, { sprite: 'hero_sheet', manifest: window.SPRITES && window.SPRITES.hero, rigDef: window.CHARACTER, height: 42, feetY: 6 });
       this.physics.add.collider(player, world.platforms);
       Studio.Mechanics.install(this, player, world);   // crumble collider + mechanic state (#30)
       Studio.Mechanics.decorate(this, world);          // visual telegraphs for belt/dash/field zones
@@ -117,6 +129,10 @@
       if (mv.jump && onGround && !jumpLatch) { player.setVelocityY(JUMP_V); jumpLatch = true; Studio.Audio.sfx('jump'); }
       if (!mv.jump) jumpLatch = false;
       if (this._touch) this._touch.setViz(mv);
+      if (this._hero) {   // draw the manifest-driven actor over the (invisible) physics body
+        var st = !onGround ? (b.velocity.y < -30 ? 'jump' : 'fall') : (Math.abs(b.velocity.x) > 20 ? 'run' : 'idle');
+        this._hero.sync(player.x, player.y + 19, player.flipX); this._hero.state(st); this._hero.update(16.667);
+      }
       Studio.Mechanics.step(this, player, world);   // conveyor/dashpad/fields/crumble — AFTER input sets velocity
 
       Studio.Enemies.step(this, world, frame);   // walker patrol + flyer sweep (#31)
