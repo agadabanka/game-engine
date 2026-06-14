@@ -50,7 +50,13 @@ async function fileIssue(repo, title, body, extraLabels = []) {
   console.error(`FAIL [${repo}]`, res.status, (await res.text()).slice(0, 140)); return null;
 }
 
-const notes = await fetch(`${BASE}/api/notes`).then((r) => r.json()).then((j) => j.notes || []).catch(() => []);
+// the server serves /api/notes as a BARE array (res.json(notes())); older callers
+// expected {notes:[…]} — accept either shape so the loop never silently no-ops.
+const raw = await fetch(`${BASE}/api/notes`).then((r) => r.json()).then((j) => Array.isArray(j) ? j : (j && j.notes) || []).catch(() => []);
+// collapse exact-duplicate notes (a double-tap leaves the same text twice) so one
+// piece of feedback becomes one issue — keyed on text + level.
+const seen = new Set();
+const notes = raw.filter((n) => { const k = `${(n.text || '').trim()}|${n.level}`; if (seen.has(k)) return false; seen.add(k); return true; });
 console.log(`repo: ${REPO} · upstream: ${UPSTREAM.join(', ') || '(none)'} · notes: ${notes.length} (from ${BASE})`);
 if (!notes.length) { console.log('nothing to file — leave notes in-game (⏸ Pause → 📝).'); process.exit(0); }
 
