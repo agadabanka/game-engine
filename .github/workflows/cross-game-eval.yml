@@ -40,6 +40,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: node tools/eval-all.mjs
+      - name: Visual QA — screenshots vs golden baselines
+        run: node tools/visual-qa.mjs
       - name: Upload eval board + scorecards
         if: always()
         uses: actions/upload-artifact@v4

@@ -81,6 +81,23 @@ export async function renderEvalBoard(summary, outPath) {
   return toPNG(html, 880, outPath);
 }
 
+/** Visual-QA board: SSIM of each gate screenshot vs its golden baseline. */
+export async function renderVisualBoard(summary, outPath) {
+  const rows = (summary.results || []).map((r) => {
+    const c = r.skip ? PAL.pend : r.ok ? PAL.ok : PAL.fail;
+    const g = r.skip ? GLYPH.pending : r.ok ? GLYPH.ok : GLYPH.fail;
+    return `<div class="row"><div class="g" style="background:${c}">${g}</div>
+      <div><div class="nm">${esc(r.id)}</div><div class="meta">${r.note ? esc(r.note) : `SSIM ${r.ssim != null ? r.ssim.toFixed(4) : 'n/a'} vs baseline`}</div></div>
+      <div class="pill" style="margin-left:auto;background:${c}22;color:${c}">${r.skip ? 'SKIP' : r.ok ? 'MATCH' : 'DRIFT'}</div></div>`;
+  }).join('');
+  const c = summary.ok ? PAL.ok : PAL.fail;
+  const html = `<div class="t">🖼 Visual QA — screenshots vs golden baselines</div>
+    <div class="sub">${esc((summary.ran || '').slice(0, 16).replace('T', ' '))} · SSIM threshold ${summary.threshold} · catches off-theme art / broken layouts the gate can't</div>
+    <div class="bar"><i style="width:${Math.round((summary.passed / Math.max(1, summary.total)) * 100)}%;background:${c}"></i></div>
+    <div style="font-size:19px;font-weight:800;margin-bottom:14px;color:${c}">${summary.ok ? '✓' : '✗'} ${summary.passed}/${summary.total} match baseline</div>${rows}`;
+  return toPNG(html, 720, outPath);
+}
+
 /** Static showcase of the 12-stage pipeline (for docs / decks). */
 export async function renderPipelineBoard(outPath) {
   const steps = [['1', 'Scaffold', 'clone base · GitHub · hub'], ['2', 'Identity', 'name · hero · worlds'], ['3', 'Levels', '5 themed biomes'],

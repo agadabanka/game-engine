@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "description": "The reusable rig that ties together everything learned building the-platformer and Jazz — hit 'new game' and go. Includes the meta-hub (mission control) that monitors every game's diaries and notes.",
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node hub/server.js",
     "dev": "node hub/server.js",
@@ -14,7 +16,8 @@
     "trailer": "node tools/trailer/make-trailer.mjs",
     "sync-sdk": "node scripts/sync-sdk.mjs",
     "eval:all": "node tools/eval-all.mjs",
-    "test": "node --test tools/lib/"
+    "test": "node --test tools/lib/",
+    "visual-qa": "node tools/visual-qa.mjs"
   },
   "dependencies": {
     "express": "^4.19.2"

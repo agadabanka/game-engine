@@ -45,8 +45,10 @@ The single foundation under 7.1's status checkmarks and 7.2's generated diary.
       changes, blocks merge on red. *(needs a repo secret `GH_TOKEN` to clone golden repos)*
 - [x] **Visual boards** `tools/lib/render-board.mjs` — eval board + build board +
       pipeline board (the "nice visuals"); tied into eval-all.
-- [ ] **Visual QA** — screenshot diff of each gate's `shot-*.png` vs a committed golden
-      baseline (catches off-theme/regressions beyond the non-black check eval already does).
+- [x] **Visual QA** `tools/visual-qa.mjs` — SSIM of each gate's deterministic
+      frame-200 `shot-webgl.png` vs a committed golden baseline (`tools/golden-baselines/`),
+      fails on drift; `--update` re-baselines. Wired into CI. (Vision-judge/off-theme LLM
+      pass can layer on later.)
 - [ ] **Add a deepfin eval** — deepfin has no `eval.mjs` and its game.js doesn't set the
       `__ready` contract, so the platformer slot is gated via the engine game-template for
       now. Follow-up: commit an eval to the deepfin repo.
