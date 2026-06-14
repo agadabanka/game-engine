@@ -60,7 +60,7 @@ export const ELEMENT_LIBRARY = {
 
   // ── adversaries (one distinct kind per level + a boss) ──
   walker:    { implemented: true,  feeling: 'Challenge',  aesthetic: 'threat → mastery (stomp)',      interest: 6, ai: 'stomp/clear',    note: 'Stompable ground patroller. One kind in the engine today (kind-rotation = #31). Keep off pit edges (SAFE_AFTER).' },
-  flyer:     { implemented: false, feeling: 'Challenge',  aesthetic: 'an overhead threat you duck under', interest: 6, ai: 'passes-under', note: 'Deadly high patroller. Place at a row above max jump and off spring columns → AI-safe over anything.' },
+  flyer:     { implemented: true,  feeling: 'Challenge',  aesthetic: 'an overhead threat you duck under', interest: 6, ai: 'passes-under', note: 'Overhead sweeper (Studio.Enemies, spec.enemies {fly,up,range}). Place up≥~210 (clear of the ~138px jump apex) on a solid with NO walker/pad — so the autopilot runs FLAT under it and never jumps into it. A walker/pad on the same span flings the AI into it (learned the hard way).' },
   piranha:   { implemented: false, feeling: 'Challenge',  aesthetic: 'patience — timing the gap',     interest: 7, ai: 'time-the-gap',   note: 'Pipe plant on a cycle; ONE per stretch with a long runway (never back-to-back).' },
   boss:      { implemented: false, feeling: 'Challenge',  aesthetic: 'the climactic duel',            interest: 9, ai: 'multi-stomp',    note: 'Finale: a multi-HP brute gating the exit; flat enemy-free arena. (#44 boss template.)' },
 
