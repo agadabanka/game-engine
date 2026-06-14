@@ -27,6 +27,31 @@ session and end with links.
 - **The diary is the deliverable the owner reads.** Write DIARY.md as you go:
   what was built, engine investments, gotchas + fixes, the scorecard, links.
 
+## Build it with the runner — one command, observable
+Drive the whole arc with the autonomous runner instead of running stages by hand:
+```
+node scripts/make-game.mjs "<Name>" [--spec spec.json] [--from <stage>] [--retries 2]
+```
+It executes the 11 stages with **checkpoints** (resume from `GAME_META.stages`),
+**auto-retry**, **stop-on-fail** (+ a resume hint), and live **observability**: per-stage
+checkmarks (`tools/lib/buildlog.mjs`), a rendered build board, and a generated `### Build
+log` appended to DIARY.md. Mechanical stages invoke the tools below; credential-gated ones
+skip cleanly when the secret is absent; creative stages (identity/levels/feel) verify you
+authored the content. `--dry-run` to rehearse the orchestration.
+
+## Where each capability lives (ENGINE-level — every game inherits these)
+The tools are engine-level (operate on a game id/dir); a new game does NOT carry its own copies.
+| Stage | Tool (engine) | Notes |
+|---|---|---|
+| scaffold | `scripts/new-game.mjs` | clone base · GitHub repo · hub register |
+| gate | game `eval.mjs` + `tools/lib/mirth.mjs` | FUN (`Studio.Brawl.fun`) + optional funny gate (`Studio.Mirth`) |
+| art | `tools/art.mjs` → `scripts/gemini.js` | themed backdrops/keyart per world; cached via `tools/lib/gencache.mjs` |
+| music | `tools/music.mjs` → `lib/lyria.js` | Lyria loop per world (or procedural `Studio.Audio` fallback) |
+| shorts | `tools/trailer/make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed, auto-wired (see ENGINE.md) |
+| videos | `tools/record.mjs` + `tools/youtube-upload.mjs` | per-level MP4 → YouTube (YT_* secrets) |
+| safety net | `tools/eval-all.mjs` | run the golden set + this game before merge |
+Anything still scattered in a game repo is a migration target — lift it here and update this table.
+
 ## The pipeline (all stages must land; update GAME_META.json stages as you go)
 1. **Scaffold** — `node scripts/new-game.mjs "<Name>" --local --tagline … --hero … --verb …`
    from the game-engine repo root (needs GH_TOKEN; creates + pushes the GitHub repo).
@@ -41,7 +66,12 @@ session and end with links.
    deterministic (two identical runs), the autopilot WINS every level, AND the
    run **maximizes fun, not perfection** — score the match/run with a felt-fun
    model (`Studio.Brawl.fun` pattern: action/flow/arc/closeness/variety) and
-   gate on FUN ≥ 70. Owner's standing rule: losing a few times is fine —
+   gate on FUN ≥ 70. **Optional felt-gates compose** — e.g. a comedy game also
+   gates on `Studio.Mirth.score(events)` (the funny gate: exaggeration/density/
+   variety/timing/surprise, threshold ~65; canonical node scorer in
+   `tools/lib/mirth.mjs`, tested). Invent new felt-gates the same way: a scorer in
+   the SDK + a mirror in `tools/lib/`, the game emits the events, eval gates on it.
+   Owner's standing rule: losing a few times is fine —
    comebacks beat sweeps; never gate on 0-death alone when a fun score fits the
    genre better. Non-black readback, BOTH renderers (webgl + canvas). Iterate
    with trace/autopsy tooling; for rng-driven genres, seed-scan (`scan.mjs`

@@ -878,6 +878,43 @@
     }
   };
 
+  // -------------------------------------------------------------------- Mirth
+  // A "funny" felt-comedy model — a NEW gate alongside fun. Where fun asks "is the run
+  // engaging?", MIRTH asks "is it FUNNY?". Comedy = EXAGGERATION (slapstick physics) +
+  // TIMING (a varied comic rhythm) + VARIETY (incongruous gag kinds) + SURPRISE at the
+  // right DENSITY. Score a run's comedic events 0..100; the funny gate passes on >= ~65.
+  // Mirror of tools/lib/mirth.mjs (the tested node scorer) — keep the algorithms identical.
+  // events: [{ t, f, mag? }], t = 'bounce'|'pratfall'|'smooch'|'reaction'|'surprise'|'combo'.
+  Studio.Mirth = {
+    GATE: 65,
+    score: function (events, ctx) {
+      ctx = ctx || {};
+      var evs = (events || []).slice().sort(function (a, b) { return a.f - b.f; });
+      var clamp = function (v) { return Math.max(0, Math.min(1, v)); };
+      var bell = function (x, mid, w) { return clamp(1 - Math.abs(x - mid) / w); };
+      var lastF = evs.length ? evs[evs.length - 1].f : 1;
+      var durF = Math.max(1, (ctx.frame != null ? ctx.frame : lastF) - (ctx.start || 0));
+      var dur = durF / 60;
+      var slap = evs.filter(function (e) { return e.t === 'bounce' || e.t === 'pratfall'; });
+      var exaggeration = slap.length ? clamp(slap.reduce(function (s, e) { return s + (e.mag || 1); }, 0) / slap.length / 2) : 0.2;
+      var density = bell((evs.length / Math.max(1, dur)) * 5, 5, 4);
+      var kinds = {}; evs.forEach(function (e) { kinds[e.t] = 1; });
+      var variety = clamp(Object.keys(kinds).length / 6);
+      var gaps = []; for (var i = 1; i < evs.length; i++) gaps.push(evs[i].f - evs[i - 1].f);
+      var mean = gaps.length ? gaps.reduce(function (a, b) { return a + b; }, 0) / gaps.length : 0;
+      var sd = gaps.length ? Math.sqrt(gaps.reduce(function (a, g) { return a + (g - mean) * (g - mean); }, 0) / gaps.length) : 0;
+      var cv = mean ? sd / mean : 0;
+      var timing = gaps.length ? bell(cv, 0.6, 0.55) : 0.3;
+      var surprise = clamp(evs.filter(function (e) { return e.t === 'surprise' || e.t === 'combo'; }).length / 4);
+      var mirth = 100 * (0.28 * exaggeration + 0.20 * density + 0.18 * variety + 0.18 * timing + 0.16 * surprise);
+      return {
+        mirth: Math.round(mirth * 10) / 10,
+        parts: { exaggeration: +exaggeration.toFixed(2), density: +density.toFixed(2), variety: +variety.toFixed(2), timing: +timing.toFixed(2), surprise: +surprise.toFixed(2) },
+        beats: evs.length, durS: Math.round(dur)
+      };
+    }
+  };
+
   // -------------------------------------------------------------------- Juice
   // The "feel" surface. GPU filters are WebGL-only -> every call is guarded.
   Studio.Juice = {
