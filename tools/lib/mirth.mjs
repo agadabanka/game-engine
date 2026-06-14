@@ -32,22 +32,24 @@ export function mirthScore(events, ctx = {}) {
   // SLAPSTICK — average exaggeration of the physical gags (bounce/pratfall magnitude)
   const slap = evs.filter((e) => e.t === 'bounce' || e.t === 'pratfall');
   const exaggeration = slap.length ? clamp(slap.reduce((s, e) => s + (e.mag || 1), 0) / slap.length / 2) : 0.2;
-  // DENSITY — gags per 5s, sweet spot ~5 (dry below, noisy above)
-  const density = bell((evs.length / Math.max(1, dur)) * 5, 5, 4);
+  // DENSITY — gags per SECOND, sweet spot ~2/s (steady slapstick; >~4.5/s = noisy, <~0.5/s = dry).
+  // Calibrated against real gameplay (a funny platformer run lands ~2–3 gags/s).
+  const density = bell(evs.length / Math.max(1, dur), 2.0, 2.6);
   // VARIETY — distinct gag kinds (incongruity); 6 kinds = full marks
   const kinds = new Set(evs.map((e) => e.t));
   const variety = clamp(kinds.size / 6);
-  // TIMING — comic rhythm: spacing between gags should VARY (cv≈0.6 ideal; metronomic or clumped isn't funny)
+  // TIMING — comic rhythm: spacing should VARY (a varied cv reads as good comic timing;
+  // perfectly metronomic isn't funny). Centered for the clustered rhythm of real play.
   const gaps = [];
   for (let i = 1; i < evs.length; i++) gaps.push(evs[i].f - evs[i - 1].f);
   const mean = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
   const sd = gaps.length ? Math.sqrt(gaps.reduce((a, g) => a + (g - mean) ** 2, 0) / gaps.length) : 0;
   const cv = mean ? sd / mean : 0;
-  const timing = gaps.length ? bell(cv, 0.6, 0.55) : 0.3;
-  // SURPRISE — unexpected beats (surprise pickups, combos)
-  const surprise = clamp(evs.filter((e) => e.t === 'surprise' || e.t === 'combo').length / 4);
+  const timing = gaps.length ? bell(cv, 0.85, 0.95) : 0.3;
+  // SURPRISE — unexpected beats (surprise pickups, combos, critter boings)
+  const surprise = clamp(evs.filter((e) => e.t === 'surprise' || e.t === 'combo').length / 5);
 
-  const mirth = 100 * (0.28 * exaggeration + 0.20 * density + 0.18 * variety + 0.18 * timing + 0.16 * surprise);
+  const mirth = 100 * (0.26 * exaggeration + 0.20 * density + 0.18 * variety + 0.16 * timing + 0.20 * surprise);
   return {
     mirth: Math.round(mirth * 10) / 10,
     parts: { exaggeration: +exaggeration.toFixed(2), density: +density.toFixed(2), variety: +variety.toFixed(2), timing: +timing.toFixed(2), surprise: +surprise.toFixed(2) },

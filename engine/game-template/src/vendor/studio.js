@@ -897,16 +897,16 @@
       var dur = durF / 60;
       var slap = evs.filter(function (e) { return e.t === 'bounce' || e.t === 'pratfall'; });
       var exaggeration = slap.length ? clamp(slap.reduce(function (s, e) { return s + (e.mag || 1); }, 0) / slap.length / 2) : 0.2;
-      var density = bell((evs.length / Math.max(1, dur)) * 5, 5, 4);
+      var density = bell(evs.length / Math.max(1, dur), 2.0, 2.6);   // ~2 gags/s = steady slapstick
       var kinds = {}; evs.forEach(function (e) { kinds[e.t] = 1; });
       var variety = clamp(Object.keys(kinds).length / 6);
       var gaps = []; for (var i = 1; i < evs.length; i++) gaps.push(evs[i].f - evs[i - 1].f);
       var mean = gaps.length ? gaps.reduce(function (a, b) { return a + b; }, 0) / gaps.length : 0;
       var sd = gaps.length ? Math.sqrt(gaps.reduce(function (a, g) { return a + (g - mean) * (g - mean); }, 0) / gaps.length) : 0;
       var cv = mean ? sd / mean : 0;
-      var timing = gaps.length ? bell(cv, 0.6, 0.55) : 0.3;
-      var surprise = clamp(evs.filter(function (e) { return e.t === 'surprise' || e.t === 'combo'; }).length / 4);
-      var mirth = 100 * (0.28 * exaggeration + 0.20 * density + 0.18 * variety + 0.18 * timing + 0.16 * surprise);
+      var timing = gaps.length ? bell(cv, 0.85, 0.95) : 0.3;
+      var surprise = clamp(evs.filter(function (e) { return e.t === 'surprise' || e.t === 'combo'; }).length / 5);
+      var mirth = 100 * (0.26 * exaggeration + 0.20 * density + 0.18 * variety + 0.16 * timing + 0.20 * surprise);
       return {
         mirth: Math.round(mirth * 10) / 10,
         parts: { exaggeration: +exaggeration.toFixed(2), density: +density.toFixed(2), variety: +variety.toFixed(2), timing: +timing.toFixed(2), surprise: +surprise.toFixed(2) },
