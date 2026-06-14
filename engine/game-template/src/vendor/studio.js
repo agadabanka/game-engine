@@ -45,7 +45,20 @@
       vine: { color: 0x2d6a4f, top: 0x74c69d, friction: 1, deadly: false, ground: true },
       basalt: { color: 0x3d2b3d, top: 0x7d5260, friction: 1, deadly: false, ground: true },
       snow: { color: 0x8ecae6, top: 0xf1faee, friction: 0.45, deadly: false, ground: true },
-      neon: { color: 0x1b1b3a, top: 0x4cc9f0, friction: 1, deadly: false, ground: true }
+      neon: { color: 0x1b1b3a, top: 0x4cc9f0, friction: 1, deadly: false, ground: true },
+      // confection set (funded by Lovelump) — a candy-world palette + SWEET HAZARDS.
+      // footings:
+      candy: { color: 0xff7eb3, top: 0xffd6ea, friction: 1, deadly: false, ground: true },
+      reef: { color: 0x2bb6a6, top: 0xa9f3ea, friction: 0.9, deadly: false, ground: true },
+      lily: { color: 0x49b36a, top: 0xb4f3b0, friction: 1, deadly: false, ground: true },
+      hedge: { color: 0x2f9e5e, top: 0x86e6a4, friction: 1, deadly: false, ground: true },
+      bloom: { color: 0xe85d9c, top: 0xffc6e0, friction: 1, deadly: false, ground: true },
+      cocoa: { color: 0x6b4226, top: 0xb07a4e, friction: 1, deadly: false, ground: true },
+      frosting: { color: 0xf7c6dd, top: 0xffffff, friction: 0.5, deadly: false, ground: true },
+      // hazards (deadly — routed to the hazards group):
+      lagoon: { color: 0x1f7fc4, top: 0x86d0ff, friction: 1, deadly: true, ground: false }, // pink-lemonade water
+      thorn: { color: 0x7b2a8a, top: 0xc81d9e, friction: 1, deadly: true, ground: false }, // bramble patch
+      fudge: { color: 0x3f2207, top: 0xc0631f, friction: 1, deadly: true, ground: false }  // molten chocolate
     },
     get: function (name) { return this.table[name] || this.table.solid; }
   };
@@ -140,8 +153,24 @@
       var B = Studio.Textures, base = def.color, dark = Studio._darken(base, 0.25),
         lite = Studio._lighten(base, 0.3), belly = def.belly != null ? def.belly : Studio._lighten(base, 0.5),
         line = 0x1d1d28, W = def.w || 46, H = def.h || 48, shape = def.shape || 'round';
-      B.bake(scene, k + 'body', W + 8, H + 8, function (g) {
-        var x = 4, y = 4, r = shape === 'square' ? 10 : Math.min(W, H) / 2 - (shape === 'bean' ? 6 : 2);
+      // a heart-shaped body: two top lobes + a bottom point (for lovestruck characters);
+      // others use the rounded-rect blob. Drawn outline-first so it reads with a clean edge.
+      var heart = function (g, col, cx, top, w, h) {
+        var r = w * 0.265, ly = top + r * 0.96;
+        g.fillStyle(col, 1);
+        g.fillCircle(cx - r * 0.9, ly, r); g.fillCircle(cx + r * 0.9, ly, r);
+        g.fillTriangle(cx - w * 0.47, ly + r * 0.18, cx + w * 0.47, ly + r * 0.18, cx, top + h);
+      };
+      B.bake(scene, k + 'body', W + 12, H + 12, function (g) {
+        if (shape === 'heart') {
+          var cx = (W + 12) / 2, top = 6;
+          heart(g, line, cx, top - 3, W + 6, H + 6);            // outline
+          heart(g, base, cx, top, W, H);                        // fill
+          g.fillStyle(lite, 1).fillCircle(cx - W * 0.24, top + W * 0.2, W * 0.16);  // shine on a lobe
+          g.fillStyle(belly, 0.55).fillCircle(cx + W * 0.22, top + H * 0.52, W * 0.2);
+          return;
+        }
+        var x = 6, y = 6, r = shape === 'square' ? 10 : Math.min(W, H) / 2 - (shape === 'bean' ? 6 : 2);
         g.fillStyle(line, 1).fillRoundedRect(x - 3, y - 3, W + 6, H + 6, r + 3);
         g.fillStyle(base, 1).fillRoundedRect(x, y, W, H, r);
         g.fillStyle(lite, 1).fillRoundedRect(x, y, W, H * 0.45, { tl: r, tr: r, bl: 0, br: 0 });
@@ -326,6 +355,91 @@
       for (var x = -60; x <= span + 60; x += step) { var y = base - (Math.sin(x * 0.011 + ph) * 0.5 + 0.5) * amp; g.lineTo(x, y); }
       g.lineTo(span + 60, H + 30); g.closePath(); g.fillPath();
     });
+  };
+
+  // Size a backdrop IMAGE to COVER the whole (resizable) canvas — no letterbox gaps —
+  // and re-cover on resize. Replaces hard-coded ×1.15 hacks. scroll:0 locks it to the
+  // camera (always full-bleed); a small scroll adds parallax (kept oversized to still cover).
+  Studio.coverBackdrop = function (scene, image, opt) {
+    opt = opt || {};
+    var scroll = opt.scroll != null ? opt.scroll : 0;
+    image.setOrigin(0.5, 0.5).setScrollFactor(scroll).setDepth(opt.depth != null ? opt.depth : -100);
+    function fit() {
+      var W = scene.scale.width, H = scene.scale.height;
+      var src = image.texture && image.texture.getSourceImage ? image.texture.getSourceImage() : null;
+      var iw = (src && src.width) || image.width || W, ih = (src && src.height) || image.height || H;
+      image.setScale(Math.max(W / iw, H / ih) * (scroll > 0 ? 1.25 : 1));
+      image.setPosition(W / 2, H / 2);
+    }
+    fit();
+    scene.scale.on('resize', fit);
+    return image;
+  };
+
+  // ------------------------------------------------------------- Touch controls
+  // ONE on-screen control overlay (analog joystick OR d-pad + action buttons) that drives a
+  // shared input state AND reflects the driver's intent (so a recording's buttons match play).
+  // Renderer-agnostic; attach to the Play scene. Shown on touch devices (or ?touch=1 to force).
+  //   var ctl = Studio.Touch.create(scene, { down:false, fire:false });
+  //   // in manual input: left = keys.left || ctl.state.left ;  each frame: ctl.setViz(currentInput)
+  Studio.Touch = {
+    create: function (scene, opt) {
+      opt = opt || {};
+      var accent = opt.accent != null ? opt.accent : 0xffd34d, wantFire = !!opt.fire, wantDown = !!opt.down;
+      var state = { left: false, right: false, jump: false, down: false, fire: false };
+      var isTouch = (scene.sys && scene.sys.game && scene.sys.game.device.input.touch) || (typeof window !== 'undefined' && 'ontouchstart' in window);
+      var show = opt.show != null ? opt.show : (isTouch || (typeof location !== 'undefined' && /[?&]touch=1/.test(location.search)));
+      if (isTouch && scene.input && scene.input.addPointer) { try { scene.input.addPointer(3); } catch (e) {} }
+      var pref = 'joystick'; try { pref = localStorage.getItem('studio_controller') || 'joystick'; } catch (e) {}
+      var dpad = opt.dpad != null ? opt.dpad : (pref === 'dpad');
+      var DEPTH = 60, objs = [], joy = null, viz = {};
+      function resume() { try { var c = scene.sound && scene.sound.context; if (c && c.state === 'suspended') c.resume(); } catch (e) {} if (opt.onResume) try { opt.onResume(); } catch (e) {} }
+      function btn(x, y, r, glyph, col) {
+        var box = scene.add.circle(x, y, r, 0x12182b, 0.5).setScrollFactor(0).setDepth(DEPTH).setStrokeStyle(3, 0xffffff, 0.32);
+        var t = scene.add.text(x, y, glyph, { fontFamily: 'Arial Black, Arial', fontSize: Math.round(r * 0.7) + 'px', color: col || '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH + 1);
+        objs.push(box, t); return { box: box, t: t };
+      }
+      function hold(b, key) { b.box.setInteractive(); b.box.on('pointerdown', function () { state[key] = true; resume(); }); b.box.on('pointerup', function () { state[key] = false; }); b.box.on('pointerout', function () { state[key] = false; }); }
+      function build() {
+        if (!show) return;
+        var W = scene.scale.width, H = scene.scale.height, y = H - 84;
+        viz.jump = btn(W - 96, y, 56, '⤒', '#fff'); hold(viz.jump, 'jump');
+        if (wantFire) { viz.fire = btn(W - 96, y - 132, 48, '●', '#ff8088'); hold(viz.fire, 'fire'); }
+        if (dpad) {
+          viz.left = btn(96, y, 50, '◀'); hold(viz.left, 'left');
+          viz.right = btn(214, y, 50, '▶'); hold(viz.right, 'right');
+          if (wantDown) { viz.down = btn(W - 214, y, 44, '▼'); hold(viz.down, 'down'); }
+        } else {
+          var bx = 132, by = H - 96, R = 76;
+          var base = scene.add.circle(bx, by, R, 0x0f1528, 0.42).setScrollFactor(0).setDepth(DEPTH).setStrokeStyle(3, 0xffffff, 0.28);
+          var thumb = scene.add.circle(bx, by, 34, 0x2a3556, 0.95).setScrollFactor(0).setDepth(DEPTH + 2).setStrokeStyle(3, accent, 0.85);
+          objs.push(base, thumb);
+          joy = { bx: bx, by: by, R: R, thumb: thumb, pid: null };
+          var setFrom = function (px, py) { var dx = px - bx, dy = py - by, m = Math.hypot(dx, dy) || 1; if (m > R) { dx = dx / m * R; dy = dy / m * R; } thumb.setPosition(bx + dx, by + dy); var nx = dx / R, ny = dy / R; state.left = nx < -0.35; state.right = nx > 0.35; state.jump = ny < -0.55; if (wantDown) state.down = ny > 0.55; };
+          var rel = function () { joy.pid = null; thumb.setPosition(bx, by); state.left = state.right = state.down = false; state.jump = false; };
+          joy._down = function (p) { if (joy.pid != null) return; if (p.x > W * 0.5) return; joy.pid = p.id; resume(); setFrom(p.x, p.y); };
+          joy._move = function (p) { if (p.id === joy.pid) setFrom(p.x, p.y); };
+          joy._up = function (p) { if (p.id === joy.pid) rel(); };
+          scene.input.on('pointerdown', joy._down); scene.input.on('pointermove', joy._move); scene.input.on('pointerup', joy._up);
+        }
+      }
+      function teardown() { objs.forEach(function (o) { try { o.destroy(); } catch (e) {} }); objs = []; if (joy && joy._down) { scene.input.off('pointerdown', joy._down); scene.input.off('pointermove', joy._move); scene.input.off('pointerup', joy._up); } joy = null; viz = {}; }
+      function layout() { teardown(); build(); }
+      build();
+      scene.scale.on('resize', layout);
+      return {
+        state: state, isTouch: isTouch, shown: show,
+        setViz: function (inp) {
+          inp = inp || {};
+          var lit = function (o, on) { if (!o) return; o.box.setFillStyle(on ? accent : 0x12182b, on ? 0.95 : 0.5); o.box.setScale(on ? 1.12 : 1); };
+          lit(viz.jump, inp.jump); lit(viz.fire, inp.fire);
+          if (joy && joy.pid == null) { var dx = (inp.right ? 1 : inp.left ? -1 : 0) * joy.R * 0.6, dy = (inp.jump ? -1 : inp.down ? 1 : 0) * joy.R * 0.6; joy.thumb.setPosition(joy.bx + dx, joy.by + dy); }
+          else if (viz.left) { lit(viz.left, inp.left); lit(viz.right, inp.right); lit(viz.down, inp.down); }
+        },
+        switch: function () { dpad = !dpad; try { localStorage.setItem('studio_controller', dpad ? 'dpad' : 'joystick'); } catch (e) {} layout(); return dpad ? 'dpad' : 'joystick'; },
+        destroy: function () { scene.scale.off('resize', layout); teardown(); }
+      };
+    }
   };
 
   // --------------------------------------------------------------- Level DSL

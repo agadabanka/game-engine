@@ -80,6 +80,7 @@
       scene._hud = this.add.text(12, 10, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setScrollFactor(0).setDepth(100);
       hud();
       this.cursors = this.input.keyboard.createCursorKeys();
+      this._touch = Studio.Touch.create(this, { down: false });   // on-screen joystick + JUMP (mobile)
 
       Studio.harness.install(window.game, {
         snapshot: snapshot,
@@ -103,6 +104,7 @@
       else player.setVelocityX(0);
       if (mv.jump && onGround && !jumpLatch) { player.setVelocityY(JUMP_V); jumpLatch = true; Studio.Audio.sfx('jump'); }
       if (!mv.jump) jumpLatch = false;
+      if (this._touch) this._touch.setViz(mv);
 
       world.enemies.getChildren().forEach(function (e) {
         if (!e.active) return; e.x += e.dir * 0.6; if (Math.abs(e.x - e.homeX) > e.patrol) e.dir *= -1;
@@ -112,10 +114,17 @@
       if (player.y > scene.scale.height + 120) die();
     }
   };
-  function manual() { var c = scene.cursors; if (!c) return input; return { left: c.left.isDown, right: c.right.isDown, jump: c.up.isDown || c.space.isDown }; }
+  function manual() {
+    var c = scene.cursors, t = (scene._touch && scene._touch.state) || {};
+    if (!c) return input;
+    return { left: c.left.isDown || t.left, right: c.right.isDown || t.right, jump: c.up.isDown || c.space.isDown || t.jump };
+  }
 
   var config = {
-    type: Phaser.AUTO, width: 960, height: 540, backgroundColor: '#1d2b53', seed: ['game-template'],
+    type: Phaser.AUTO, parent: 'game', width: 960, height: 540, backgroundColor: '#1d2b53', seed: ['game-template'],
+    // FIT + centre so the canvas fills/letterboxes any viewport (phone/desktop); fps floor clamps the delta.
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    fps: { min: 30, target: 60, smoothStep: true },
     render: { preserveDrawingBuffer: true, pixelArt: true },
     physics: { default: 'arcade', arcade: { gravity: { y: GRAV }, debug: false } },
     scene: [Play]

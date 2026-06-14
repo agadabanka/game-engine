@@ -357,6 +357,91 @@
     });
   };
 
+  // Size a backdrop IMAGE to COVER the whole (resizable) canvas — no letterbox gaps —
+  // and re-cover on resize. Replaces hard-coded ×1.15 hacks. scroll:0 locks it to the
+  // camera (always full-bleed); a small scroll adds parallax (kept oversized to still cover).
+  Studio.coverBackdrop = function (scene, image, opt) {
+    opt = opt || {};
+    var scroll = opt.scroll != null ? opt.scroll : 0;
+    image.setOrigin(0.5, 0.5).setScrollFactor(scroll).setDepth(opt.depth != null ? opt.depth : -100);
+    function fit() {
+      var W = scene.scale.width, H = scene.scale.height;
+      var src = image.texture && image.texture.getSourceImage ? image.texture.getSourceImage() : null;
+      var iw = (src && src.width) || image.width || W, ih = (src && src.height) || image.height || H;
+      image.setScale(Math.max(W / iw, H / ih) * (scroll > 0 ? 1.25 : 1));
+      image.setPosition(W / 2, H / 2);
+    }
+    fit();
+    scene.scale.on('resize', fit);
+    return image;
+  };
+
+  // ------------------------------------------------------------- Touch controls
+  // ONE on-screen control overlay (analog joystick OR d-pad + action buttons) that drives a
+  // shared input state AND reflects the driver's intent (so a recording's buttons match play).
+  // Renderer-agnostic; attach to the Play scene. Shown on touch devices (or ?touch=1 to force).
+  //   var ctl = Studio.Touch.create(scene, { down:false, fire:false });
+  //   // in manual input: left = keys.left || ctl.state.left ;  each frame: ctl.setViz(currentInput)
+  Studio.Touch = {
+    create: function (scene, opt) {
+      opt = opt || {};
+      var accent = opt.accent != null ? opt.accent : 0xffd34d, wantFire = !!opt.fire, wantDown = !!opt.down;
+      var state = { left: false, right: false, jump: false, down: false, fire: false };
+      var isTouch = (scene.sys && scene.sys.game && scene.sys.game.device.input.touch) || (typeof window !== 'undefined' && 'ontouchstart' in window);
+      var show = opt.show != null ? opt.show : (isTouch || (typeof location !== 'undefined' && /[?&]touch=1/.test(location.search)));
+      if (isTouch && scene.input && scene.input.addPointer) { try { scene.input.addPointer(3); } catch (e) {} }
+      var pref = 'joystick'; try { pref = localStorage.getItem('studio_controller') || 'joystick'; } catch (e) {}
+      var dpad = opt.dpad != null ? opt.dpad : (pref === 'dpad');
+      var DEPTH = 60, objs = [], joy = null, viz = {};
+      function resume() { try { var c = scene.sound && scene.sound.context; if (c && c.state === 'suspended') c.resume(); } catch (e) {} if (opt.onResume) try { opt.onResume(); } catch (e) {} }
+      function btn(x, y, r, glyph, col) {
+        var box = scene.add.circle(x, y, r, 0x12182b, 0.5).setScrollFactor(0).setDepth(DEPTH).setStrokeStyle(3, 0xffffff, 0.32);
+        var t = scene.add.text(x, y, glyph, { fontFamily: 'Arial Black, Arial', fontSize: Math.round(r * 0.7) + 'px', color: col || '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH + 1);
+        objs.push(box, t); return { box: box, t: t };
+      }
+      function hold(b, key) { b.box.setInteractive(); b.box.on('pointerdown', function () { state[key] = true; resume(); }); b.box.on('pointerup', function () { state[key] = false; }); b.box.on('pointerout', function () { state[key] = false; }); }
+      function build() {
+        if (!show) return;
+        var W = scene.scale.width, H = scene.scale.height, y = H - 84;
+        viz.jump = btn(W - 96, y, 56, '⤒', '#fff'); hold(viz.jump, 'jump');
+        if (wantFire) { viz.fire = btn(W - 96, y - 132, 48, '●', '#ff8088'); hold(viz.fire, 'fire'); }
+        if (dpad) {
+          viz.left = btn(96, y, 50, '◀'); hold(viz.left, 'left');
+          viz.right = btn(214, y, 50, '▶'); hold(viz.right, 'right');
+          if (wantDown) { viz.down = btn(W - 214, y, 44, '▼'); hold(viz.down, 'down'); }
+        } else {
+          var bx = 132, by = H - 96, R = 76;
+          var base = scene.add.circle(bx, by, R, 0x0f1528, 0.42).setScrollFactor(0).setDepth(DEPTH).setStrokeStyle(3, 0xffffff, 0.28);
+          var thumb = scene.add.circle(bx, by, 34, 0x2a3556, 0.95).setScrollFactor(0).setDepth(DEPTH + 2).setStrokeStyle(3, accent, 0.85);
+          objs.push(base, thumb);
+          joy = { bx: bx, by: by, R: R, thumb: thumb, pid: null };
+          var setFrom = function (px, py) { var dx = px - bx, dy = py - by, m = Math.hypot(dx, dy) || 1; if (m > R) { dx = dx / m * R; dy = dy / m * R; } thumb.setPosition(bx + dx, by + dy); var nx = dx / R, ny = dy / R; state.left = nx < -0.35; state.right = nx > 0.35; state.jump = ny < -0.55; if (wantDown) state.down = ny > 0.55; };
+          var rel = function () { joy.pid = null; thumb.setPosition(bx, by); state.left = state.right = state.down = false; state.jump = false; };
+          joy._down = function (p) { if (joy.pid != null) return; if (p.x > W * 0.5) return; joy.pid = p.id; resume(); setFrom(p.x, p.y); };
+          joy._move = function (p) { if (p.id === joy.pid) setFrom(p.x, p.y); };
+          joy._up = function (p) { if (p.id === joy.pid) rel(); };
+          scene.input.on('pointerdown', joy._down); scene.input.on('pointermove', joy._move); scene.input.on('pointerup', joy._up);
+        }
+      }
+      function teardown() { objs.forEach(function (o) { try { o.destroy(); } catch (e) {} }); objs = []; if (joy && joy._down) { scene.input.off('pointerdown', joy._down); scene.input.off('pointermove', joy._move); scene.input.off('pointerup', joy._up); } joy = null; viz = {}; }
+      function layout() { teardown(); build(); }
+      build();
+      scene.scale.on('resize', layout);
+      return {
+        state: state, isTouch: isTouch, shown: show,
+        setViz: function (inp) {
+          inp = inp || {};
+          var lit = function (o, on) { if (!o) return; o.box.setFillStyle(on ? accent : 0x12182b, on ? 0.95 : 0.5); o.box.setScale(on ? 1.12 : 1); };
+          lit(viz.jump, inp.jump); lit(viz.fire, inp.fire);
+          if (joy && joy.pid == null) { var dx = (inp.right ? 1 : inp.left ? -1 : 0) * joy.R * 0.6, dy = (inp.jump ? -1 : inp.down ? 1 : 0) * joy.R * 0.6; joy.thumb.setPosition(joy.bx + dx, joy.by + dy); }
+          else if (viz.left) { lit(viz.left, inp.left); lit(viz.right, inp.right); lit(viz.down, inp.down); }
+        },
+        switch: function () { dpad = !dpad; try { localStorage.setItem('studio_controller', dpad ? 'dpad' : 'joystick'); } catch (e) {} layout(); return dpad ? 'dpad' : 'joystick'; },
+        destroy: function () { scene.scale.off('resize', layout); teardown(); }
+      };
+    }
+  };
+
   // --------------------------------------------------------------- Level DSL
   // A level is data. build() returns { platforms, hazards, coins, enemies, spawn, goalX }.
   Studio.Level = {
