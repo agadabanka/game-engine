@@ -99,9 +99,21 @@ session and end with links.
 - "Unlock all levels": a level-select shell should open EVERY card (set the
   selectable count to `LEVELS.length`), not gate behind progression — players and
   deep-links can jump anywhere. Keep the default cursor on the highest reached.
-- Shorts pipeline (engine ability): `tools/trailer/make-shorts.mjs <id|all>` records
-  per-level vertical clips off the LIVE deploy (honors `?level`, muxes each game's
-  real music), `host-shorts.mjs <id...>` uploads them as GitHub Release assets
-  (`shorts` tag) and emits api.github.com asset URLs for the hub `/v` proxy. Record
-  DISTINCT levels (1/3/5) and verify a mid-clip frame per level shows GAMEPLAY (not
-  a menu) before hosting.
+- Shorts subsystem (engine ability — see `docs/ENGINE.md` "The shorts subsystem").
+  A new game gets the whole vertical-shorts feed for FREE; you just run two commands:
+  ```
+  node tools/trailer/make-shorts.mjs <id>     # records levels 1/3/5 off the LIVE
+                                              # deploy, mobile-encoded (~2MB each)
+  node tools/trailer/host-shorts.mjs <id>     # uploads to a GitHub Release AND wires
+                                              # hub/games.json → then deploy the hub
+  ```
+  - **Auto-plan**: no per-game config needed (defaults to levels 1/3/5). To customize,
+    add a `meta.shorts` block to the game's `hub/games.json` entry:
+    `{ mode, levels, music:"assets/music/level-{l}.mp3", menuStart, platformer, skip }`.
+  - The recorder honours `?level`, dismisses menus (`gotoLevel`/`menuStart`), muxes the
+    game's music, and encodes mobile-small — all inherited. The player
+    (`hub/public/shorts.html`) gives every game reliable iOS sound + buffering +
+    variety with zero work.
+  - VERIFY before hosting: grab a mid-clip frame per level (`ffmpeg -ss 14`) and
+    confirm it shows GAMEPLAY (not a menu/title). A menu frame means the game's
+    `?level` boot is gated wrong (see the `mode !== 'play'` rule above).

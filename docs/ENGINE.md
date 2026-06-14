@@ -83,6 +83,41 @@ hub ──pull──> game A  /api/{notes,diary,meta}   (live)
     ──pull──> game B  GitHub: DIARY.md, GAME_META.json   (pre-deploy)
 ```
 
+## The shorts subsystem (every game gets it for free)
+
+A vertical, TikTok-style shorts feed of all games' gameplay, served by the hub.
+Four parts, each engine-level — a new game inherits all of it without touching any
+of these files:
+
+```
+make-shorts.mjs ──record+encode──> out/shorts/<id>/*.mp4
+host-shorts.mjs ──upload+WIRE────> GitHub Release (tag `shorts`) + hub/games.json
+hub /v proxy   ──auth+stream────> private-repo assets (api.github.com → client)
+shorts.html    ──play───────────> the feed (audio, buffering, variety)
+```
+
+- **Recorder** (`tools/trailer/make-shorts.mjs`): drives each game's LIVE deploy
+  through the deterministic harness and films distinct levels. Bakes in every fix:
+  honours `?level=N` (no `reset()`), calls `__game.gotoLevel(i)` to dismiss a
+  level-select menu, `menuStart` taps space for "press-space" shells, muxes the
+  game's real per-level music, and **encodes mobile** (720×1280 / CRF 28 / 1.1 Mbps
+  cap / 96k aac ≈ 2 MB) so it buffers fast on cellular. **Auto-plan:** a new game
+  needs no entry — it defaults to levels 1/3/5; override with a `meta.shorts` block
+  in `hub/games.json` (`mode/levels/music/menuStart/platformer/accent/skip`).
+- **Host** (`host-shorts.mjs <id…>`): (re)creates the `shorts` Release, uploads the
+  mp4s, and **wires them straight into `hub/games.json`** (the `api.github.com` asset
+  URL — the only privately-streamable form). Record → host → wire is one flow.
+- **Proxy** (`hub/server.js` `/v`): streams private-repo Release assets with the
+  GitHub token + `Accept: octet-stream`, forwarding Range — so `<video>` seeks work
+  same-origin. Whitelisted to the registry's URLs. (Curated `shorts` come from the
+  games.json seed so re-hosts always propagate over a persisted store.)
+- **Player** (`hub/public/shorts.html`): the hard-won mobile playback rules, shared
+  by all games — **audio** starts muted then unmutes once playing, re-asserting
+  unmute inside every touch/scroll gesture (the only thing iOS honours); **buffering**
+  keeps a tight 4-element decoder window, a self-healing watchdog re-kicks a stalled
+  short, and the spinner clears on any ready signal; **variety** interleaves shorts
+  round-robin across games.
+
 ## How a new game is born
 `scripts/new-game.mjs` clones the base (a complete game), rebrands it, writes
 `GAME_META.json`, creates the GitHub repo, pushes, and registers with the hub. The

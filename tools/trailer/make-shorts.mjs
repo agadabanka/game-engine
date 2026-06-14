@@ -1,10 +1,17 @@
-// ── ENGINE SHORTS builder (v2) ───────────────────────────────────────────────
-// Record DISTINCT-level gameplay clips off each game's LIVE deploy, reframe to
-// vertical 1080x1920 with each game's OWN music muxed in. Fixes vs v1:
-//   • no window.__game.reset() → ?level=N is honoured (distinct levels)
-//   • per-game real music (fetched from the deploy), per-level where it exists
-//   • per-game mode: levels (?level), windows (slice one chained run), single
+// ── ENGINE SHORTS builder (v3) ───────────────────────────────────────────────
+// Record DISTINCT-level gameplay clips off each game's LIVE deploy, reframe to a
+// vertical MOBILE short with each game's OWN music muxed in. Every fix this engine
+// learned is baked in here so a NEW game gets smooth shorts for free:
+//   • ?level=N honoured (no reset) → distinct levels; gotoLevel() dismisses any
+//     level-select menu; menuStart taps space for "press space to play" shells.
+//   • per-game real music (fetched from the deploy), per-level where it exists.
+//   • MOBILE encode (720x1280 / CRF28 / 1.1Mbps cap / 96k aac) → ~2MB, fast to
+//     buffer on cellular so the player's loading frame barely appears.
+//   • AUTO-PLAN: a game needs NO entry here — defaults to levels 1/3/5. Override
+//     per game with a `meta.shorts` block in hub/games.json (mode/levels/music/
+//     menuStart/platformer/accent/skip). PLAN below is just the legacy fallback.
 //   node tools/trailer/make-shorts.mjs <gameId|all> [level,level]
+//   then: node tools/trailer/host-shorts.mjs <gameId...>   (hosts + wires registry)
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,8 +28,14 @@ const OUT = path.join(ROOT, 'out/shorts');
 const WORK = path.join(OUT, '_work');
 fs.mkdirSync(WORK, { recursive: true });
 
-const W = 1080, H = 1920, GW = 1080, GH = Math.round(1080 * 540 / 960);
+const W = 1080, H = 1920, GW = 1080, GH = Math.round(1080 * 540 / 960);  // compose canvas (crisp overlays)
+const OUT_W = 720, OUT_H = 1280;                                         // final output — MOBILE size
 const FPS = 30, SHORT = 30;
+// Final encode: ~1.5–2.5 MB / 30s so shorts buffer fast on cellular (the loading
+// frame barely appears). Composed at 1080 for crisp text, scaled to 720 on output.
+const VENC = ['-c:v', 'libx264', '-crf', '28', '-maxrate', '1100k', '-bufsize', '2200k',
+  '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-r', String(FPS)];
+const AENC = ['-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart'];
 const PLATFORMER = new Set(['the-platformer', 'jazz', 'deepfin', 'starsweeper']);
 const ACCENT = { 'the-platformer': '#7CFC00', jazz: '#7cc6ff', deepfin: '#ff8fc8', 'ember-depths': '#ff7b3a',
   'nimbus-climb': '#bfe3ff', starlance: '#b388eb', roadwar: '#ffb703', starsweeper: '#ffd166',
@@ -47,6 +60,28 @@ const PLAN = {
   'roadwar-iso':   { mode: 'single', menuStart: true, music: () => 'assets/music/ground-1.mp3' },
   starlance:       { mode: 'single', menuStart: true, music: () => 'assets/music/drive.mp3' },
 };
+
+// Resolve a game's shorts plan: registry `meta.shorts` wins, then the legacy PLAN,
+// then sensible defaults (levels 1/3/5). New games inherit the defaults — no edit
+// here needed. `meta.shorts.music` is a string (optionally with a `{l}` level token);
+// PLAN entries may use a function. `skip:true` opts a game out (e.g. its own pipeline).
+function planFor(g) {
+  const cfg = (g.meta && g.meta.shorts) || PLAN[g.id] || {};
+  const rawMusic = cfg.music;
+  const musicFn = typeof rawMusic === 'function' ? rawMusic
+    : rawMusic ? (l) => String(rawMusic).replace(/\{l\}/g, l)
+    : () => null;
+  return {
+    skip: !!cfg.skip,
+    mode: cfg.mode || 'levels',
+    levels: cfg.levels || [1, 3, 5],
+    windows: cfg.windows, labels: cfg.labels,
+    music: musicFn,
+    menuStart: !!cfg.menuStart,
+    platformer: cfg.platformer != null ? cfg.platformer : PLATFORMER.has(g.id),
+    accent: cfg.accent || ACCENT[g.id] || '#ffd166',
+  };
+}
 
 function label(g, lv) {
   const w = (g.meta && Array.isArray(g.meta.worlds)) ? g.meta.worlds : [];
@@ -128,25 +163,27 @@ async function overlayPNG(file, name, lab, tint, url) {
 function compose(clip, overlay, track, out) {
   const fc = [`[0:v]split=2[bg][fg]`,
     `[bg]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},boxblur=28:2,eq=brightness=-0.18:saturation=1.1[bgb]`,
-    `[fg]scale=${GW}:${GH}[fgs]`, `[bgb][fgs]overlay=0:(H-${GH})/2[base]`, `[base][1:v]overlay=0:0,format=yuv420p[v]`].join(';');
+    `[fg]scale=${GW}:${GH}[fgs]`, `[bgb][fgs]overlay=0:(H-${GH})/2[base]`,
+    `[base][1:v]overlay=0:0,scale=${OUT_W}:${OUT_H}:flags=lanczos,format=yuv420p[v]`].join(';');
   ff(['-i', clip, '-i', overlay, '-stream_loop', '-1', '-i', track || BED,
     '-filter_complex', fc, '-map', '[v]', '-map', '2:a', '-t', String(SHORT),
     '-af', `volume=0.85,afade=t=in:st=0:d=0.6,afade=t=out:st=${SHORT - 1.2}:d=1.2`,
-    '-c:v', 'libx264', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', String(FPS),
-    '-c:a', 'aac', '-b:a', '150k', '-movflags', '+faststart', out]);
+    ...VENC, ...AENC, out]);
 }
 
 const arg = process.argv[2];
-const targets = arg === 'all' ? GAMES.filter(g => g.url && PLAN[g.id]) : GAMES.filter(g => g.id === arg);
+// 'all' = every deployed game that hasn't opted out (meta.shorts.skip). New games
+// are auto-included with default levels 1/3/5 — no edit to this file required.
+const targets = arg === 'all' ? GAMES.filter(g => g.url && !planFor(g).skip) : GAMES.filter(g => g.id === arg);
 for (const g of targets) {
   const base = g.url.replace(/\/$/, '');
-  const plan = PLAN[g.id]; if (!plan) { console.log(`no plan for ${g.id}`); continue; }
+  const plan = planFor(g); if (plan.skip) { console.log(`skip ${g.id} (meta.shorts.skip)`); continue; }
   const gdir = path.join(OUT, g.id); fs.rmSync(gdir, { recursive: true, force: true }); fs.mkdirSync(gdir, { recursive: true });
   console.log(`\n${g.name} (${g.id}) — ${plan.mode}`);
-  const ms = !!plan.menuStart;
-  const jobs = plan.mode === 'levels' ? plan.levels.map(l => ({ lv: PLATFORMER.has(g.id) ? 100 + l : l, n: l, skip: 160, lab: label(g, l), track: plan.music(l), menuStart: ms }))
-    : plan.mode === 'windows' ? plan.windows.map((w, i) => ({ lv: PLATFORMER.has(g.id) ? 101 : 1, n: i + 1, skip: w, lab: (plan.labels[i] || `Run ${i + 1}`).toUpperCase(), track: plan.music(i + 1), menuStart: ms }))
-    : [{ lv: PLATFORMER.has(g.id) ? 101 : 1, n: 1, skip: 160, lab: label(g, 1), track: plan.music(1), menuStart: ms }];
+  const ms = plan.menuStart, P = plan.platformer;
+  const jobs = plan.mode === 'levels' ? plan.levels.map(l => ({ lv: P ? 100 + l : l, n: l, skip: 160, lab: label(g, l), track: plan.music(l), menuStart: ms }))
+    : plan.mode === 'windows' ? plan.windows.map((w, i) => ({ lv: P ? 101 : 1, n: i + 1, skip: w, lab: (plan.labels[i] || `Run ${i + 1}`).toUpperCase(), track: plan.music(i + 1), menuStart: ms }))
+    : [{ lv: P ? 101 : 1, n: 1, skip: 160, lab: label(g, 1), track: plan.music(1), menuStart: ms }];
   for (const j of jobs) {
     const clip = path.join(WORK, `${g.id}-${j.n}-raw.mp4`), ov = path.join(WORK, `${g.id}-${j.n}-ov.png`);
     const out = path.join(gdir, `${g.id}-${j.n}.mp4`);
@@ -154,7 +191,7 @@ for (const g of targets) {
     const n = await record(base, j.lv, j.skip, FPS * SHORT, clip, j.menuStart);
     const track = await music(base, j.track);
     process.stdout.write(`(${n}f, music:${track ? 'real' : 'bed'}) compose`);
-    await overlayPNG(ov, g.name, j.lab, ACCENT[g.id] || '#ffd166', g.url);
+    await overlayPNG(ov, g.name, j.lab, plan.accent, g.url);
     compose(clip, ov, track, out);
     fs.rmSync(clip, { force: true });
     console.log(` → ${path.basename(out)} (${(fs.statSync(out).size / 1048576).toFixed(1)} MB)`);

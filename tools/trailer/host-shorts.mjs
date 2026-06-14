@@ -67,4 +67,21 @@ for (const g of GAMES) {
   console.log(` ✓ ${arr.length} hosted`);
 }
 fs.writeFileSync(path.join(SHORTS, 'hosted.json'), JSON.stringify(hosted, null, 2));
+
+// Wire the hosted shorts straight into the registry so the hub serves them —
+// record → host → wire is ONE flow, no manual games.json edit. Each re-host rotates
+// the asset IDs, so this keeps the registry pointing at the live assets. Pass
+// --no-wire to skip (e.g. to inspect hosted.json first).
+if (!process.argv.includes('--no-wire')) {
+  const REG = path.join(ROOT, 'hub/games.json');
+  const reg = JSON.parse(fs.readFileSync(REG, 'utf8'));
+  let wired = 0;
+  for (const id of Object.keys(hosted)) {
+    const g = reg.find((x) => x.id === id); if (!g) continue;
+    g.shorts = hosted[id].map((s) => ({ title: s.title, biome: s.biome, level: s.level, mp4: s.mp4 }));
+    wired++;
+  }
+  fs.writeFileSync(REG, JSON.stringify(reg, null, 2) + '\n');
+  console.log(`wired ${wired} game(s) into hub/games.json — deploy the hub to publish`);
+}
 console.log('\nDONE →', path.join(SHORTS, 'hosted.json'));

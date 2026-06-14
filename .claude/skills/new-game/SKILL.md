@@ -35,8 +35,12 @@ repo that's already wired to the whole stack and showing on the hub.
 ## What the new game already has
 Platform (server/store/gemini/lyria) · Phaser engine (scenes/materials/levelkit/
 merge) · the level builder · the evaluation suite (0-death gate, felt-fun,
-recorder, vision judge, game-diff/feel-judge) · the notes→diary→issues loop. You
-don't rebuild any of it — you re-skin the surface and design levels.
+recorder, vision judge, game-diff/feel-judge) · the notes→diary→issues loop · the
+`?level=N` level-jump contract (deep-link / record any level) · the **shorts feed**
+(record with `tools/trailer/make-shorts.mjs`, host+wire with `host-shorts.mjs`; it
+plays in the hub's mobile shorts player with reliable sound + buffering — all
+inherited, see `docs/ENGINE.md`). You don't rebuild any of it — you re-skin the
+surface and design levels.
 
 ## Notes
 - Don't fabricate a game the user didn't ask for. If no name is given, ask for one.
