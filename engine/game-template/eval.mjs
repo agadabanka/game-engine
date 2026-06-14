@@ -31,7 +31,7 @@ async function fresh(r) {
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(`${BASE}/?r=${r}`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/?r=${r}&level=1`, { waitUntil: 'load' });   // ?level skips the menu → straight to Play
   await page.waitForFunction(() => window.__ready === true, { timeout: 20000 });
   page._errs = errors;
   return page;

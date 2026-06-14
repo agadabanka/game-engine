@@ -46,7 +46,7 @@
       // ?level=N jumps straight to level N (1-based) — the engine's uniform
       // level-jump contract, so any game can be deep-linked/recorded per level.
       // (100+N is also accepted, the showcase-recorder convention.)
-      var _lv = parseInt(new URLSearchParams(location.search).get('level') || '1', 10) || 1;
+      var _lv = window.__startLevel || parseInt(new URLSearchParams(location.search).get('level') || '1', 10) || 1;
       if (_lv > 100) _lv -= 100;
       var spec = window.LEVELS[Math.max(0, Math.min(window.LEVELS.length - 1, _lv - 1))];
       this.cameras.main.setBackgroundColor(spec.sky || 0x1d2b53);
@@ -120,6 +120,14 @@
     return { left: c.left.isDown || t.left, right: c.right.isDown || t.right, jump: c.up.isDown || c.space.isDown || t.jump };
   }
 
+  // the shell: a title / world-select menu (live players see it; ?level boots straight to Play).
+  // A scaffolded game customizes this (name/tagline/thumbs/links) — the menu comes for free.
+  window.SHELL = {
+    name: 'Studio Game', tagline: 'A platformer built on the game-engine.', accent: 0x7cc6ff, sky: 0x0b1021,
+    worlds: (window.LEVELS || []).map(function (l) { return { name: l.name || 'World', color: l.sky }; }),
+    links: { diary: '/diary.html' },
+  };
+
   var config = {
     type: Phaser.AUTO, parent: 'game', width: 960, height: 540, backgroundColor: '#1d2b53', seed: ['game-template'],
     // FIT + centre so the canvas fills/letterboxes any viewport (phone/desktop); fps floor clamps the delta.
@@ -127,7 +135,7 @@
     fps: { min: 30, target: 60, smoothStep: true },
     render: { preserveDrawingBuffer: true, pixelArt: true },
     physics: { default: 'arcade', arcade: { gravity: { y: GRAV }, debug: false } },
-    scene: [Play]
+    scene: [Studio.Shell.title(), Play]
   };
   var r = new URLSearchParams(location.search).get('r');
   if (r === 'canvas') config.type = Phaser.CANVAS; else if (r === 'webgl') config.type = Phaser.WEBGL;

@@ -390,6 +390,74 @@
     return game;
   };
 
+  // ------------------------------------------------------------- Shell (menu)
+  // A reusable TITLE / level-select scene so games stop booting straight into a level.
+  // Add it BEFORE the Play scene:  scene: [Studio.Shell.title(), Play]
+  // It reads window.SHELL = { name, tagline, accent, sky, titleArt, links:{diary,build,design},
+  //   worlds:[{name,tag,color}], thumbs:[url,…] }. A card click sets window.__startLevel (1-based)
+  // and starts 'Play'; the game's Play.create reads window.__startLevel (then ?level, then 1).
+  // ?level=N (deep-link / eval / recorder) SKIPS the menu and boots Play directly — so the gate
+  // and shorts pipeline are unaffected; only live players (no ?level) see the menu.
+  Studio.Shell = {
+    title: function () {
+      return {
+        key: 'Title',
+        preload: function () {
+          var S = window.SHELL || {}, sc = this;
+          if (S.titleArt) sc.load.image('shell_title', S.titleArt);
+          (S.thumbs || []).forEach(function (t, i) { if (t) sc.load.image('shell_thumb' + i, t); });
+          sc.load.on('loaderror', function () {});
+        },
+        create: function () {
+          var scene = this, W = scene.scale.width, H = scene.scale.height, S = window.SHELL || {};
+          var p = new URLSearchParams(location.search);
+          if (p.get('level')) { scene.scene.start('Play'); return; }   // deep-link / eval → straight to Play
+          var accent = S.accent != null ? S.accent : 0xffd34d;
+          var accCss = '#' + ('000000' + accent.toString(16)).slice(-6);
+          if (scene.textures.exists('shell_title')) { var bg = scene.add.image(W / 2, H / 2, 'shell_title'); var src = bg.texture.getSourceImage(); bg.setScale(Math.max(W / src.width, H / src.height)); }
+          else scene.add.rectangle(W / 2, H / 2, W, H, S.sky != null ? S.sky : 0x16121f);
+          scene.add.rectangle(W / 2, H / 2, W, H, 0x0a0710, 0.34);
+          scene.add.text(34, 24, S.name || 'STUDIO GAME', { fontFamily: 'Arial Black, Arial', fontSize: '46px', color: '#ffffff', stroke: '#140b12', strokeThickness: 8 }).setShadow(0, 4, '#000', 10, true, true);
+          if (S.tagline) scene.add.text(36, 80, S.tagline, { fontFamily: 'Arial', fontSize: '15px', color: accCss, stroke: '#140b12', strokeThickness: 3, wordWrap: { width: W * 0.62 } });
+          var worlds = S.worlds || (window.LEVELS || []).map(function (l) { return { name: l.name, color: l.sky }; });
+          var n = worlds.length || 1;
+          scene._sel = 0;
+          var cw = Math.min(176, (W - 90) / n - 16), ch = Math.round(cw * 0.62), gap = 16;
+          var total = n * cw + (n - 1) * gap, x0 = (W - total) / 2 + cw / 2, cy = H - 156;
+          scene._cards = [];
+          var tag = scene.add.text(W / 2, cy + ch / 2 + 24, '', { fontFamily: 'Arial', fontSize: '15px', color: accCss }).setOrigin(0.5);
+          function sel(i) { scene._sel = i; scene._cards.forEach(function (c, j) { var on = j === i; c.border.setStrokeStyle(4, accent, on ? 1 : 0); c.card.setScale(on ? 1.08 : 1); c.card.setDepth(on ? 5 : 0); c.name.setColor(on ? accCss : '#ffffff'); }); tag.setText(worlds[i] && worlds[i].tag ? '▸ ' + worlds[i].tag : (worlds[i] ? worlds[i].name : '')); }
+          function start() { if (scene._starting) return; scene._starting = true; window.__startLevel = scene._sel + 1; scene.cameras.main.fadeOut(220, 0, 0, 0); scene.time.delayedCall(240, function () { scene.scene.start('Play'); }); }
+          worlds.forEach(function (w, i) {
+            var x = x0 + i * (cw + gap), card = scene.add.container(x, cy);
+            var thumb = scene.textures.exists('shell_thumb' + i) ? scene.add.image(0, 0, 'shell_thumb' + i).setDisplaySize(cw, ch) : scene.add.rectangle(0, 0, cw, ch, w.color != null ? w.color : 0x2a2440);
+            var scrim = scene.add.rectangle(0, ch / 2 - 14, cw, 28, 0x05060c, 0.74);
+            var border = scene.add.rectangle(0, 0, cw + 6, ch + 6, 0, 0).setStrokeStyle(4, accent, 0);
+            var badge = scene.add.text(-cw / 2 + 7, -ch / 2 + 5, String(i + 1), { fontFamily: 'Arial Black, Arial', fontSize: '16px', color: accCss, stroke: '#000', strokeThickness: 4 });
+            var name = scene.add.text(0, ch / 2 - 14, w.name, { fontFamily: 'Arial', fontSize: '13px', color: '#ffffff' }).setOrigin(0.5);
+            card.add([thumb, scrim, border, badge, name]);
+            scene.tweens.add({ targets: card, y: cy - 5, duration: 1500 + i * 140, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+            var hit = scene.add.zone(x, cy, cw + 12, ch + 12).setInteractive({ useHandCursor: true });
+            hit.on('pointerover', function () { sel(i); });
+            hit.on('pointerdown', function () { sel(i); start(); });
+            scene._cards.push({ card: card, border: border, name: name });
+          });
+          sel(0);
+          var prompt = scene.add.text(W / 2, H - 42, '▶  PICK A WORLD  ·  OR PRESS SPACE', { fontFamily: 'Arial Black, Arial', fontSize: '15px', color: '#ffffff', stroke: '#1c1320', strokeThickness: 6 }).setOrigin(0.5);
+          scene.tweens.add({ targets: prompt, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
+          var Lk = S.links || {}, lx = W - 22, ly = 22;
+          function link(label, href, color) { if (!href) return; var t = scene.add.text(lx, ly, label, { fontFamily: 'Arial', fontSize: '14px', color: color }).setOrigin(1, 0).setInteractive({ useHandCursor: true }); t.on('pointerdown', function () { window.location.href = href; }); ly += 25; }
+          link('📖 diary', Lk.diary, '#ffd98a'); link('🧱 builder', Lk.build, '#9fd6ff'); link('✏️ design', Lk.design, '#c9a7ff');
+          scene.input.keyboard.on('keydown-RIGHT', function () { sel((scene._sel + 1) % n); });
+          scene.input.keyboard.on('keydown-LEFT', function () { sel((scene._sel - 1 + n) % n); });
+          ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT'].forEach(function (k, i) { scene.input.keyboard.on('keydown-' + k, function () { if (worlds[i]) sel(i); }); });
+          scene.input.keyboard.once('keydown-SPACE', start);
+          scene.cameras.main.fadeIn(260, 0, 0, 0);
+        }
+      };
+    }
+  };
+
   // ------------------------------------------------------------- Touch controls
   // ONE on-screen control overlay (analog joystick OR d-pad + action buttons) that drives a
   // shared input state AND reflects the driver's intent (so a recording's buttons match play).
