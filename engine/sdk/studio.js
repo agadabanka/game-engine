@@ -106,6 +106,38 @@
         g.fillStyle(line, 0.9).fillRect(0, 0, W, 3);                                               // bold surface edge
       });
     },
+    // a MOLDED clay slab baked at the platform's exact pixel size: rounded corners
+    // + a soft lit top lip + a bottom inner-shadow + a dark seam outline, with TRUE
+    // alpha outside the round-rect — so a floating platform reads as molded clay,
+    // not a hard-edged cardboard rectangle (the "platforms alpha is missing" note).
+    // Body = the game's generated clay tile_<mat> (cover-fit) if present, else the
+    // material colour. Physics bodies stay rectangular (Arcade AABB) so feel/gate
+    // are unchanged. Falls back to the stretched tile key under headless or if the
+    // canvas API is unavailable, so the sim-only gate is byte-identical.
+    claySlab: function (scene, key, w, h, mat) {
+      var fallback = scene.textures.exists('tile_' + mat) ? 'tile_' + mat : 'grad_' + mat;
+      if (Studio._headless) return fallback;
+      if (scene.textures.exists(key)) return key;
+      try {
+        var cw = Math.max(8, Math.round(w)), ch = Math.max(8, Math.round(h));
+        var ct = scene.textures.createCanvas(key, cw, ch);
+        if (!ct) return fallback;
+        var ctx = ct.getContext(), M = Studio.Materials.get(mat || 'solid');
+        var r = Math.max(7, Math.min(20, Math.round(ch * 0.34)));
+        var hex = function (c) { return '#' + ('000000' + (c >>> 0).toString(16)).slice(-6); };
+        function rr(x, y, ww, hh, rad) { ctx.beginPath(); ctx.moveTo(x + rad, y); ctx.arcTo(x + ww, y, x + ww, y + hh, rad); ctx.arcTo(x + ww, y + hh, x, y + hh, rad); ctx.arcTo(x, y + hh, x, y, rad); ctx.arcTo(x, y, x + ww, y, rad); ctx.closePath(); }
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.save(); rr(0, 0, cw, ch, r); ctx.clip();
+        var srcKey = scene.textures.exists('tile_' + mat) ? 'tile_' + mat : null, img = srcKey && scene.textures.get(srcKey).getSourceImage();
+        if (img && img.width) { var s = Math.max(cw / img.width, ch / img.height), dw = img.width * s, dh = img.height * s; ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh); }
+        else { ctx.fillStyle = hex(M.color); ctx.fillRect(0, 0, cw, ch); var bd = ctx.createLinearGradient(0, 0, 0, ch); bd.addColorStop(0, hex(M.top)); bd.addColorStop(1, hex(Studio._darken(M.color, 0.4))); ctx.fillStyle = bd; ctx.globalAlpha = 0.5; ctx.fillRect(0, 0, cw, ch); ctx.globalAlpha = 1; }
+        var lipH = Math.min(ch * 0.5, 16), lip = ctx.createLinearGradient(0, 0, 0, lipH); lip.addColorStop(0, 'rgba(255,255,255,0.6)'); lip.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = lip; ctx.fillRect(0, 0, cw, lipH);
+        var shH = Math.min(ch * 0.55, 20), sh = ctx.createLinearGradient(0, ch - shH, 0, ch); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(20,16,28,0.34)'); ctx.fillStyle = sh; ctx.fillRect(0, ch - shH, cw, shH);
+        ctx.restore();
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(28,28,40,0.8)'; rr(1.5, 1.5, cw - 3, ch - 3, r); ctx.stroke();
+        ct.refresh(); return key;
+      } catch (e) { return fallback; }
+    },
     kit: function (scene, opt) {
       opt = opt || {}; var T = opt.tile || 40, M = Studio.Materials, self = this;
       Object.keys(M.table).forEach(function (name) {
@@ -728,6 +760,15 @@
         var img = group.create(cx, cy, tex); img.setDisplaySize(w, h).refreshBody();
         return img;
       }
+      // a FLOATING slab gets the MOLDED clay look (rounded, soft-edged, true alpha) baked at exact
+      // size; ground/walls keep the wide stretched tile (their flat edges sit off-screen / at the floor).
+      function clayPlat(group, cx, cy, w, h, mat) {
+        var m = mat || 'solid', key = 'clay_' + m + '_' + Math.round(w) + 'x' + Math.round(h);
+        var tex = Studio.Textures.claySlab(scene, key, w, h, m);
+        var img = group.create(cx, cy, tex);
+        if (tex === key) img.refreshBody(); else img.setDisplaySize(w, h).refreshBody();
+        return img;
+      }
       (spec.ground || []).forEach(function (seg) {
         var mat = seg[2] || 'solid', w = seg[1] - seg[0], h = H - spec.groundY;
         slab(Studio.Materials.get(mat).deadly ? hazards : platforms, seg[0] + w / 2, spec.groundY + h / 2, w, h, mat);
@@ -735,7 +776,16 @@
       (spec.walls || []).forEach(function (w) {
         var ht = (w.tiles || 1) * T; slab(platforms, w.x + T / 2, spec.groundY - ht / 2, T, ht, w.mat || 'stone');
       });
-      (spec.platforms || []).forEach(function (p) { slab(platforms, p.x + p.w / 2, p.y + T / 2, p.w, T, p.mat || 'solid'); });
+      (spec.platforms || []).forEach(function (p) { clayPlat(platforms, p.x + p.w / 2, p.y + T / 2, p.w, T, p.mat || 'solid'); });
+      // ── mechanics (#30): one-way platforms + crumble platforms (autopilot-transparent) ──
+      (spec.oneway || []).forEach(function (p) {
+        var img = clayPlat(platforms, p.x + p.w / 2, p.y + T / 2, p.w, T, p.mat || 'cloud');
+        img.body.checkCollision.down = false; img.body.checkCollision.left = false; img.body.checkCollision.right = false; img._oneWay = true;
+      });
+      var crumble = scene.physics.add.staticGroup();
+      (spec.crumble || []).forEach(function (p) {
+        var img = clayPlat(crumble, p.x + p.w / 2, p.y + T / 2, p.w, T, p.mat || 'frosting'); img._life = -1;
+      });
       var coins = scene.physics.add.staticGroup();
       (spec.coins || []).forEach(function (c) { coins.create(c.x, c.y, 'coin'); });
       var enemies = scene.physics.add.group({ allowGravity: false, immovable: true });
@@ -743,7 +793,8 @@
         var s = enemies.create(e.x, spec.groundY - 14, 'enemy'); s.patrol = e.patrol || 60; s.homeX = e.x; s.dir = 1;
       });
       return {
-        platforms: platforms, hazards: hazards, coins: coins, enemies: enemies,
+        platforms: platforms, hazards: hazards, coins: coins, enemies: enemies, crumble: crumble,
+        conveyor: spec.conveyor || [], dashpad: spec.dashpad || [], fields: spec.fields || [],
         spawn: spec.spawn || { x: 60, y: spec.groundY - 80 }, goalX: spec.goal != null ? spec.goal : (spec.width - 60)
       };
     }
@@ -766,6 +817,57 @@
         if (px >= b.left - 2 && px <= b.right + 2 && b.top >= py - 6 && b.top <= py + (tile || 40)) return true;
       }
       return false;
+    }
+  };
+
+  // ------------------------------------------------------------- Mechanics (#30)
+  // Runtime forces for the data mechanics that Level.build lays down (crumble,
+  // conveyor, dashpad, fields). All are "autopilot-transparent": the always-
+  // moving-right 0-death autopilot clears them without special-casing, because
+  // every horizontal force keeps net motion rightward (conveyor/dashpad push <
+  // run SPEED) and fields only assist vertically (never trap), while crumble
+  // fuses (60f) outlast the ~41f the autopilot needs to cross a <=150px slab —
+  // so a platform only drops once you're already off it. Wiring per game:
+  //   create():  Studio.Mechanics.install(scene, player, world)
+  //   update():  Studio.Mechanics.step(scene, player, world)   // AFTER input sets velocity
+  //   reset():   Studio.Mechanics.reset(world)                  // restore for the determinism gate
+  Studio.Mechanics = {
+    install: function (scene, player, world) {
+      if (world && world.crumble) world._crumbleCol = scene.physics.add.collider(player, world.crumble);
+      return world && world._crumbleCol;
+    },
+    reset: function (world) {
+      if (!world || !world.crumble) return;
+      world.crumble.getChildren().forEach(function (c) {
+        c._life = -1; c.setAngle(0); c.setAlpha(1);
+        if (c.body && !c.body.enable) c.enableBody(true, c.x, c.y, true, true);
+      });
+    },
+    step: function (scene, player, world) {
+      if (!world || !player || !player.body) return;
+      var b = player.body, onGround = b.blocked.down || b.touching.down;
+      // CRUMBLE — standing on one lights a fuse; it wobbles, then drops behind you.
+      if (world.crumble) world.crumble.getChildren().forEach(function (c) {
+        if (!c.body || !c.body.enable) return;
+        if (c._life < 0 && b.touching.down && player.y < c.y && Math.abs(player.x - c.x) < c.displayWidth / 2 + 10) c._life = 60;
+        if (c._life > 0) { c._life--; c.setAngle(Math.sin(c._life * 0.6) * 3); if (c._life === 0) { c.disableBody(true, true); Studio.Audio.sfx('stomp'); } }
+      });
+      // CONVEYOR — a belt nudges you along (push < SPEED, so right-runs never reverse).
+      (world.conveyor || []).forEach(function (z) {
+        if (onGround && player.x > z.x0 && player.x < z.x1) player.setVelocityX(b.velocity.x + (z.dir || 1) * (z.push || 80));
+      });
+      // DASHPAD — a strip of ground that flings you forward (over solid floor, no pit risk).
+      (world.dashpad || []).forEach(function (d) {
+        if (onGround && Math.abs(player.x - d.x) < 30) { player.setVelocityX((d.dir || 1) * (d.speed || 340)); if (!d._lit || frameNow() - d._lit > 18) { d._lit = frameNow(); Studio.Audio.sfx('whoosh'); } }
+      });
+      // FIELDS — updraft lifts, lowgrav floats (vertical assist only; never traps).
+      (world.fields || []).forEach(function (f) {
+        if (player.x > f.x && player.x < f.x + f.w && player.y > f.y && player.y < f.y + f.h) {
+          if (f.type === 'updraft') player.setVelocityY(Math.max(b.velocity.y - (f.strength || 42), -260));
+          else if (f.type === 'lowgrav') player.setVelocityY(b.velocity.y * 0.92);
+        }
+      });
+      function frameNow() { return scene.game.loop.frame; }
     }
   };
 

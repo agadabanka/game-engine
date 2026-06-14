@@ -34,6 +34,7 @@
   function reset() {
     deaths = 0; won = false; frame = 0; coins = 0; auto = false; jumpLatch = false;
     player.setVelocity(0, 0); player.setPosition(spawn.x, spawn.y);
+    if (Studio.Mechanics) Studio.Mechanics.reset(world);   // restore crumble for the determinism gate
   }
   function respawn() { player.setVelocity(0, 0); player.setPosition(spawn.x, spawn.y); jumpLatch = false; }
   function die() { deaths++; lastDeathX = Math.round(player.x); respawn(); }
@@ -58,6 +59,7 @@
 
       player = this.physics.add.sprite(spawn.x, spawn.y, 'hero');
       this.physics.add.collider(player, world.platforms);
+      Studio.Mechanics.install(this, player, world);   // crumble collider + mechanic state (#30)
       this.physics.add.overlap(player, world.coins, function (p, c) {
         c.disableBody(true, true); coins++; Studio.Audio.sfx('coin');
         Studio.Juice.burst(scene, c.x, c.y, { n: 8, tint: 0xffd700, life: 380 }); hud();
@@ -111,6 +113,7 @@
       if (mv.jump && onGround && !jumpLatch) { player.setVelocityY(JUMP_V); jumpLatch = true; Studio.Audio.sfx('jump'); }
       if (!mv.jump) jumpLatch = false;
       if (this._touch) this._touch.setViz(mv);
+      Studio.Mechanics.step(this, player, world);   // conveyor/dashpad/fields/crumble — AFTER input sets velocity
 
       world.enemies.getChildren().forEach(function (e) {
         if (!e.active) return; e.x += e.dir * 0.6; if (Math.abs(e.x - e.homeX) > e.patrol) e.dir *= -1;
