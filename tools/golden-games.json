@@ -1,0 +1,8 @@
+{
+  "_": "Golden canary set for the cross-game eval (tools/eval-all.mjs). It runs the engine game-template against SDK HEAD (the DIRECT engine-SDK regression test) PLUS each golden game's own gate (per-genre coverage). Per game: 'sdk':'head' vendors engine/sdk/studio.js (only valid for engine-lineage games); 'sdk':'own' runs the game with its OWN shipped SDK (other lineages — a health check). 'eval':'own' uses the repo's eval.mjs; 'eval':'none' means no harness yet (skipped, not failed).",
+  "games": [
+    { "id": "deepfin",     "repo": "agadabanka/deepfin",     "archetype": "platformer", "sdk": "head", "eval": "none", "note": "no eval.mjs in repo and game.js doesn't set the __ready contract; the platformer genre is covered by the engine game-template until a deepfin eval is added" },
+    { "id": "grovekeep",   "repo": "agadabanka/grovekeep",   "archetype": "builder",    "sdk": "own",  "eval": "own" },
+    { "id": "roadwar-iso", "repo": "agadabanka/roadwar-iso", "archetype": "isorts",     "sdk": "own",  "eval": "own" }
+  ]
+}

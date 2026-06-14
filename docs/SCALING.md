@@ -33,17 +33,32 @@ The single foundation under 7.1's status checkmarks and 7.2's generated diary.
 - [ ] **Stage-runner as code** — = 7.1.
 - [ ] Observability/logging surfaced in console + diary (= keystone).
 
-## 7.4 — Quality at scale (safety net BEFORE flooring throughput)
-- [ ] **Golden games**: deepfin (platformer), grovekeep (town builder),
-      roadwar-iso (iso RTS). Clone + vendor current SDK so their gate runs against
-      engine changes.
-- [ ] **Cross-game eval runner** `tools/eval-all.mjs` — gates on **golden set + current
-      game** only (keeps CI fast), aggregates scorecards, exits non-zero on any red.
-- [ ] **CI workflow** — run cross-game eval on engine/SDK changes; block merge on red.
-- [ ] **Visual QA** — vision judge + screenshot diff vs golden baselines (catches black
-      screens / broken menus / off-theme art).
-- [ ] **SDK sync script + check** `scripts/sync-sdk.mjs` — propagate `engine/sdk/studio.js`
-      to the template (and a CI check that they match).
+## 7.4 — Quality at scale (safety net BEFORE flooring throughput)  ← IN PROGRESS
+- [x] **SDK sync script + check** `scripts/sync-sdk.mjs` — propagate `engine/sdk/studio.js`
+      to the template; `--check` fails CI if stale.
+- [x] **Golden games** `tools/golden-games.json` — deepfin (platformer), grovekeep
+      (builder), roadwar-iso (iso RTS).
+- [x] **Cross-game eval runner** `tools/eval-all.mjs` — gates the engine **game-template
+      vs SDK HEAD** (direct engine-SDK regression) + each golden game's own gate.
+      Aggregates scorecards, exits non-zero on red, renders an eval board.
+- [x] **CI workflow** `.github/workflows/cross-game-eval.yml` — runs on engine/SDK
+      changes, blocks merge on red. *(needs a repo secret `GH_TOKEN` to clone golden repos)*
+- [x] **Visual boards** `tools/lib/render-board.mjs` — eval board + build board +
+      pipeline board (the "nice visuals"); tied into eval-all.
+- [ ] **Visual QA** — screenshot diff of each gate's `shot-*.png` vs a committed golden
+      baseline (catches off-theme/regressions beyond the non-black check eval already does).
+- [ ] **Add a deepfin eval** — deepfin has no `eval.mjs` and its game.js doesn't set the
+      `__ready` contract, so the platformer slot is gated via the engine game-template for
+      now. Follow-up: commit an eval to the deepfin repo.
+
+> **Architectural finding (shapes the net):** the SDK is NOT one shared file — there
+> are ≥2 lineages. `engine/sdk/studio.js` (1064-line Brawl/Toon) underlies the
+> game-template + engine-lineage games; grovekeep/roadwar-iso ship their OWN
+> `Studio.Game.boot` SDK (~3200–3700 lines, in their repos). Deployed games freeze their
+> vendored SDK, so an `engine/sdk/studio.js` edit can't retroactively break them — the
+> **game-template is the true regression surface** for engine-SDK changes, and golden
+> games are per-genre health checks (`sdk:"own"` = as-shipped). Consolidating the
+> lineages onto one engine SDK is a future migration.
 
 ## Suggested sequence
 1. Keystone (events/observability) → 2. Golden games + cross-game eval (safety net) →

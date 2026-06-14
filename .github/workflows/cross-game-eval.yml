@@ -1,0 +1,53 @@
+# Quality safety net (7.4): on any engine/SDK change, run the golden games' own gates
+# against engine HEAD and block the merge on red — so one shared-SDK change can't
+# silently break shipped games. Optimised to the golden set (fast, ~minutes).
+#
+# Requires a repo secret `GH_TOKEN` (a PAT with read access to the golden game repos),
+# since the default GITHUB_TOKEN can't clone other private repos.
+name: cross-game-eval
+on:
+  push:
+    paths:
+      - 'engine/sdk/**'
+      - 'engine/game-template/**'
+      - 'tools/eval-all.mjs'
+      - 'tools/golden-games.json'
+  pull_request:
+    paths:
+      - 'engine/sdk/**'
+      - 'engine/game-template/**'
+      - 'tools/eval-all.mjs'
+      - 'tools/golden-games.json'
+  workflow_dispatch:
+
+jobs:
+  golden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: SDK vendor copies in sync
+        run: node scripts/sync-sdk.mjs --check
+      - name: Unit tests (build-event keystone)
+        run: node --test tools/lib/
+      - name: Cross-game eval — golden set vs engine HEAD
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: node tools/eval-all.mjs
+      - name: Upload eval board + scorecards
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-board
+          path: |
+            out/golden/eval-board.png
+            out/golden/summary.json
+            out/golden/*/out/scorecard.json
+            out/golden/*/out/shot-*.png
+          if-no-files-found: ignore

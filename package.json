@@ -11,7 +11,10 @@
     "refresh": "node hub/refresh.mjs",
     "book": "node tools/build-book.mjs",
     "book:art": "node scripts/gen-book-art.mjs",
-    "trailer": "node tools/trailer/make-trailer.mjs"
+    "trailer": "node tools/trailer/make-trailer.mjs",
+    "sync-sdk": "node scripts/sync-sdk.mjs",
+    "eval:all": "node tools/eval-all.mjs",
+    "test": "node --test tools/lib/"
   },
   "dependencies": {
     "express": "^4.19.2"
