@@ -616,7 +616,15 @@
       + '</div><div id="snm" style="font-size:12px;color:#9fb3e0;margin-top:6px"></div></div>';
     document.body.appendChild(box);
     var t = box.querySelector('#snt'); try { t.focus(); } catch (e) {}
-    var close = function () { try { box.remove(); } catch (e) {} };
+    // The game's keyboard plugin registers SPACE + arrows in its CAPTURE list (createCursorKeys)
+    // and preventDefault()s them for gameplay — which, with this DOM field open over the canvas,
+    // swallowed the SPACE BAR (and arrows) as you typed. Drop Phaser's global capture while the
+    // note is open so the field receives every key, and stop key events at the box as a backstop.
+    var kb = scene && scene.input && scene.input.keyboard;
+    try { if (kb && kb.disableGlobalCapture) kb.disableGlobalCapture(); } catch (e) {}
+    var swallow = function (e) { e.stopPropagation(); };
+    box.addEventListener('keydown', swallow); box.addEventListener('keyup', swallow); box.addEventListener('keypress', swallow);
+    var close = function () { try { if (kb && kb.enableGlobalCapture) kb.enableGlobalCapture(); } catch (e) {} try { box.remove(); } catch (e) {} };
     box.querySelector('#snx').onclick = close;
     box.querySelector('#sns').onclick = function () {
       var txt = (t.value || '').trim(); if (!txt) { close(); return; }
@@ -795,6 +803,7 @@
       return {
         platforms: platforms, hazards: hazards, coins: coins, enemies: enemies, crumble: crumble,
         conveyor: spec.conveyor || [], dashpad: spec.dashpad || [], fields: spec.fields || [],
+        groundY: spec.groundY, tile: T,
         spawn: spec.spawn || { x: 60, y: spec.groundY - 80 }, goalX: spec.goal != null ? spec.goal : (spec.width - 60)
       };
     }
@@ -813,7 +822,7 @@
     groundAt: function (group, px, py, tile) {
       var kids = group.getChildren();
       for (var i = 0; i < kids.length; i++) {
-        var b = kids[i] && kids[i].body; if (!b) continue;
+        var b = kids[i] && kids[i].body; if (!b || !b.enable) continue;   // skip dropped/disabled bodies (crumble)
         if (px >= b.left - 2 && px <= b.right + 2 && b.top >= py - 6 && b.top <= py + (tile || 40)) return true;
       }
       return false;

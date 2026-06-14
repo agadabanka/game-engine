@@ -13,7 +13,8 @@
 
   function sense(onGround) {
     var probeX = player.x + 26, footY = player.y + 22;
-    var groundAhead = Studio.Autopilot.groundAt(world.platforms, probeX, footY, T);
+    var groundAhead = Studio.Autopilot.groundAt(world.platforms, probeX, footY, T) ||
+      (world.crumble && Studio.Autopilot.groundAt(world.crumble, probeX, footY, T));   // crumble bridges count as ground
     var blockedRight = player.body.blocked.right; // solid walls only (overlaps set touching.*)
     var enemyAhead = false;
     world.enemies.getChildren().forEach(function (e) {

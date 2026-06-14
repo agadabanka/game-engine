@@ -41,7 +41,7 @@ export const ELEMENT_LIBRARY = {
   hazard:    { implemented: true,  feeling: 'Challenge',  aesthetic: 'a deadly pit with a face',      interest: 6, ai: 'leap',           note: 'A deadly-material segment — the autopilot hops it like a gap; obeys maxGapPx. Lava/water/thorn/fudge.' },
   bridge:    { implemented: true,  feeling: 'Sensation',  aesthetic: 'stepping stones across',        interest: 5, ai: 'hop-stone',      note: 'A low foothold mid-gap (≤80px up) → island→stone→island; tames overshoot.' },
   spring:    { implemented: true,  feeling: 'Sensation',  aesthetic: 'exhilaration — flung skyward',  interest: 8, ai: 'ride+collect',   note: 'A bounce pad — a VERTICAL verb. Needs >=SAFE_AFTER runway before a pit (a launch must not carry into a fall).' },
-  oneway:    { implemented: false, feeling: 'Expression', aesthetic: 'choose your layer / route',     interest: 6, ai: 'land-on',        note: 'Land from above, jump up through from below — stacked routes (Triangularity).' },
+  oneway:    { implemented: true,  feeling: 'Expression', aesthetic: 'choose your layer / route',     interest: 6, ai: 'land-on',        note: 'Land from above, jump up through from below — stacked routes (Triangularity). spec.oneway in Level.build; high perches are autopilot-invisible.' },
   ice:       { implemented: false, feeling: 'Challenge',  aesthetic: 'loss of control — momentum',    interest: 6, ai: 'walk-careful',   note: 'Low friction; place over CONTINUOUS ground so a slide cannot overshoot into a fall.' },
   pipe:      { implemented: false, feeling: 'Challenge',  aesthetic: 'a wall to surmount',            interest: 5, ai: 'launch-clear',   note: 'Tall obstacle; running launch. A flat runway before it. (Walls exist but break the AI — see #40.)' },
 
@@ -52,10 +52,10 @@ export const ELEMENT_LIBRARY = {
   brick:     { implemented: false, feeling: 'Discovery',  aesthetic: 'a hidden route when powered',   interest: 4, ai: 'none',           note: 'Smash-through route for the powered hero; pairs with a power qblock.' },
 
   // ── timed / dynamic verbs (the #30 backlog — high interest, AI standoff rules) ──
-  conveyor:  { implemented: false, feeling: 'Expression', aesthetic: 'fight or ride the current',     interest: 6, ai: 'auto (push<accel)', note: 'Belt surface (dir ±1). Push < runAccel so the AI always wins. Over continuous ground.' },
+  conveyor:  { implemented: true,  feeling: 'Expression', aesthetic: 'fight or ride the current',     interest: 6, ai: 'auto (push<accel)', note: 'Belt surface (dir ±1). Push < run SPEED so the AI always wins. Studio.Mechanics applies it; over continuous ground.' },
   spout:     { implemented: false, feeling: 'Challenge',  aesthetic: 'time the burst',                interest: 8, ai: 'observe+dash',   note: 'Periodic floor flame. LONG grounded runway before it; AI stands off, learns the cycle, dashes a dormant window.' },
   dropper:   { implemented: false, feeling: 'Challenge',  aesthetic: 'pass between the drops',        interest: 8, ai: 'observe+dash',   note: 'Periodic ceiling rockfall. Same grounded-runway + AI standoff rule.' },
-  crumble:   { implemented: false, feeling: 'Challenge',  aesthetic: 'the floor betrays you',         interest: 7, ai: 'leap/cross-fast', note: 'Collapses ~0.6s after touch. Over a leapable gap (AI leaps; a lingerer drops) or over ground.' },
+  crumble:   { implemented: true,  feeling: 'Challenge',  aesthetic: 'the floor betrays you',         interest: 7, ai: 'cross-fast',     note: 'Collapses ~1s (60f fuse) after touch. spec.crumble bridges a gap at ground level; the run-right AI senses it as ground and crosses in ~41f, then it drops behind. Keep spans ≤150px.' },
   fireBar:   { implemented: false, feeling: 'Challenge',  aesthetic: 'don’t leap into the wheel of fire', interest: 8, ai: 'pass-under (overhead)', note: 'A rotating bar of fireballs — mount OVERHEAD (lowest sweep ≥2 tiles up): grounded AI strolls under, a jumping player dodges. No coins/gaps under it.' },
 
   // ── adversaries (one distinct kind per level + a boss) ──
@@ -67,10 +67,10 @@ export const ELEMENT_LIBRARY = {
   // ── physics fields & pads (AI-TRANSPARENT helpers — none trap, so the autopilot reads through) ──
   // LAW: a field changes traversal speed/arc, shifting the phase of any downstream periodic hazard —
   // so place fields over SAFE ground with NO timed hazard between them and the goal.
-  dashpad:   { implemented: false, feeling: 'Sensation',  aesthetic: 'turbo launch — speed!',         interest: 8, ai: 'auto (faster)',  note: 'Floor strip → one-shot burst to ~1.45× (capped, lands safe). Over CONTINUOUS flat ground only.' },
+  dashpad:   { implemented: true,  feeling: 'Sensation',  aesthetic: 'turbo launch — speed!',         interest: 8, ai: 'auto (faster)',  note: 'Floor strip → burst to ~1.4× while over it, decays to run speed before any edge. spec.dashpad; place in the safe band over CONTINUOUS flat ground.' },
   wind:      { implemented: false, feeling: 'Expression', aesthetic: 'lean into the current',         interest: 6, ai: 'auto (push<accel)', note: 'A horizontal air current. Push < runAccel; place WITH travel over safe ground.' },
-  updraft:   { implemented: false, feeling: 'Sensation',  aesthetic: 'caught on a thermal',           interest: 7, ai: 'auto (gentle lift)', note: 'An upward fan column (counter-gravity, capped). Over a climb/flat; never over a gap the AI must clear.' },
-  lowgrav:   { implemented: false, feeling: 'Sensation',  aesthetic: 'moon-jump float',               interest: 7, ai: 'auto (floaty)',  note: 'A bubble that scales gravity down. Over flat solid ground; keep pit edges clear.' },
+  updraft:   { implemented: true,  feeling: 'Sensation',  aesthetic: 'caught on a thermal',           interest: 7, ai: 'auto (gentle lift)', note: 'An upward fan column (counter-gravity, capped at -260). spec.fields type:updraft; over a climb/flat; never over a gap the AI must clear.' },
+  lowgrav:   { implemented: true,  feeling: 'Sensation',  aesthetic: 'moon-jump float',               interest: 7, ai: 'auto (floaty)',  note: 'A bubble that scales vy down (×0.92). spec.fields type:lowgrav; over flat solid ground; keep pit edges clear.' },
   water:     { implemented: false, feeling: 'Discovery',  aesthetic: 'sink slow, swim up',            interest: 7, ai: 'auto (buoyant)', note: 'A buoyant pool: capped sink + swim-strokes. Over solid ground, fenced from chasm edges.' },
   sticky:    { implemented: false, feeling: 'Challenge',  aesthetic: 'trudge through the mud',        interest: 6, ai: 'auto (slower)',  note: 'Mud (inverse of ice): capped speed + drag. Not right before a gap that needs run-up speed.' },
   bounceTile:{ implemented: false, feeling: 'Sensation',  aesthetic: 'auto-bounce floor',             interest: 6, ai: 'auto (rides arcs)', note: 'A trampoline floor (a low permanent spring); over a continuous flat net.' },
