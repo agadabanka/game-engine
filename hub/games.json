@@ -738,11 +738,15 @@
         "scaffold": "done",
         "identity": "done",
         "levels": "done",
-        "gate": "done",
+        "character": "done",
         "feel": "done",
         "art": "done",
+        "music": "done",
+        "gate": "done",
         "deploy": "done",
-        "shorts": "todo",
+        "videos": "done",
+        "shorts": "done",
+        "diary": "done",
         "loop": "done"
       },
       "shorts": {
@@ -753,7 +757,16 @@
         ],
         "music": "assets/music/level-{l}.mp3",
         "platformer": false
-      }
+      },
+      "videos": {
+        "level-1-candy-heart-hills": "https://youtu.be/6d5OVK0LB_A",
+        "level-2-smooch-lagoon": "https://youtu.be/mmj98g9UTpE",
+        "level-3-bouquet-boulevard": "https://youtu.be/DvTfASLcZaY",
+        "level-4-chocolate-falls": "https://youtu.be/TOKqZwpV5ys",
+        "level-5-cloud-nine": "https://youtu.be/WU67tXwqNl4",
+        "montage": "https://youtu.be/SxoYJzKzn3U"
+      },
+      "playlist": "https://youtu.be/SxoYJzKzn3U"
     },
     "shorts": [
       {
@@ -774,6 +787,12 @@
         "level": 5,
         "mp4": "https://api.github.com/repos/agadabanka/lovelump/releases/assets/447159831"
       }
+    ],
+    "screenshots": [
+      "https://lovelump-production.up.railway.app/diary-shots/lump-hero.png",
+      "https://lovelump-production.up.railway.app/diary-shots/smooch-lagoon.png",
+      "https://lovelump-production.up.railway.app/diary-shots/chocolate-falls.png",
+      "https://lovelump-production.up.railway.app/diary-shots/cloud-nine.png"
     ]
   }
 ]
