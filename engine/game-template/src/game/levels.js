@@ -7,5 +7,7 @@ window.LEVELS = [
     walls: [{ x: 760, tiles: 2, mat: 'stone' }],
     coins: [{ x: 300, y: 440 }, { x: 360, y: 440 }, { x: 900, y: 440 }, { x: 1300, y: 440 }, { x: 1400, y: 440 }, { x: 1640, y: 360 }],
     enemies: [{ x: 980, patrol: 50 }]
+    // a boss finale is supported via `boss: { x, hp }` (Studio.Boss); it needs the multi-stomp
+    // autopilot policy (coupled to #40's deferred autopilot extensions) before the gate can certify it.
   }
 ];

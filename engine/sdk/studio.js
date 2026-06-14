@@ -943,6 +943,48 @@
     }
   };
 
+  // ---------------------------------------------------------------- Boss (#44)
+  // A reusable multi-HP boss FINALE. A big stompable brute sits against a tall un-jumpable DROP-WALL
+  // (deepfin's contract: the wall gates the exit and falls when the boss dies). In a FLAT arena the
+  // run-right-hop autopilot is trapped at the wall → it jumps, comes down onto the boss, stomps
+  // (HP--), the boss reels (brief invuln, flashing), it bounces, and repeats until the boss dies and
+  // the wall drops — then it runs to the goal. Phases speed the boss up as HP falls. Win contract =
+  // Studio.Boss.defeated(world). Wiring: create() in the arena, route the stomp overlap to onStomp,
+  // call step() each frame, and gate the win on defeated().
+  Studio.Boss = {
+    create: function (scene, world, opts) {
+      opts = opts || {}; var gy = world.groundY || 470, hp = opts.hp || 3, T = world.tile || 40;
+      var scale = opts.scale || 2.4, halfW = 16 * scale;                 // 'enemy' tex is ~32 wide
+      var wx = opts.wallX != null ? opts.wallX : Math.round(opts.x + halfW + 6);   // wall just past the boss's right edge
+      var ht = (opts.wallTiles || 5) * T;
+      if (world.platforms) { var w = world.platforms.create(wx, gy - ht / 2, scene.textures.exists('tile_stone') ? 'tile_stone' : 'grad_stone'); w.setDisplaySize(T, ht).refreshBody(); world._bossWall = w; }
+      var b = world.enemies.create(opts.x, gy - Math.round(13 * scale), 'enemy');
+      b.setScale(scale); b.boss = true; b.hp = hp; b.maxHp = hp; b.reel = 0;
+      b.homeX = opts.x; b.dir = -1; b._spd = opts.speed || 0.45; b.patrol = opts.patrol || 24; b._fly = false;
+      if (b.body) b.body.setAllowGravity(false);
+      if (Studio.Juice) Studio.Juice.glow(b, 0xff5d6c, 3);
+      world._boss = b; world._bossDead = false;
+      return b;
+    },
+    // route the player↔boss stomp here; returns true if a hit landed (the caller need not also kill it).
+    onStomp: function (scene, world, player) {
+      var b = world && world._boss; if (!b || !b.active || b.reel > 0) return false;
+      if (!(player.body.velocity.y > 30 && player.y < b.y - 4)) return false;     // a STOMP (from above, falling)
+      b.hp--; b.reel = 20; player.setVelocityY(-440);
+      if (Studio.Juice) { Studio.Juice.shake(scene, 120, 0.008); Studio.Juice.burst(scene, b.x, b.y, { n: 12, tint: 0xffd166 }); }
+      if (Studio.Audio) Studio.Audio.sfx(b.hp <= 0 ? 'ko' : 'stomp');
+      if (b.hp <= 0) { b.disableBody(true, true); world._bossDead = true; if (world._bossWall) world._bossWall.disableBody(true, true); }
+      return true;
+    },
+    step: function (scene, world) {
+      var b = world && world._boss; if (!b || !b.active) return;
+      if (b.reel > 0) { b.reel--; b.setAlpha((b.reel >> 1) % 2 ? 0.5 : 1); } else b.setAlpha(1);
+      var phase = 1 + (b.maxHp - b.hp);                                  // telegraphed: faster each phase
+      b.x += b.dir * (b._spd * (0.6 + phase * 0.2)); if (Math.abs(b.x - b.homeX) > b.patrol) b.dir *= -1;
+    },
+    defeated: function (world) { return !world || !world._boss || !!world._bossDead; }
+  };
+
   // -------------------------------------------------------------------- Brawl
   // The brawler archetype (funded by Biome Bash): Smash-style fighters with
   // damage % + knockback scaling, frame-data attacks (startup/active/recover),

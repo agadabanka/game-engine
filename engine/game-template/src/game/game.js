@@ -62,6 +62,7 @@
       this.physics.add.collider(player, world.platforms);
       Studio.Mechanics.install(this, player, world);   // crumble collider + mechanic state (#30)
       Studio.Mechanics.decorate(this, world);          // visual telegraphs for belt/dash/field zones
+      if (spec.boss) Studio.Boss.create(this, world, spec.boss);   // multi-HP boss finale (#44)
       this.physics.add.overlap(player, world.coins, function (p, c) {
         c.disableBody(true, true); coins++; Studio.Audio.sfx('coin');
         Studio.Juice.burst(scene, c.x, c.y, { n: 8, tint: 0xffd700, life: 380 }); hud();
@@ -69,6 +70,7 @@
       this.physics.add.overlap(player, world.hazards, function () { die(); });
       this.physics.add.overlap(player, world.enemies, function (p, e) {
         if (!e.active) return;
+        if (e.boss) { Studio.Boss.onStomp(scene, world, p); return; }   // multi-HP boss (#44)
         if (p.body.velocity.y > 40 && p.y < e.y - 6) { // stomp from above
           e.disableBody(true, true); p.setVelocityY(-380); Studio.Audio.sfx('stomp');
           Studio.Juice.squash(scene, p); Studio.Juice.shake(scene, 90, 0.006);
@@ -118,8 +120,9 @@
       Studio.Mechanics.step(this, player, world);   // conveyor/dashpad/fields/crumble — AFTER input sets velocity
 
       Studio.Enemies.step(this, world, frame);   // walker patrol + flyer sweep (#31)
+      Studio.Boss.step(this, world);             // boss reel/phase/patrol (#44)
 
-      if (!won && player.x >= levelGoalX - 8) {
+      if (!won && player.x >= levelGoalX - 8 && Studio.Boss.defeated(world)) {   // win gated on the boss
         won = true; Studio.Audio.sfx('win'); Studio.Juice.flash(scene, 200, 6, 214, 160);
         if (!auto) { var nx = (scene._world || 1) + 1; Studio.Shell.banner(scene, 'win', { lines: ['◆ ' + coins + ' collected'], next: nx <= window.LEVELS.length ? nx : null, last: nx > window.LEVELS.length }); }
       }
