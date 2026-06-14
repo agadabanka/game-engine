@@ -108,3 +108,25 @@ export function backlog() {
 
 /** Interest weight for an element key (the feel model reads this). Unknown → 1. */
 export function interestOf(key) { const e = ELEMENT_LIBRARY[key]; return e ? e.interest : 1; }
+
+// ── #32 · the SIGNATURE-MECHANIC pattern: teach ONE new verb per level ──────────
+// Deepfin's lesson: 5 levels that reuse the same mechanics feel "all alike and boring".
+// The cure is to build each level around ONE distinct, teachable verb (introduced gently,
+// then ramped), so every world has a different texture. SIGNATURE_POOL is the set of such
+// verbs — implemented, high-interest, and a DISCRETE action a level can be themed on (not
+// ground/coins/walkers, which are everywhere). Ordered easy → spicy.
+export const SIGNATURE_POOL = ['spring', 'conveyor', 'oneway', 'dashpad', 'updraft', 'lowgrav', 'crumble', 'flyer'];
+
+/** The signature mechanic to TEACH at level i (0-based) — one distinct verb per level so no two
+ *  feel alike. Rotates the implemented pool; pass {pool} to override. Returns {key, ...element}. */
+export function signatureFor(i, opts = {}) {
+  const pool = (opts.pool || SIGNATURE_POOL).filter((k) => ELEMENT_LIBRARY[k] && ELEMENT_LIBRARY[k].implemented);
+  if (!pool.length) return null;
+  const n = pool.length, key = pool[(((i | 0) % n) + n) % n];
+  return { key, ...ELEMENT_LIBRARY[key] };
+}
+
+/** Novelty/fatigue: a mechanic's FIRST appearance lands at full interest; each repeat habituates
+ *  ×0.84. The feel model multiplies interestOf(key) by this so over-reused verbs stop scoring. */
+export function noveltyFactor(priorUses) { return Math.pow(0.84, Math.max(0, priorUses | 0)); }
+export function noveltyInterest(key, priorUses = 0) { return interestOf(key) * noveltyFactor(priorUses); }
