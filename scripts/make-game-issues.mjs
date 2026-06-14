@@ -25,15 +25,23 @@ const meta = gameDir && fs.existsSync(path.join(gameDir, 'GAME_META.json')) ? JS
 const done = (meta.stages || {});
 
 // The pipeline as work items, IN ORDER, each with the BAR that defines "done".
+// The FINER pipeline (#48): the coarse 13 split to match the engine's design toolkit (tools/lib/*).
+// Each new stage runs a real tool and leaves an artifact. Keys are [a-z]+ (the marker regex).
 const STAGES = [
-  ['scaffold', 'Scaffold the game', 'Repo created (PRIVATE), pushed, and registered on the hub; `eval.mjs` present and runnable.'],
+  ['scaffold', 'Scaffold the game', 'Repo created (PRIVATE), pushed, and registered on the hub; `eval.mjs` present and runnable. From the RICH base template (shell + Scale.FIT + touch + HUD/menu + mechanic runtime + art-ready Studio.Hero).'],
   ['identity', 'Identity — name, hero, worlds', 'GAME_META has the hero, a tagline, and 5 distinctly-named worlds.'],
-  ['levels', 'Levels — 5 RICH, distinct worlds', 'Five levels, each a DISTINCT biome with its own mechanics/hazards/verticality (NOT flat ground + gaps). Lint-clean via `tools/lib/levelkit`. The autopilot wins every level, 0 deaths.'],
-  ['character', 'Character art — an animated hero (NOT a tinted blob)', 'The hero is a `Studio.Toon` rig (or a generated sprite sheet) with 6+ animation states (idle/run/jump/fall/land + reactions) and real personality — never the template’s tinted placeholder. Enemies have character too.'],
+  ['design', 'Design — intent + per-level FUN', 'Run `tools/design-pass.mjs`: per-level interest curve + FUN (engagement/dynamics/arc/flow), the MDA aesthetic + Schell lenses, and the signature mechanic per level (`tools/lib/{design,feelmodel,elements}`). Writes DESIGN.md + src/design.json; no level mostly dead-air.'],
+  ['story', 'Story — premise, protagonist, antagonist, beats', 'Run `tools/story.mjs --write`: STORY.md (premise who/what/why · protagonist arc · named antagonist/boss · one beat per world) + src/story.json; SHELL.beats feed the intro cards and the title surfaces the arc (`tools/lib/story`).'],
+  ['cast', 'Cast — a named roster', 'Build the CAST (`tools/lib/cast`): hero + one named adversary per world + the boss, each a role + look + personality (CAST.md). Drives the art pipeline + HUD mood portraits.'],
+  ['mechanics', 'Mechanics — a signature verb per level', 'Each level teaches ONE distinct mechanic (Studio.Mechanics: conveyor/dashpad/crumble/one-way/updraft/lowgrav + spring), placed by the builders (`tools/lib/builders`) via the signature rotation (`signatureFor`) + the difficulty ramp (`tools/lib/difficulty`). Autopilot-transparent; telegraphed.'],
+  ['levels', 'Levels — 5 RICH, distinct worlds', 'Five levels, each a DISTINCT biome (NOT flat ground + gaps) built with the engine builders; reachability-clean (`tools/lib/reach`), lint-clean via `tools/lib/levelkit`. The autopilot wins every level, 0 deaths.'],
+  ['funtune', 'Fun-tune — fun-max the campaign', 'Run `tools/fun-max.mjs --write` to hill-climb each level by the feel model under the 0-death safety proxy, then RE-GATE. Campaign mean FUN rises; no level mostly dead-air; the climax lands late (`tools/lib/{funmax,evolve}`).'],
+  ['character', 'Character art — an animated hero (NOT a tinted blob)', 'The hero is a `Studio.Toon` rig (or a generated sprite sheet via `tools/art-sprites.mjs`) with 6+ animation states (idle/run/jump/fall/land + reactions) and real personality. Enemies have character too (the cast).'],
   ['feel', 'Feel — animation states + juice', 'Animation states driven by movement on hero AND enemies; hitstop/shake/flash tuned; particles on every event (pickup/land/bounce); an expressive HUD.'],
-  ['art', 'Art — backdrops + title keyart', 'A Gemini backdrop per world + a title keyart, on-theme, bottom third kept gameplay-clean, NO text in the images. Wired into the game.'],
+  ['art', 'Art — backdrops + title keyart', 'A Gemini backdrop per world + a title keyart (`tools/full-art.mjs`), on-theme, bottom third kept gameplay-clean, NO text in the images. Wired into the game.'],
   ['music', 'Music — a Lyria loop per world', 'One Lyria loop per world + a title theme, mp3s in `src/assets/music`, wired so each level plays its own track.'],
-  ['gate', 'Gate — eval GREEN (incl. the felt-gate)', 'Menu/human-path smoke test (0 page errors) + autopilot WINS every level, 0 deaths, deterministic, non-black on BOTH renderers, and the genre felt-gate passes (FUN≥70 and/or e.g. MIRTH≥65).'],
+  ['narrative', 'Narrative coherence — primitives → fiction', 'Run `tools/lib/narrative`: every engine primitive the game uses maps to the world fiction (NARRATIVE.md, surfaced on /design); none generic ("void replaces the pit" bar).'],
+  ['gate', 'Gate — eval + PARITY GREEN', 'Menu/human-path smoke (0 page errors) + autopilot WINS every level 0-death, deterministic, non-black on BOTH renderers, the genre felt-gate passes (FUN≥70 and/or MIRTH≥65), AND the parity gate (`tools/parity.mjs`) passes: menu + mobile + touch + real art + ≥K mechanics + ≥E enemy kinds + a story.'],
   ['deploy', 'Deploy — Railway live', 'Live URL with /health, /api/meta, /api/diary responding; a headless page renders non-black off the live URL.'],
   ['videos', 'Videos — per-level + YouTube', 'Each level’s autopilot run recorded to MP4 with its music, a montage built, uploaded to YouTube + a playlist created; links in GAME_META.'],
   ['shorts', 'Shorts — mobile vertical feed', 'Levels 1/3/5 recorded off the LIVE deploy (mobile-encoded), hosted as PRIVATE-repo Release assets (api.github.com asset URLs), auto-wired into the hub feed; a mid-clip frame shows GAMEPLAY (not a menu).'],
