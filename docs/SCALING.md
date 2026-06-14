@@ -16,13 +16,16 @@ The single foundation under 7.1's status checkmarks and 7.2's generated diary.
   (`buildlog.test.mjs`, 7/7 green).
 - [ ] Wire the recorder/host tools to emit through it (later, as runner lands).
 
-## 7.1 — Autonomous make-game runner (one command, not a session)
-- [ ] `scripts/make-game.mjs` stage-runner: executes the pipeline headlessly with
-      **checkpoints** (resume from `GAME_META.stages`), **auto-retry**, **status report**.
-- [ ] Each stage = a typed contract `{ name, run(ctx), check(ctx), retries }`.
-- [ ] Mechanical stages run unattended (scaffold, art, music, gate, deploy, videos,
-      shorts, loop); creative stages (identity, levels, feel) take a supplied spec or
-      an agent hook. Emits build events → live checkmarks.
+## 7.1 — Autonomous make-game runner (one command, not a session)  ← DONE
+- [x] `scripts/make-game.mjs` stage-runner: executes the pipeline headlessly with
+      **checkpoints** (resume from `GAME_META.stages`), **auto-retry** (`--retries`),
+      **stop-on-fail** (+ `--from`/`--only` resume), and a **status report** + build board.
+- [x] Each stage = a registry entry `{ detail, run(ctx), secret?, creative?, gate? }`.
+- [x] Mechanical stages invoke the real tools; credential-gated ones (`GEMINI_SA_JSON`,
+      `RAILWAY_TOKEN`, `YT_*`) **skip cleanly** when the secret is absent; creative stages
+      (identity/levels/feel) verify authored content (an agent or `--spec` supplies it).
+- [x] Emits build events → live checkmarks, build board, and an augmented DIARY build-log.
+      `--dry-run` demos the whole orchestration (incl. a gate auto-retry). Verified 11/11.
 
 ## 7.2 — Skill → programmatic migration (prose → tested tools)
 - [ ] **Diary as generated artifact** — emit a build-log section from events; PRESERVE

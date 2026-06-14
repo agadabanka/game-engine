@@ -17,7 +17,8 @@
     "sync-sdk": "node scripts/sync-sdk.mjs",
     "eval:all": "node tools/eval-all.mjs",
     "test": "node --test tools/lib/",
-    "visual-qa": "node tools/visual-qa.mjs"
+    "visual-qa": "node tools/visual-qa.mjs",
+    "make-game": "node scripts/make-game.mjs"
   },
   "dependencies": {
     "express": "^4.19.2"
