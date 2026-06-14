@@ -91,11 +91,26 @@
         for (var i = 0; i < bands; i++) { var t = i / (bands - 1); g.fillStyle(Studio._mix(top, bottom, t), 1).fillRect(0, Math.round(t * (h - bh)), 16, bh); }
       });
     },
+    // a THEMED material tile — a clay/candy SHELF look (lit rounded top lip + shaded, speckled body
+    // + bold dark surface outline) instead of a flat gradient, recoloured per material. Drop-in for
+    // grad_<mat>; a game can override with a generated tile_<mat> texture (Level.build prefers it).
+    materialTile: function (scene, key, m) {
+      var body = m.color, top = m.top, lite = Studio._lighten(top, 0.4), dark = Studio._darken(body, 0.42), line = 0x1d1d28, W = 128, H = 96;
+      this.bake(scene, key, W, H, function (g) {
+        g.fillStyle(body, 1).fillRect(0, 0, W, H);
+        for (var i = 0; i < 12; i++) { var t = i / 11; g.fillStyle(Studio._mix(Studio._lighten(body, 0.14), dark, t), 1).fillRect(0, Math.round(20 + t * (H - 20)), W, Math.ceil((H - 20) / 12) + 1); }
+        g.fillStyle(lite, 0.42); g.fillCircle(W * 0.22, H * 0.5, 6).fillCircle(W * 0.7, H * 0.62, 5).fillCircle(W * 0.45, H * 0.8, 4);
+        g.fillStyle(dark, 0.34); g.fillCircle(W * 0.55, H * 0.45, 4).fillCircle(W * 0.85, H * 0.78, 4).fillCircle(W * 0.12, H * 0.74, 3);
+        g.fillStyle(top, 1).fillRoundedRect(0, 0, W, 22, { tl: 12, tr: 12, bl: 0, br: 0 });        // rounded clay lip
+        g.fillStyle(lite, 0.85).fillRoundedRect(0, 3, W, 7, { tl: 12, tr: 12, bl: 0, br: 0 });     // highlight
+        g.fillStyle(line, 0.9).fillRect(0, 0, W, 3);                                               // bold surface edge
+      });
+    },
     kit: function (scene, opt) {
       opt = opt || {}; var T = opt.tile || 40, M = Studio.Materials, self = this;
       Object.keys(M.table).forEach(function (name) {
-        var m = M.get(name);
-        self.gradStrip(scene, 'grad_' + name, Studio._lighten(m.top, 0.12), Studio._darken(m.color, 0.34));
+        if (scene.textures.exists('tile_' + name)) return;   // a generated clay tile wins (loaded in preload)
+        self.materialTile(scene, 'grad_' + name, M.get(name));
       });
       var hero = opt.hero || 0xffd166, enemy = opt.enemy || 0xef476f, goal = opt.goal || 0x06d6a0;
       this.bake(scene, 'hero', 30, 38, function (g) {
@@ -691,9 +706,10 @@
       // ONE wide static body per slab — the player slides smoothly with no seams
       // to catch on (which would spoof blocked.right and break the autopilot).
       function slab(group, cx, cy, w, h, mat) {
-        // one wide static body, textured with the material's vertical gradient
-        // (bright lit top -> dark depth); no separate decor objects to leak on rebuild.
-        var img = group.create(cx, cy, 'grad_' + (mat || 'solid')); img.setDisplaySize(w, h).refreshBody();
+        // one wide static body, textured with the material: a generated clay tile_<mat> if the game
+        // loaded one, else the themed materialTile baked by Textures.kit (clay shelf, not a flat smear).
+        var m = mat || 'solid', tex = scene.textures.exists('tile_' + m) ? 'tile_' + m : 'grad_' + m;
+        var img = group.create(cx, cy, tex); img.setDisplaySize(w, h).refreshBody();
         return img;
       }
       (spec.ground || []).forEach(function (seg) {
