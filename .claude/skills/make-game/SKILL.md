@@ -27,23 +27,36 @@ session and end with links.
 - **The diary is the deliverable the owner reads.** Write DIARY.md as you go:
   what was built, engine investments, gotchas + fixes, the scorecard, links.
 
-## Operating model — issue-driven, one stage at a time (DO THIS, don't skip)
-The pipeline is NOT prose to self-police — it is a set of enforced work items. The failure
-mode this prevents: rushing to a visible end-state (deployed + a short) while silently
+## Operating model — issue-driven, one stage at a time, IN ORDER (DO THIS, don't skip)
+The pipeline is NOT prose to self-police — it is a set of enforced, ORDERED work items. The
+failure mode this prevents: rushing to a visible end-state (deployed + a short) while silently
 skipping the hard creative stages (character art, rich levels, feel, music, videos).
 
 **Step 0 — log the pipeline as issues on the game repo:**
 ```
 node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir>
 ```
-This opens one GitHub issue per stage, each with a sharp ACCEPTANCE CRITERION (the bar),
-and closes the stages GAME_META already marks `done`. Then:
-- **Resolve the OPEN issues in order, ONE AT A TIME.** Finish a stage fully before the next.
+This opens one GitHub issue per stage, each with a sharp ACCEPTANCE CRITERION (the bar), plus a
+single **pinned "Build tracker" meta-issue** that always names the NEXT step; it closes the stages
+GAME_META marks `done`. Then:
+- **Don't choose the next stage from memory — ASK the repo.** Run
+  `node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir> --next`; it prints the ONE
+  lowest-numbered open stage. That is the ONLY stage you may work on right now. (The pinned
+  Build tracker shows the same 👉 NEXT pointer for the owner.) This is the ORDER GUARD — it's
+  how you ensure the steps happen in order instead of jumping to the fun/visible ones.
+- **Resolve the OPEN issues strictly in number order, ONE AT A TIME.** Finish a stage fully
+  before the next. Never start a higher-numbered stage while a lower one is open.
 - **Close an issue only with EVIDENCE that meets the bar** — a screenshot, the green
-  scorecard, the live link, the playlist. Never self-declare a stage done by skimping.
+  scorecard, the live link, the playlist. Never self-declare a stage done by skimping. Then set
+  `GAME_META.stages` to `done` and **re-run the command** (it closes the issue, advances the
+  tracker's NEXT pointer, and flags any out-of-order completion).
 - An open issue = an unfinished step the owner can see. The owner can also drop notes as
-  issues; treat them as work items. Re-run the command anytime to re-sync.
-- Update `GAME_META.stages` to `done` as each issue closes (the runner + this command read it).
+  issues; treat them as work items.
+
+**Private by default (standing owner rule):** every created game repo is PRIVATE. `new-game.mjs`
+defaults to `--private`; only `--public` opts out. Shorts therefore host as Release assets via
+`api.github.com` asset URLs (the hub `/v` proxy adds the auth token) — never jsDelivr/raw, which
+can't read a private repo.
 
 ## Build it with the runner — one command, observable
 Drive the whole arc with the autonomous runner instead of running stages by hand:

@@ -12,7 +12,8 @@
 //   --owner    GitHub owner (default = the token's user)
 //   --dir      where to scaffold (default /home/user/<slug>)
 //   --hub      hub URL to register with (default $HUB_URL)
-//   --private  create the repo private    --dry-run  scaffold locally, skip GitHub/push/register
+//   --public   create the repo PUBLIC     --dry-run  scaffold locally, skip GitHub/push/register
+//              (game repos are PRIVATE by default — standing owner rule)
 //   --local    scaffold from the vendored base in engine/game-template/ instead of cloning --base
 //
 // Needs GH_TOKEN. After it runs, finish the deploy with the printed Railway steps.
@@ -33,7 +34,9 @@ const verb = flag('verb', 'run · jump');
 const baseRepo = flag('base', 'agadabanka/studio-game-template');
 const dir = flag('dir', `/home/user/${slug}`);
 const hubUrl = flag('hub', process.env.HUB_URL || '');
-const isPrivate = has('private');
+// Standing owner rule: every created game repo is PRIVATE by default. `--public`
+// is the only way to opt out (kept explicit so it can never be the silent default).
+const isPrivate = !has('public');
 const dryRun = has('dry-run');
 const useLocal = has('local');
 const GH = process.env.GH_TOKEN;
@@ -117,7 +120,7 @@ if (dryRun) {
 
 // 5. create the GitHub repo + push
 const owner = flag('owner') || (await gh('/user')).login;
-console.log(`• creating GitHub repo ${owner}/${slug}…`);
+console.log(`• creating GitHub repo ${owner}/${slug} (${isPrivate ? 'private' : 'PUBLIC'})…`);
 let repoFull;
 try {
   const repo = await gh('/user/repos', 'POST', { name: slug, description: tagline, private: isPrivate });

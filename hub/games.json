@@ -629,34 +629,34 @@
     ],
     "shorts": [
       {
-        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short1-clouds.mp4",
         "title": "Cumulus Courtyard",
         "biome": "Clouds",
-        "yt": "gP8718WaX7c"
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/biome-bash/releases/assets/447110494"
       },
       {
-        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short2-jungle.mp4",
         "title": "Canopy Clash",
         "biome": "Jungle",
-        "yt": "-sMUJwY5j6E"
+        "level": 2,
+        "mp4": "https://api.github.com/repos/agadabanka/biome-bash/releases/assets/447110520"
       },
       {
-        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short3-volcano.mp4",
         "title": "Caldera Rim",
         "biome": "Volcano",
-        "yt": "v7Ra7rqzqvE"
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/biome-bash/releases/assets/447110542"
       },
       {
-        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short4-glacier.mp4",
         "title": "Glacier Shelf",
         "biome": "Glacier",
-        "yt": "Ywx88MZYCj4"
+        "level": 4,
+        "mp4": "https://api.github.com/repos/agadabanka/biome-bash/releases/assets/447110559"
       },
       {
-        "mp4": "https://cdn.jsdelivr.net/gh/agadabanka/biome-bash@main/shorts/short5-neon-city.mp4",
         "title": "Neon Rooftops",
         "biome": "Neon City",
-        "yt": "ioWi6of4X3o"
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/biome-bash/releases/assets/447110575"
       }
     ],
     "meta": {
@@ -709,5 +709,62 @@
         "skip": true
       }
     }
+  },
+  {
+    "id": "lovelump",
+    "name": "Lovelump",
+    "repo": "agadabanka/lovelump",
+    "url": "https://lovelump-production.up.railway.app",
+    "tagline": "A lovestruck lump of clay squishes through a candy-colored world, spreading smooches and collecting romance",
+    "meta": {
+      "hero": "Lump, a googly-eyed heart of clay",
+      "verb": "smooch · squish · spread love",
+      "worlds": [
+        "Candy Heart Hills",
+        "Smooch Lagoon",
+        "Bouquet Boulevard",
+        "Chocolate Falls",
+        "Cloud Nine"
+      ],
+      "levelCount": 5,
+      "archetype": "platformer",
+      "engine": "game-engine",
+      "designLens": "claymation slapstick — the first game gated on Studio.Mirth (the funny gate) alongside FUN; all 5 levels MIRTH 67–77, 0 deaths",
+      "art": {
+        "style": "claymation plasticine"
+      },
+      "music": "procedural",
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "art": "done",
+        "deploy": "done",
+        "shorts": "todo",
+        "loop": "done"
+      }
+    },
+    "shorts": [
+      {
+        "title": "Candy Heart Hills",
+        "biome": "Candy Heart Hills",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/lovelump/releases/assets/447105431"
+      },
+      {
+        "title": "Bouquet Boulevard",
+        "biome": "Bouquet Boulevard",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/lovelump/releases/assets/447105435"
+      },
+      {
+        "title": "Cloud Nine",
+        "biome": "Cloud Nine",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/lovelump/releases/assets/447105439"
+      }
+    ]
   }
 ]

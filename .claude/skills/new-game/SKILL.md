@@ -20,7 +20,8 @@ repo that's already wired to the whole stack and showing on the hub.
      --tagline "<one-liner>" --hero "<hero>" --verb "<verb>" \
      --hub "$HUB_URL"
    ```
-   - Add `--private` for a private repo, `--owner <org>` to place it elsewhere,
+   - Repos are **PRIVATE by default** (standing owner rule — every created game repo stays
+     private). Pass `--public` only if explicitly asked. `--owner <org>` to place it elsewhere,
      `--base <owner/repo>` to scaffold from a different base.
    - Add `--dry-run` first if you want to preview the scaffold without touching
      GitHub — it writes the files locally and stops.
@@ -33,11 +34,14 @@ repo that's already wired to the whole stack and showing on the hub.
    node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir>
    ```
    This opens one GitHub issue per stage (levels, character art, feel, art, music, gate,
-   deploy, videos, shorts, diary, loop), each with its acceptance bar. From here you
-   **work against the repo, resolving issues one at a time** — exactly the way you later
-   work the notes→issues loop, except this time YOU file the issues. Close an issue only
-   with evidence that meets the bar; an open issue is a stage that isn't done. This is what
-   stops stages from being silently skipped.
+   deploy, videos, shorts, diary, loop), each with its acceptance bar, PLUS a **pinned
+   "Build tracker" meta-issue that always names the next step**. From here you
+   **work against the repo, resolving issues one at a time, IN ORDER** — exactly the way you
+   later work the notes→issues loop, except this time YOU file the issues. Don't pick the next
+   stage from memory: run `node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir> --next`
+   to get the single stage you're allowed to work on now. Close an issue only with evidence that
+   meets the bar; an open issue is a stage that isn't done. This is what stops stages from being
+   silently skipped or done out of order.
 
 4. **Confirm it landed.** Report the new repo URL, that it's registered on the hub, and the
    link to the pipeline issues. Then start resolving them top-down (re-skin the hero with a
