@@ -44,6 +44,21 @@ test('spawn/goal/enemy over a gap are caught', () => {
   assert.ok(r.issues.some((i) => i.rule === 'enemy-in-gap'));
 });
 
+test('a DEADLY segment counts as a gap (hazard pit the autopilot hops)', () => {
+  // a fudge pit (deadly) between two solids — the autopilot sees no foothold there, so it
+  // must obey maxGapPx and nothing may stand on it.
+  const lvl = { ...GREEN, ground: [[0, 420, 'solid'], [420, 560, 'fudge'], [560, 1920, 'solid']], walls: [], enemies: [] };
+  assert.deepEqual(gaps(lvl), [[420, 560, 140]]);          // the 140px fudge reads as a gap
+  assert.equal(onGround(lvl, 490), false);                 // mid-pit is NOT solid ground
+  assert.equal(lintLevel(lvl).ok, true);                   // 140 <= 200 → clean
+  // widen the pit past the hop envelope → caught
+  const wide = { ...lvl, ground: [[0, 400, 'solid'], [400, 650, 'fudge'], [650, 1920, 'solid']] };
+  assert.ok(lintLevel(wide).issues.some((i) => i.rule === 'gap-too-wide'));
+  // an enemy parked on the pit would fall/die → caught
+  const onPit = { ...lvl, enemies: [{ x: 490, patrol: 40 }] };
+  assert.ok(lintLevel(onPit).issues.some((i) => i.rule === 'enemy-in-gap'));
+});
+
 test('scaffoldLevel produces a lint-clean level', () => {
   for (const gapCount of [0, 1, 2, 3]) {
     const lvl = scaffoldLevel({ gapCount, name: `S${gapCount}` });

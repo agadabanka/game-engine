@@ -13,18 +13,31 @@ export const PLATFORMER_RULES = Object.freeze({
   maxGapPx: 200,           // a gap wider than the hop is unreachable → death
   maxWallTiles: 2,         // a wall taller than the hop can't be cleared
   minWallClearancePx: 200, // a wall-hop sails ~200px, so a wall must sit a runway away from a pit
+  // DEADLY materials route their ground segment to the hazards group → the autopilot
+  // sees no foothold there and HOPS it like a gap. So a hazard pit is a jumpable gap
+  // with deadly visuals: it must obey maxGapPx, and spawn/goal/enemies must not sit on it.
+  deadlyMats: ['lava', 'lagoon', 'thorn', 'fudge', 'spike', 'acid'],
 });
 
-/** No-ground spans (gaps) computed from a level's sorted ground segments → [[a,b,width]]. */
-export function gaps(level) {
-  const segs = [...(level.ground || [])].map((s) => [s[0], s[1]]).sort((a, b) => a[0] - b[0]);
+/** A ground segment that's actually a footing (not a deadly hazard pit). */
+function solidSegs(level, rules = PLATFORMER_RULES) {
+  const deadly = new Set(rules.deadlyMats || []);
+  return (level.ground || []).filter((s) => !deadly.has(s[2]));
+}
+
+/** No-ground spans (gaps) — deadly segments count as gaps, since the autopilot hops them. */
+export function gaps(level, rules = PLATFORMER_RULES) {
+  const segs = solidSegs(level, rules).map((s) => [s[0], s[1]]).sort((a, b) => a[0] - b[0]);
+  // merge touching/abutting solids so a contiguous floor isn't reported as a 0px gap
+  const merged = [];
+  for (const s of segs) { const last = merged[merged.length - 1]; if (last && s[0] <= last[1] + 1) last[1] = Math.max(last[1], s[1]); else merged.push([...s]); }
   const out = [];
-  for (let i = 0; i < segs.length - 1; i++) { const end = segs[i][1], start = segs[i + 1][0]; if (start > end) out.push([end, start, start - end]); }
+  for (let i = 0; i < merged.length - 1; i++) { const end = merged[i][1], start = merged[i + 1][0]; if (start > end) out.push([end, start, start - end]); }
   return out;
 }
 
-/** Is x over solid ground? */
-export function onGround(level, x) { return (level.ground || []).some(([a, b]) => x >= a && x <= b); }
+/** Is x over SOLID ground (a deadly hazard pit does not count)? */
+export function onGround(level, x, rules = PLATFORMER_RULES) { return solidSegs(level, rules).some(([a, b]) => x >= a && x <= b); }
 
 /**
  * Lint a platformer level against the reachability/balance rules.
@@ -33,15 +46,15 @@ export function onGround(level, x) { return (level.ground || []).some(([a, b]) =
 export function lintLevel(level, rules = PLATFORMER_RULES) {
   const issues = [];
   const add = (rule, detail) => issues.push({ rule, detail });
-  const G = gaps(level);
+  const G = gaps(level, rules);
   for (const [a, b, w] of G) if (w > rules.maxGapPx) add('gap-too-wide', `gap ${a}-${b} is ${w}px > ${rules.maxGapPx} (unreachable)`);
   for (const wll of (level.walls || [])) {
     if ((wll.tiles || 1) > rules.maxWallTiles) add('wall-too-tall', `wall@${wll.x} is ${wll.tiles} tiles > ${rules.maxWallTiles}`);
     for (const [a, b] of G) { const near = Math.min(Math.abs(wll.x - a), Math.abs(wll.x - b)); if (near < rules.minWallClearancePx) add('wall-near-gap', `wall@${wll.x} within ${near}px of gap ${a}-${b} (need ≥${rules.minWallClearancePx})`); }
   }
-  if (level.spawn && !onGround(level, level.spawn.x)) add('spawn-in-gap', `spawn x=${level.spawn.x} is not over ground`);
-  if (level.goal != null && !onGround(level, level.goal)) add('goal-in-gap', `goal x=${level.goal} is not over ground`);
-  for (const e of (level.enemies || [])) if (!onGround(level, e.x)) add('enemy-in-gap', `enemy x=${e.x} is not over ground (will fall)`);
+  if (level.spawn && !onGround(level, level.spawn.x, rules)) add('spawn-in-gap', `spawn x=${level.spawn.x} is not over solid ground`);
+  if (level.goal != null && !onGround(level, level.goal, rules)) add('goal-in-gap', `goal x=${level.goal} is not over solid ground`);
+  for (const e of (level.enemies || [])) if (!onGround(level, e.x, rules)) add('enemy-in-gap', `enemy x=${e.x} is not over solid ground (will fall/die)`);
   return { ok: issues.length === 0, issues };
 }
 

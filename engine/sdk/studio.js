@@ -45,7 +45,20 @@
       vine: { color: 0x2d6a4f, top: 0x74c69d, friction: 1, deadly: false, ground: true },
       basalt: { color: 0x3d2b3d, top: 0x7d5260, friction: 1, deadly: false, ground: true },
       snow: { color: 0x8ecae6, top: 0xf1faee, friction: 0.45, deadly: false, ground: true },
-      neon: { color: 0x1b1b3a, top: 0x4cc9f0, friction: 1, deadly: false, ground: true }
+      neon: { color: 0x1b1b3a, top: 0x4cc9f0, friction: 1, deadly: false, ground: true },
+      // confection set (funded by Lovelump) — a candy-world palette + SWEET HAZARDS.
+      // footings:
+      candy: { color: 0xff7eb3, top: 0xffd6ea, friction: 1, deadly: false, ground: true },
+      reef: { color: 0x2bb6a6, top: 0xa9f3ea, friction: 0.9, deadly: false, ground: true },
+      lily: { color: 0x49b36a, top: 0xb4f3b0, friction: 1, deadly: false, ground: true },
+      hedge: { color: 0x2f9e5e, top: 0x86e6a4, friction: 1, deadly: false, ground: true },
+      bloom: { color: 0xe85d9c, top: 0xffc6e0, friction: 1, deadly: false, ground: true },
+      cocoa: { color: 0x6b4226, top: 0xb07a4e, friction: 1, deadly: false, ground: true },
+      frosting: { color: 0xf7c6dd, top: 0xffffff, friction: 0.5, deadly: false, ground: true },
+      // hazards (deadly — routed to the hazards group):
+      lagoon: { color: 0x1f7fc4, top: 0x86d0ff, friction: 1, deadly: true, ground: false }, // pink-lemonade water
+      thorn: { color: 0x7b2a8a, top: 0xc81d9e, friction: 1, deadly: true, ground: false }, // bramble patch
+      fudge: { color: 0x3f2207, top: 0xc0631f, friction: 1, deadly: true, ground: false }  // molten chocolate
     },
     get: function (name) { return this.table[name] || this.table.solid; }
   };
@@ -140,8 +153,24 @@
       var B = Studio.Textures, base = def.color, dark = Studio._darken(base, 0.25),
         lite = Studio._lighten(base, 0.3), belly = def.belly != null ? def.belly : Studio._lighten(base, 0.5),
         line = 0x1d1d28, W = def.w || 46, H = def.h || 48, shape = def.shape || 'round';
-      B.bake(scene, k + 'body', W + 8, H + 8, function (g) {
-        var x = 4, y = 4, r = shape === 'square' ? 10 : Math.min(W, H) / 2 - (shape === 'bean' ? 6 : 2);
+      // a heart-shaped body: two top lobes + a bottom point (for lovestruck characters);
+      // others use the rounded-rect blob. Drawn outline-first so it reads with a clean edge.
+      var heart = function (g, col, cx, top, w, h) {
+        var r = w * 0.265, ly = top + r * 0.96;
+        g.fillStyle(col, 1);
+        g.fillCircle(cx - r * 0.9, ly, r); g.fillCircle(cx + r * 0.9, ly, r);
+        g.fillTriangle(cx - w * 0.47, ly + r * 0.18, cx + w * 0.47, ly + r * 0.18, cx, top + h);
+      };
+      B.bake(scene, k + 'body', W + 12, H + 12, function (g) {
+        if (shape === 'heart') {
+          var cx = (W + 12) / 2, top = 6;
+          heart(g, line, cx, top - 3, W + 6, H + 6);            // outline
+          heart(g, base, cx, top, W, H);                        // fill
+          g.fillStyle(lite, 1).fillCircle(cx - W * 0.24, top + W * 0.2, W * 0.16);  // shine on a lobe
+          g.fillStyle(belly, 0.55).fillCircle(cx + W * 0.22, top + H * 0.52, W * 0.2);
+          return;
+        }
+        var x = 6, y = 6, r = shape === 'square' ? 10 : Math.min(W, H) / 2 - (shape === 'bean' ? 6 : 2);
         g.fillStyle(line, 1).fillRoundedRect(x - 3, y - 3, W + 6, H + 6, r + 3);
         g.fillStyle(base, 1).fillRoundedRect(x, y, W, H, r);
         g.fillStyle(lite, 1).fillRoundedRect(x, y, W, H * 0.45, { tl: r, tr: r, bl: 0, br: 0 });
