@@ -76,7 +76,7 @@ The tools are engine-level (operate on a game id/dir); a new game does NOT carry
 |---|---|---|
 | scaffold | `scripts/new-game.mjs` | clone base · GitHub repo · hub register |
 | gate | game `eval.mjs` + `tools/lib/mirth.mjs` | FUN (`Studio.Brawl.fun`) + optional funny gate (`Studio.Mirth`) |
-| art | `tools/art.mjs` → `scripts/gemini.js` | themed backdrops/keyart per world; cached via `tools/lib/gencache.mjs` |
+| art | `tools/full-art.mjs` (orchestrator) → `art.mjs`+`art-sprites.mjs`+`art-tiles.mjs`+`art-props.mjs` | backdrops/keyart · generated hero+enemy **sprite sheets** (model-sheet→keyed→packed) · clay **tile** materials · **props** — all from `GAME_META.art.{style,enemies,tiles,props}`, chroma-keyed, merged into one `sprites.js` manifest, cached via `gencache`. `Studio.Hero` renders the sprite or falls back to the `Studio.Toon` rig |
 | music | `tools/music.mjs` → `lib/lyria.js` | Lyria loop per world (or procedural `Studio.Audio` fallback) |
 | shorts | `tools/trailer/make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed, auto-wired (see ENGINE.md) |
 | videos | `tools/record.mjs` + `tools/trailer/yt-upload.mjs` | per-level landscape MP4 (music muxed) + montage → YouTube (YT_* secrets; write the refresh token to /tmp/yt-creds.json). Playlist needs the broader `youtube` scope — an upload-scoped token 403s, so fall back to the montage link. |
