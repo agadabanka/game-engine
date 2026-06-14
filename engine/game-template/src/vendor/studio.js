@@ -372,6 +372,22 @@
     });
   };
 
+  // Standalone parallax silhouette layers (the depth bands from Backdrop) — wide enough to scroll
+  // across the whole world. Use OVER a fixed cover photo (which can't parallax) to add real depth
+  // motion: each band drifts at its own scrollFactor. layers:[{color,scroll,amp,y,alpha,depth,step,phase}].
+  Studio.parallaxHills = function (scene, opt) {
+    opt = opt || {};
+    var W = scene.scale.width, H = scene.scale.height, span = opt.worldWidth || (W * 2);
+    (opt.layers || []).forEach(function (L, li) {
+      var g = scene.add.graphics().setScrollFactor(L.scroll != null ? L.scroll : 0.3, 1).setDepth(L.depth != null ? L.depth : (-90 + li));
+      g.fillStyle(L.color, L.alpha != null ? L.alpha : 1);
+      var base = L.y != null ? L.y : H * 0.74, step = L.step || 150, amp = L.amp || 70, ph = (L.phase != null ? L.phase : li * 9) + 1;
+      g.beginPath(); g.moveTo(-60, H + 30);
+      for (var x = -60; x <= span + 60; x += step) { var y = base - (Math.sin(x * 0.011 + ph) * 0.5 + 0.5) * amp; g.lineTo(x, y); }
+      g.lineTo(span + 60, H + 30); g.closePath(); g.fillPath();
+    });
+  };
+
   // Size a backdrop IMAGE to COVER the whole (resizable) canvas — no letterbox gaps —
   // and re-cover on resize. Replaces hard-coded ×1.15 hacks. scroll:0 locks it to the
   // camera (always full-bleed); a small scroll adds parallax (kept oversized to still cover).
