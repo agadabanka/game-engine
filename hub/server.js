@@ -40,8 +40,9 @@ async function getGames() {
   const byId = {};
   for (const g of seed) byId[g.id] = { ...g };
   // stored entry wins for live fields (url, dashboard edits); but the SEED's curated
-  // meta wins when present, so games.json updates (e.g. new stages) propagate.
-  for (const g of stored) byId[g.id] = { ...byId[g.id], ...g, meta: byId[g.id]?.meta || g.meta, url: byId[g.id]?.url || g.url };
+  // fields win when present, so games.json updates (new stages, re-hosted shorts)
+  // propagate even over an already-seeded store.
+  for (const g of stored) byId[g.id] = { ...byId[g.id], ...g, meta: byId[g.id]?.meta || g.meta, url: byId[g.id]?.url || g.url, shorts: byId[g.id]?.shorts || g.shorts };
   return Object.values(byId);
 }
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

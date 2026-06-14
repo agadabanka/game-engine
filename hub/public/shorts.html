@@ -92,17 +92,19 @@
     // always allowed, so the frame never hangs. A tap then lifts the mute.
     function kick(i){ const v=vid(i); if(!v) return; load(i);
       const gen = ++playGen; let tries = 0;
-      const attempt = (forceMuted)=>{
-        if (cur !== i || gen !== playGen) return;          // scrolled away or superseded
-        v.muted = forceMuted || !audioOn;
+      // Start MUTED — muted playback is ALWAYS allowed (no autoplay block, never a stuck
+      // frame). Once it's actually rolling, lift the mute if the user wants sound:
+      // unmuting an already-PLAYING element is honored on iOS after the first tap, which
+      // is far more reliable than attempting unmuted autoplay (frequently blocked → the
+      // "needs a tap" cases). A scroll-gesture syncMute() re-asserts it as a backstop.
+      const start = ()=>{
+        if (cur !== i || gen !== playGen) return;             // scrolled away or superseded
+        v.muted = true;
         const p = v.play();
-        if (p && p.catch) p.catch(()=>{
-          if (cur !== i || gen !== playGen) return;
-          if (!v.muted) { attempt(true); return; }                // unmuted blocked → play muted (no stuck frame)
-          if (++tries <= 8) setTimeout(()=>attempt(true), 300);   // buffering → brief retry (the watchdog covers the rest)
-        });
+        if (p && p.then) p.then(()=>{ if (cur===i && gen===playGen && audioOn) v.muted = false; })
+                          .catch(()=>{ if (cur===i && gen===playGen && ++tries<=8) setTimeout(start, 300); });
       };
-      attempt(false);
+      start();
     }
     function play(i){ pausedByUser = false; kick(i); pl(i).classList.remove('paused'); }
     function pause(i){ playGen++; const v=vid(i); if(v){ v.pause(); pl(i).classList.add('paused'); } }
@@ -166,12 +168,17 @@
     // current short the moment scrolling settles — landing the play() inside the
     // gesture window gives it a chance to start WITH sound instead of falling to muted.
     let scrollT = null;
-    feed.addEventListener('scroll', ()=>{ clearTimeout(scrollT); scrollT = setTimeout(()=>{ if (!pausedByUser) kick(cur); }, 120); }, {passive:true});
+    feed.addEventListener('scroll', ()=>{ syncMute(); clearTimeout(scrollT); scrollT = setTimeout(()=>{ if (!pausedByUser) kick(cur); }, 120); }, {passive:true});
 
-    // best-effort: turn sound on at the first tap anywhere (except the mute button,
-    // which toggles it explicitly). Desktop/Android honor this immediately; iOS
-    // needs the tap to land on the player, which the per-player handler covers.
-    document.addEventListener('pointerdown', e=>{ if(audioOn) return; if(e.target.closest('#mute')) return; armAudio(); }, {passive:true});
+    // iOS only honors an UNMUTE performed INSIDE a user gesture. So on every touch —
+    // including the start of a scroll-swipe — re-assert unmute on all loaded shorts.
+    // That "pre-unlocks" the short you're swiping toward, so it starts WITH sound
+    // instead of needing its own tap. The first gesture still just enables sound.
+    function syncMute(){ if(!audioOn) return; document.querySelectorAll('video').forEach(v=>{ if(v.src) v.muted=false; }); }
+    const onGesture = e=>{ if(e.target && e.target.closest && e.target.closest('#mute')) return;
+      if(!audioOn){ armAudio(); } else { syncMute(); } };
+    document.addEventListener('pointerdown', onGesture, {passive:true});
+    document.addEventListener('touchstart', onGesture, {passive:true});
 
     const go = d=>{ cur=Math.max(0,Math.min(secs.length-1,cur+d)); secs[cur].scrollIntoView({behavior:'smooth'}); };
     document.getElementById('down').onclick=()=>go(1);
