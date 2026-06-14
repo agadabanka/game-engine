@@ -586,23 +586,25 @@
     create: function (scene, opt) {
       opt = opt || {};
       var wrap = scene.add.container(0, 0).setDepth(opt.depth != null ? opt.depth : 6);
-      var S = (typeof window !== 'undefined' && window.SPRITES && window.SPRITES.hero) || null;
-      var key = opt.sprite || 'hero_sheet', spr = null, rig = null;
+      var S = opt.manifest || ((typeof window !== 'undefined' && window.SPRITES && window.SPRITES.hero) || null);
+      var key = opt.sprite || 'hero_sheet', pre = (opt.animPrefix || 'hero') + '_', spr = null, rig = null;
       if (S && scene.textures.exists(key)) {
         var sc = (opt.height || 76) / (S.frameHeight || 128);
-        spr = scene.add.sprite(0, opt.feetY != null ? opt.feetY : 0, key, (S.anims && S.anims.idle && S.anims.idle[0]) || 0).setOrigin(0.5, 1).setScale(sc);
+        var first = (S.anims && (S.anims.idle ? S.anims.idle[0] : (S.anims[Object.keys(S.anims)[0]] || [0])[0])) || 0;
+        spr = scene.add.sprite(0, opt.feetY != null ? opt.feetY : 0, key, first).setOrigin(0.5, 1).setScale(sc);
         wrap.add(spr);
         Object.keys(S.anims || {}).forEach(function (a) {
-          var k = 'hero_' + a; if (scene.anims.exists(k)) return;
-          scene.anims.create({ key: k, frames: S.anims[a].map(function (f) { return { key: key, frame: f }; }), frameRate: a === 'run' ? 14 : 7, repeat: (a === 'run' || a === 'idle') ? -1 : 0 });
+          var k = pre + a; if (scene.anims.exists(k)) return;
+          var fr = a === 'run' ? 14 : a === 'walk' ? 5 : 7;
+          scene.anims.create({ key: k, frames: S.anims[a].map(function (f) { return { key: key, frame: f }; }), frameRate: fr, repeat: (a === 'run' || a === 'idle' || a === 'walk') ? -1 : 0 });
         });
-        try { spr.play('hero_idle'); } catch (e) {}
+        try { spr.play(pre + (S.anims && S.anims.idle ? 'idle' : Object.keys(S.anims)[0])); } catch (e) {}
       } else if (opt.rigDef && Studio.Toon) { rig = Studio.Toon.rig(scene, opt.rigDef, 0, 0); wrap.add(rig.root); }
       var cur = '';
       return {
         wrap: wrap, kind: spr ? 'sprite' : 'rig', sprite: spr, rig: rig,
         sync: function (x, y, flipX) { wrap.setPosition(x, y); if (spr) spr.setFlipX(!!flipX); else if (rig) rig.dir = flipX ? -1 : 1; },
-        state: function (name) { if (name === cur) return; cur = name; if (spr) { var k = 'hero_' + name; if (scene.anims.exists(k)) spr.play(k, true); } else if (rig) Studio.Toon.set(rig, name); },
+        state: function (name) { if (name === cur) return; cur = name; if (spr) { var k = pre + name; if (scene.anims.exists(k)) spr.play(k, true); } else if (rig) Studio.Toon.set(rig, name); },
         face: function (mood) { if (rig) Studio.Toon.face(rig, mood); },
         update: function (dt) { if (rig) Studio.Toon.update(rig, dt || 16.667); }
       };
