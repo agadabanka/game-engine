@@ -704,7 +704,10 @@
         "videos": "done"
       },
       "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEucK9QdWMT8sWajbwyiWSco",
-      "shortsPlaylist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtxagXluixgIOSHFSiccd4S"
+      "shortsPlaylist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEtxagXluixgIOSHFSiccd4S",
+      "shorts": {
+        "skip": true
+      }
     }
   }
 ]
