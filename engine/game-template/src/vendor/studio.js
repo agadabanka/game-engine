@@ -515,6 +515,7 @@
     function open() {
       if (ov || window.__won) return; window.__paused = true; if (Studio.uistate) Studio.uistate.set(scene.game, 'pause');
       var btns = [{ label: '▶ RESUME', onClick: close }, { label: '↻ RESTART', onClick: function () { close(); (opt.onRestart || function () { scene.scene.start('Play'); })(); } }, { label: '☰ MENU', onClick: function () { window.__paused = false; (opt.onMenu || function () { scene.scene.start('Title'); })(); } }];
+      btns.push({ label: '📝 NOTE', onClick: function () { Studio.Shell.note(scene, { accentCss: _accCss(opt.accent != null ? opt.accent : 0xffd34d), meta: { level: scene._world || window.__startLevel || 1 } }); } });
       if (opt.diary !== false) btns.push({ label: '📖 DIARY', onClick: function () { window.location.href = (opt.diary || '/diary.html'); } });
       ov = Studio.Shell.overlay(scene, { title: 'PAUSED', accent: opt.accent, buttons: btns });
     }
@@ -534,6 +535,33 @@
     btns.push({ label: kind === 'win' ? '↻ REPLAY' : '↻ RETRY', onClick: function () { window.__won = false; (opt.onReplay || function () { scene.scene.start('Play'); })(); } });
     btns.push({ label: '☰ MENU', onClick: function () { window.__won = false; (opt.onMenu || function () { scene.scene.start('Title'); })(); } });
     return Studio.Shell.overlay(scene, { title: title, accent: opt.accent != null ? opt.accent : (kind === 'win' ? 0x06d6a0 : 0xff5d6c), lines: lines, buttons: btns });
+  };
+
+  // leave-a-note: a DOM note box from the pause menu → POST /api/notes (the dev feedback channel
+  // the notes→issues loop reads). opt: { accentCss, meta:{level,x} }.
+  Studio.Shell.note = function (scene, opt) {
+    opt = opt || {}; if (typeof document === 'undefined' || document.getElementById('studio-note')) return;
+    var acc = opt.accentCss || '#ffd34d';
+    var box = document.createElement('div'); box.id = 'studio-note';
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(5,3,10,.6);font-family:system-ui,-apple-system,sans-serif';
+    box.innerHTML = '<div style="background:#16111e;border:2px solid ' + acc + ';border-radius:14px;padding:18px;width:min(440px,92vw);color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6)">'
+      + '<div style="font-weight:800;margin-bottom:8px">📝 Leave a note for the dev</div>'
+      + '<textarea id="snt" rows="4" placeholder="What felt good / off right here?" style="width:100%;box-sizing:border-box;background:#0c0910;color:#fff;border:1px solid #3a2c44;border-radius:8px;padding:8px;font:inherit"></textarea>'
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'
+      + '<button id="snx" style="padding:8px 14px;border-radius:8px;border:0;background:#2a2436;color:#fff;cursor:pointer">Cancel</button>'
+      + '<button id="sns" style="padding:8px 14px;border-radius:8px;border:0;background:' + acc + ';color:#1a1020;font-weight:800;cursor:pointer">Send</button>'
+      + '</div><div id="snm" style="font-size:12px;color:#9fb3e0;margin-top:6px"></div></div>';
+    document.body.appendChild(box);
+    var t = box.querySelector('#snt'); try { t.focus(); } catch (e) {}
+    var close = function () { try { box.remove(); } catch (e) {} };
+    box.querySelector('#snx').onclick = close;
+    box.querySelector('#sns').onclick = function () {
+      var txt = (t.value || '').trim(); if (!txt) { close(); return; }
+      var m = opt.meta || {};
+      fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: txt, level: m.level, x: m.x, tag: 'in-game', ts: Date.now() }) })
+        .then(function () { box.querySelector('#snm').textContent = 'Sent — thanks! 💌'; setTimeout(close, 900); })
+        .catch(function () { box.querySelector('#snm').textContent = 'Could not reach the server.'; });
+    };
   };
 
   // ── uistate: a tiny validated scene-state machine (boot→menu→play⇄pause→won/over→menu) ──
