@@ -27,10 +27,22 @@ repo that's already wired to the whole stack and showing on the hub.
    - Requires `GH_TOKEN`. The command prints the GitHub URL and the Railway deploy
      steps when done.
 
-3. **Confirm it landed.** Report the new repo URL and that it's registered on the
-   hub. Then point at the next move: re-skin the top tier (hero art via the image
-   pipeline, a Lyria score, the worlds, the system prompt) and deploy as its own
-   Railway project (`BOOTSTRAP.md` in the new repo).
+3. **Log the build as ISSUES on the new repo — then work against the repo.** Right after
+   scaffolding, turn the whole make-game pipeline into enforced work items:
+   ```bash
+   node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir>
+   ```
+   This opens one GitHub issue per stage (levels, character art, feel, art, music, gate,
+   deploy, videos, shorts, diary, loop), each with its acceptance bar. From here you
+   **work against the repo, resolving issues one at a time** — exactly the way you later
+   work the notes→issues loop, except this time YOU file the issues. Close an issue only
+   with evidence that meets the bar; an open issue is a stage that isn't done. This is what
+   stops stages from being silently skipped.
+
+4. **Confirm it landed.** Report the new repo URL, that it's registered on the hub, and the
+   link to the pipeline issues. Then start resolving them top-down (re-skin the hero with a
+   real `Studio.Toon` rig / sprite art, design rich themed levels, a Lyria score, …),
+   deploying as its own Railway project (`BOOTSTRAP.md` in the new repo).
 
 ## What the new game already has
 Platform (server/store/gemini/lyria) · Phaser engine (scenes/materials/levelkit/
