@@ -483,6 +483,7 @@
           scene.add.rectangle(W / 2, H / 2, W, H, 0x0a0710, 0.34);
           scene.add.text(34, 24, S.name || 'STUDIO GAME', { fontFamily: 'Arial Black, Arial', fontSize: '46px', color: '#ffffff', stroke: '#140b12', strokeThickness: 8 }).setShadow(0, 4, '#000', 10, true, true);
           if (S.tagline) scene.add.text(36, 80, S.tagline, { fontFamily: 'Arial', fontSize: '15px', color: accCss, stroke: '#140b12', strokeThickness: 3, wordWrap: { width: W * 0.62 } });
+          if (S.premise) scene.add.text(36, 108, S.premise, { fontFamily: 'Arial', fontSize: '12px', color: '#cdd6f0', stroke: '#140b12', strokeThickness: 2, wordWrap: { width: W * 0.6 } }).setAlpha(0.92);   // the STORY arc (#42)
           var worlds = S.worlds || (window.LEVELS || []).map(function (l) { return { name: l.name, color: l.sky }; });
           var n = worlds.length || 1;
           scene._sel = 0;
