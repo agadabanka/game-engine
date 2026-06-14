@@ -134,7 +134,7 @@
   window.SHELL = {
     name: 'Studio Game', tagline: 'A platformer built on the game-engine.', accent: 0x7cc6ff, sky: 0x0b1021,
     worlds: (window.LEVELS || []).map(function (l) { return { name: l.name || 'World', color: l.sky }; }),
-    links: { diary: '/diary.html' },
+    links: { diary: '/diary.html', build: '/build.html', design: '/design.html' },
   };
 
   var config = {

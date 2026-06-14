@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Design Lens</title>
+<style>
+  :root { --bg:#0b1020; --card:#121826; --line:#2b3a57; --ink:#e8eefc; --dim:#9fb3e0; --accent:#ffd34d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,Segoe UI,Roboto,sans-serif; line-height:1.55; }
+  header { padding:18px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; position:sticky; top:0; background:rgba(11,16,32,.95); backdrop-filter:blur(6px); z-index:5; }
+  header h1 { font-size:20px; margin:0; }
+  header a { color:#9fd6ff; text-decoration:none; font-size:14px; }
+  .wrap { max-width:1000px; margin:0 auto; padding:24px; }
+  h2 { font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:8px; margin:30px 0 12px; }
+  .hero { font-size:18px; color:#fff; }
+  .tag { color:var(--dim); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; }
+  .card .n { font-size:12px; color:var(--accent); }
+  .card .name { font-size:16px; color:#fff; margin:3px 0 5px; }
+  .card .t { font-size:13px; color:#cdd9f5; }
+  .kv { display:grid; grid-template-columns:160px 1fr; gap:6px 14px; font-size:14px; }
+  .kv .k { color:var(--dim); }
+  pre { background:#0c1020; border:1px solid var(--line); border-radius:10px; padding:14px; overflow:auto; font-size:12px; color:#cfe1ff; }
+  details summary { cursor:pointer; color:#9fd6ff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>✏️ Design Lens</h1>
+  <a href="/">← game</a> <a href="/diary.html">📖 diary</a> <a href="/build.html">🧱 builder</a>
+</header>
+<div class="wrap" id="wrap"><p class="tag">Loading design…</p></div>
+<script>
+(async () => {
+  let m = {};
+  try { m = await (await fetch('/api/meta')).json(); } catch (e) {}
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+  const worlds = m.worlds || [];
+  const stages = m.stages || {};
+  const w = document.getElementById('wrap');
+  w.innerHTML = `
+    <p class="hero">${esc(m.hero || m.name || 'The hero')}</p>
+    <p class="tag">${esc(m.tagline || '')}</p>
+
+    <h2>The lens</h2>
+    <div class="kv">
+      <div class="k">Core verb</div><div>${esc(m.verb || '—')}</div>
+      <div class="k">Design lens</div><div>${esc(m.designLens || '—')}</div>
+      <div class="k">Art</div><div>${esc((m.art && m.art.style) || m.art || '—')}</div>
+      <div class="k">Music</div><div>${esc(typeof m.music === 'object' ? (m.music.style || 'Lyria per world') : (m.music || '—'))}</div>
+      <div class="k">Engine</div><div>${esc(m.engine || 'game-engine')}</div>
+    </div>
+
+    <h2>Worlds (${worlds.length})</h2>
+    <div class="grid">
+      ${worlds.map((wn, i) => `<div class="card"><div class="n">WORLD ${i + 1}</div><div class="name">${esc(wn)}</div></div>`).join('') || '<p class="tag">No worlds declared.</p>'}
+    </div>
+
+    <h2>Pipeline stages</h2>
+    <div class="kv">
+      ${Object.keys(stages).map(k => `<div class="k">${esc(k)}</div><div>${stages[k] === 'done' ? '✅ done' : '○ ' + esc(stages[k])}</div>`).join('') || '<div class="tag">—</div>'}
+    </div>
+
+    <h2>GAME_META.json</h2>
+    <details><summary>show raw design data</summary><pre>${esc(JSON.stringify(m, null, 2))}</pre></details>
+  `;
+})();
+</script>
+</body>
+</html>
