@@ -79,9 +79,28 @@ The tools are engine-level (operate on a game id/dir); a new game does NOT carry
 | art | `tools/art.mjs` → `scripts/gemini.js` | themed backdrops/keyart per world; cached via `tools/lib/gencache.mjs` |
 | music | `tools/music.mjs` → `lib/lyria.js` | Lyria loop per world (or procedural `Studio.Audio` fallback) |
 | shorts | `tools/trailer/make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed, auto-wired (see ENGINE.md) |
-| videos | `tools/record.mjs` + `tools/youtube-upload.mjs` | per-level MP4 → YouTube (YT_* secrets) |
+| videos | `tools/record.mjs` + `tools/trailer/yt-upload.mjs` | per-level landscape MP4 (music muxed) + montage → YouTube (YT_* secrets; write the refresh token to /tmp/yt-creds.json). Playlist needs the broader `youtube` scope — an upload-scoped token 403s, so fall back to the montage link. |
 | safety net | `tools/eval-all.mjs` | run the golden set + this game before merge |
 Anything still scattered in a game repo is a migration target — lift it here and update this table.
+
+## Platformer engine reference (BUILD from this — don't rediscover it each time)
+The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platforms, hazards, coins, enemies, spawn, goalX}`. Spec fields:
+- `ground: [[x0,x1,mat], …]` — solid floor spans. The **gaps are the spans BETWEEN segments.**
+- `walls: [{x,tiles,mat}]` — vertical steps (≤2 tiles so a hop clears them).
+- `platforms: [{x,y,w,mat}]` — **FLOATING platforms** (real footholds at any height → verticality). They're added to the same `platforms` group, so the autopilot's `groundAt` probe lands on them like ground.
+- `coins:[{x,y}]` · `enemies:[{x,patrol}]` (patrol = ± px) · `pads:[{x}]` (bounce-pads, handled in game.js) · `spawn:{x,y}` · `goal` · `sky` · `width` · `groundY` · `tile` · `height`.
+- **Materials** (`Studio.Materials.table`): each has `{color, top, friction, deadly, ground}`. `Textures.kit` auto-bakes a `grad_<mat>` strip for EVERY table entry, so **add a game's palette to the table** (precedent: the "biome set (funded by Biome Bash)", "confection set (funded by Lovelump)"). A material with `deadly:true` routes its segment to the **hazards** group (overlap = death), NOT platforms.
+
+**The autopilot is the gate (`Studio.Autopilot.platformer`)** — it must WIN every level 0-death, deterministically. It runs RIGHT and jumps when `onGround && (!safeGroundAhead || blockedRight || enemyAhead || hazardAhead)`. Its hop envelope (see `tools/lib/levelkit` PLATFORMER_RULES): **≈200px across, ≈3 tiles / ~138px up.** Design every world so the *critical path* stays inside that envelope, then it wins for free.
+
+**Techniques that turn "flat ground + gaps" into rich, VARIED structure (the owner wants real variety — different mechanics AND structure per world, not recolors):**
+- **Hazard = a jumpable gap with deadly visuals.** A `deadly` segment isn't in `platforms`, so the autopilot reads it as a gap and hops it; the player only dies on an under-jump. Recolor jumpable gaps as lava/water/thorn/fudge pools → real hazards, same 0-death path. Keep each ≤200px.
+- **Verticality via floating `platforms`** — island chains, ascending ledges, descending staircases, sky-hops. Put footholds within the hop envelope and the autopilot climbs them; put bonus perches ABOVE the path for high coins + manual play.
+- **Bounce-`pads`** launch to upper routes (vertical traversal + slapstick).
+- **Per-world STRUCTURE, not just palette:** e.g. island-archipelago over water · up-and-over hedge climb · cascading descent over a fudge river with pads back up · airy cloud-to-cloud hopping. Vary hazard type, foothold rhythm, enemy/pad density, and the vertical profile so each world *plays* differently.
+- **If the structure you want needs a smarter gate, EVOLVE the autopilot** (it's engine code in `studio.js`) — e.g. explicit hazard look-ahead, foothold-seeking, climb-to-ledge — keep it deterministic (no `Math.random`, fixed frames) and re-verify 0-death across all golden games. A richer autopilot is a reusable engine win, not a per-game hack.
+- **Character/visual decoupling:** the physics body is invisible; a separate visual sprite follows it; squash-and-stretch scales the VISUAL only — never the body — so collision/sensing stay rock-stable.
+- **Determinism:** never `Math.random`; gate gags/variation on counters (`coins%2`) or `Studio.RNG`. Lint every level with `lintLevel` before gating (gaps ≤200, walls ≤2 tiles & ≥200px from gaps, spawn/goal/enemy on ground).
 
 ## The pipeline (all stages must land; update GAME_META.json stages as you go)
 1. **Scaffold** — `node scripts/new-game.mjs "<Name>" --local --tagline … --hero … --verb …`
