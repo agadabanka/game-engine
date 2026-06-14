@@ -117,9 +117,7 @@
       if (this._touch) this._touch.setViz(mv);
       Studio.Mechanics.step(this, player, world);   // conveyor/dashpad/fields/crumble — AFTER input sets velocity
 
-      world.enemies.getChildren().forEach(function (e) {
-        if (!e.active) return; e.x += e.dir * 0.6; if (Math.abs(e.x - e.homeX) > e.patrol) e.dir *= -1;
-      });
+      Studio.Enemies.step(this, world, frame);   // walker patrol + flyer sweep (#31)
 
       if (!won && player.x >= levelGoalX - 8) {
         won = true; Studio.Audio.sfx('win'); Studio.Juice.flash(scene, 200, 6, 214, 160);

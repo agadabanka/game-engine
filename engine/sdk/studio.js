@@ -798,7 +798,13 @@
       (spec.coins || []).forEach(function (c) { coins.create(c.x, c.y, 'coin'); });
       var enemies = scene.physics.add.group({ allowGravity: false, immovable: true });
       (spec.enemies || []).forEach(function (e) {
-        var s = enemies.create(e.x, spec.groundY - 14, 'enemy'); s.patrol = e.patrol || 60; s.homeX = e.x; s.dir = 1;
+        // archetype (#31): walker = ground patroller; flyer = overhead sweeper (rides above the jump
+        // apex over solid ground → the grounded autopilot passes under it). Game skins each body.
+        var fly = !!e.fly, y = fly ? (spec.groundY - (e.up || 150)) : spec.groundY - 14;
+        var s = enemies.create(e.x, y, 'enemy');
+        s.homeX = e.x; s.dir = e.dir || (fly ? -1 : 1); s.patrol = e.patrol || 60;
+        s.kind = e.kind || null; s.big = !!e.big; s._fly = fly; s._spd = e.speed || (fly ? 1.15 : 0.6);
+        if (fly) { s._x0 = e.x - (e.range || 130); s._x1 = e.x + (e.range || 130); s._baseY = y; s._bob = e.bob || 10; s._phase = e.x % 17; }
       });
       return {
         platforms: platforms, hazards: hazards, coins: coins, enemies: enemies, crumble: crumble,
@@ -906,6 +912,33 @@
         }
       });
       function frameNow() { return scene.game.loop.frame; }
+    }
+  };
+
+  // ------------------------------------------------------------- Enemies (#31)
+  // Archetype movement for the enemies Level.build lays down. Opt-in: a game calls
+  // Studio.Enemies.step(scene, world, frame) each frame (then skins/syncs its own actors).
+  //   • WALKER — ground patroller (±patrol around homeX); kind sets speed (fast/slow/normal).
+  //   • FLYER  — overhead sweeper (x0..x1) with a sine bob; rides above the jump apex over SOLID
+  //     ground, so the grounded autopilot passes under it (deadly-on-contact is the game's choice).
+  // Kinematic (the group is allowGravity:false); deterministic on the frame counter.
+  Studio.Enemies = {
+    KIND_SPD: { beetle: 1.45, spider: 1.5, fast: 1.5, snail: 0.45, slow: 0.5, lavaslug: 0.55, snowman: 0.6 },
+    step: function (scene, world, frame) {
+      if (!world || !world.enemies) return;
+      var K = this.KIND_SPD;
+      world.enemies.getChildren().forEach(function (e) {
+        if (!e.active) return;
+        if (e._fly) {
+          e.x += e.dir * (e._spd || 1.15); if (e.x <= e._x0 || e.x >= e._x1) { e.dir *= -1; e.x = Math.max(e._x0, Math.min(e._x1, e.x)); }
+          e.y = e._baseY + Math.sin((frame + (e._phase || 0)) * 0.06) * (e._bob || 10);
+        } else {
+          // EXACT legacy walker motion (no clamp) so existing levels stay byte-identical; a kind
+          // only scales speed when set (default null → ×1 → identical to the old e.x += dir*0.6).
+          var spd = (e._spd || 0.6) * (e.kind && K[e.kind] ? K[e.kind] : 1);
+          e.x += e.dir * spd; if (Math.abs(e.x - e.homeX) > e.patrol) e.dir *= -1;
+        }
+      });
     }
   };
 
