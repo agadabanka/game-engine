@@ -85,7 +85,9 @@ function planFor(g) {
 
 function label(g, lv) {
   const w = (g.meta && Array.isArray(g.meta.worlds)) ? g.meta.worlds : [];
-  if (w[lv - 1]) return w[lv - 1].toUpperCase();
+  // worlds may be strings OR objects ({name,theme}); derive a display name either way.
+  const wn = w[lv - 1] && typeof w[lv - 1] === 'object' ? (w[lv - 1].name || w[lv - 1].title || w[lv - 1].theme || '') : w[lv - 1];
+  if (wn) return String(wn).toUpperCase();
   const vids = (g.meta && g.meta.videos) || {};
   for (const k of Object.keys(vids)) { const m = new RegExp(`level-?${lv}(?:-(.+))?$`, 'i').exec(k); if (m && m[1]) return m[1].replace(/-/g, ' ').toUpperCase(); }
   return `LEVEL ${lv}`;
