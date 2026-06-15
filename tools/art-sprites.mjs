@@ -15,6 +15,7 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 import { generateImage, geminiConfigured } from '../scripts/gemini.js';
 import { cached } from './lib/gencache.mjs';
+import { validateGame } from './validate-sprites.mjs';
 
 const gameDir = process.argv[2];
 if (!gameDir) { console.error('usage: node tools/art-sprites.mjs <gameDir> [--force]'); process.exit(2); }
@@ -172,18 +173,52 @@ async function packFrames(frameUrls) {
   }, frameUrls);
 }
 
+// ALTERNATION score of a cycle's sliced frames: how different the two CONTACT frames are
+// (frame 0 vs frame mid). Low = the same stride repeats = a HOP; high = legs scissor = a RUN.
+// Frames are bottom-centre aligned (as they'll be packed) before diffing.
+async function cycleScore(frames) {
+  if (!frames || frames.length < 2) return 0;
+  const urls = [frames[0].url, frames[(frames.length / 2) | 0].url];
+  return await page.evaluate(async (urls) => {
+    function load(u) { return new Promise((r, j) => { const im = new Image(); im.onload = () => r(im); im.onerror = j; im.src = u; }); }
+    const ims = await Promise.all(urls.map(load));
+    const w = Math.max(...ims.map((i) => i.width)), h = Math.max(...ims.map((i) => i.height));
+    const cd = (im) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(im, (w - im.width) / 2, h - im.height); return x.getImageData(0, 0, w, h).data; };
+    const a = cd(ims[0]), b = cd(ims[1]); let dd = 0, un = 0;
+    for (let i = 0; i < a.length; i += 4) { const oa = a[i + 3] > 32, ob = b[i + 3] > 32; if (oa || ob) un++; if (oa !== ob) dd++; else if (oa && ob && (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) > 60) dd++; }
+    return un ? dd / un : 0;
+  }, urls);
+}
+
+// Generate a 6-frame locomotion CYCLE, validating ALTERNATION inline and RETRYING (cache-busted,
+// with a stronger nudge) up to 3× so the legs reliably scissor — the repeatable guarantee.
+async function genCycle(keyBase, charDesc, motion, refs, label) {
+  let best = null, bestScore = -1;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const k = attempt ? keyBase + '_v' + attempt : keyBase;
+    const nudge = attempt ? `\n\nCRITICAL — VARIATION ${attempt}: make the leg ALTERNATION unmistakable. Between the two CONTACT frames the FORWARD leg MUST swap to the OPPOSITE side (right foot far ahead in one contact frame, LEFT foot far ahead in the other), legs SPREAD WIDE. Do NOT draw the same stride twice.` : '';
+    const sheet = await genSheet(k, cyclePrompt(charDesc, motion) + nudge, refs, '3:2');
+    const frames = await sliceSheet(sheet.path, 6);
+    const score = await cycleScore(frames);
+    process.stdout.write(` ${label}${sheet.hit ? '·' : '✱'}[alt${(score * 100) | 0}%${frames.length !== 6 ? '/' + frames.length + 'f' : ''}]`);
+    if (frames.length === 6 && score > bestScore) { bestScore = score; best = frames; }
+    if (frames.length === 6 && score >= 0.12) break;   // a margin above the 0.10 validation gate
+  }
+  return best || [];
+}
+
 // identity model sheet (shared reference → keeps the run sheet & the action sheet on-model)
 const modelPrompt = `Character model/reference sheet for "${hero}". ${STYLE_NOTE} Show the SAME character in a large clear SIDE view facing right and a three-quarter front view, full body, consistent colours and proportions, all of its features clearly visible. Plain neutral light-grey studio background. No text, no labels.`;
 const model = await genSheet('hero_model', modelPrompt, undefined, '3:2');
 console.log(`  hero model sheet${model.hit ? ' (cached)' : '✱'}`);
 const heroRef = [{ base64: fs.readFileSync(model.path).toString('base64'), mimeType: 'image/png' }];
 
-// HERO: a run-cycle sheet + an action sheet, conditioned on the model sheet
-const heroRun = await genSheet('hero_run', cyclePrompt(hero, 'run'), heroRef, '3:2');
+// HERO: a run-cycle sheet (validated + auto-retried) + an action sheet, conditioned on the model sheet
+process.stdout.write('  hero:');
+const runFrames = await genCycle('hero_run', hero, 'run', heroRef, 'run');
 const heroAct = await genSheet('hero_actions', gridPrompt(hero, HERO_POSES), heroRef, '3:2');
-console.log(`  hero run sheet${heroRun.hit ? '·' : '✱'}  hero action sheet${heroAct.hit ? '·' : '✱'}`);
-const runFrames = await sliceSheet(heroRun.path, 6);
 const actFrames = await sliceSheet(heroAct.path, HERO_POSES.length);
+console.log(` actions${heroAct.hit ? '·' : '✱'}`);
 // assemble: actions first (idle,idle2,jump,fall,land,land2,hurt,cheer1,cheer2) then run1..6
 const heroAll = actFrames.concat(runFrames);
 const heroPacked = await packFrames(heroAll.map((f) => f.url));
@@ -207,9 +242,11 @@ for (const en of enemies) {
   const eDesc = `${en.desc}, a small game critter`;
   const eModel = await genSheet('en_' + en.key + '_model', `Character reference sheet for ${eDesc}. ${STYLE_NOTE} A clear side view facing right + a three-quarter view, full body, consistent. Plain light-grey background. No text.`, undefined, '3:2');
   const eRef = [{ base64: fs.readFileSync(eModel.path).toString('base64'), mimeType: 'image/png' }];
-  const eWalk = await genSheet('en_' + en.key + '_walk', cyclePrompt(eDesc, 'walk'), eRef, '3:2');
+  process.stdout.write('  ' + en.key + ':');
+  const wF = await genCycle('en_' + en.key + '_walk', eDesc, 'walk', eRef, 'walk');
   const eAct = await genSheet('en_' + en.key + '_actions', gridPrompt(eDesc, ENEMY_POSES), eRef, '3:2');
-  const wF = await sliceSheet(eWalk.path, 6), aF = await sliceSheet(eAct.path, ENEMY_POSES.length);
+  const aF = await sliceSheet(eAct.path, ENEMY_POSES.length);
+  process.stdout.write(` actions${eAct.hit ? '·' : '✱'}\n`);
   const all = aF.concat(wF);
   const packed = await packFrames(all.map((f) => f.url));
   fs.writeFileSync(path.join(outDir, en.key + '.png'), Buffer.from(packed.url.split(',')[1], 'base64'));
@@ -221,10 +258,15 @@ for (const en of enemies) {
   console.log(`  enemy ${en.key} → ${en.key}.png (${packed.count} frames: ${na} action + ${wF.length} walk)`);
 }
 
-await browser.close();
 const mPath = path.join(outDir, 'manifest.json');
 const prev = fs.existsSync(mPath) ? JSON.parse(fs.readFileSync(mPath, 'utf8')) : {};
 const full = { ...prev, ...manifest };
 fs.writeFileSync(mPath, JSON.stringify(full, null, 2));
 fs.writeFileSync(path.join(gameDir, 'src/game/sprites.js'), '/* generated by tools/art-sprites.mjs — sprite-SHEET atlas (Studio.Hero loads it, falls back to the Toon rig). */\nwindow.SPRITES = ' + JSON.stringify(full, null, 2) + ';\n');
-console.log(`\n✅ hero + ${enemies.length} enemies → ${outDir} (sheets sliced + packed) + manifest.json + src/game/sprites.js`);
+
+// ── final VALIDATION gate (repeatable — the same checks as tools/validate-sprites.mjs) ──
+const rep = await validateGame(gameDir, page);
+await browser.close();
+for (const a of rep.actors) console.log(`  ${a.ok ? '✓' : '✗'} ${a.name}${a.ok ? '' : ' — ' + a.fails.join('; ')}`);
+if (!rep.ok) { console.error('\n❌ sprite validation FAILED — re-run `tools/art-sprites.mjs` to auto-regenerate the flagged cycle(s).'); process.exit(1); }
+console.log(`\n✅ hero + ${enemies.length} enemies → ${outDir} (sheets sliced + packed + VALIDATED) + manifest.json + src/game/sprites.js`);
