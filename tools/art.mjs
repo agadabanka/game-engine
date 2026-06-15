@@ -20,7 +20,10 @@ if (!geminiConfigured()) { console.error('GEMINI_SA_JSON not configured — art 
 const meta = JSON.parse(fs.readFileSync(path.join(dir, 'GAME_META.json'), 'utf8'));
 const style = val('--style') || (meta.art && meta.art.style) || (typeof meta.art === 'string' && meta.art.length > 30 ? meta.art : null)
   || 'polished toony game art, bold clean outlines, vivid saturated palette';
-const worlds = (val('--worlds') ? val('--worlds').split(',') : meta.worlds || []).map((w) => String(w).trim()).filter(Boolean);
+// worlds may be plain strings OR rich objects ({name, theme, tag}). Normalize either way.
+const wname = (w) => (w && typeof w === 'object') ? (w.name || w.title || w.theme || '') : String(w).trim();
+const wtheme = (w) => (w && typeof w === 'object' && w.theme) ? String(w.theme) : '';
+const worlds = (val('--worlds') ? val('--worlds').split(',') : meta.worlds || []).filter((w) => wname(w));
 if (!worlds.length) { console.error('no worlds — set meta.worlds or pass --worlds "A,B,C"'); process.exit(2); }
 
 const outDir = path.join(dir, 'src/assets/backdrops');
@@ -29,7 +32,7 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g
 const cacheDir = path.join(dir, '.artcache');
 
 // bottom third MUST stay gameplay-clean (per the owner's standing rule); NO text.
-const backdropPrompt = (w) => `${style}. A wide side-scrolling platformer BACKDROP for a world called "${w}". Lush, colorful, deep parallax. The BOTTOM THIRD must be simple and uncluttered (gameplay happens there). Absolutely NO text, words, letters, numbers, logos, or UI.`;
+const backdropPrompt = (w) => `${style}. A wide BACKDROP for a world called "${wname(w)}"${wtheme(w) ? ` — a ${wtheme(w)} scene` : ''}. Lush, colorful, deep parallax depth. The BOTTOM THIRD must be simple and uncluttered (gameplay happens there). Absolutely NO text, words, letters, numbers, logos, or UI.`;
 const keyartPrompt = () => `${style}. Hero key art / title illustration for "${meta.name}" — ${meta.hero || 'the hero'}. ${meta.tagline || ''}. Dynamic, characterful, poster-like. Absolutely NO text, words, or letters.`;
 
 async function gen(kind, params, prompt, aspect, dest) {
@@ -45,7 +48,7 @@ async function gen(kind, params, prompt, aspect, dest) {
 console.log(`\nart · ${meta.name} · ${worlds.length} worlds\n  style: ${style.slice(0, 80)}…\n`);
 const manifest = { style, title: 'title.jpg', backdrops: {} };
 try {
-  for (const w of worlds) { const f = `${slug(w)}.jpg`; await gen('backdrop', { world: w }, backdropPrompt(w), '16:9', path.join(outDir, f)); manifest.backdrops[w] = f; }
+  for (const w of worlds) { const nm = wname(w), f = `${slug(nm)}.jpg`; await gen('backdrop', { world: nm }, backdropPrompt(w), '16:9', path.join(outDir, f)); manifest.backdrops[nm] = f; }
   if (argv.includes('--title') || true) await gen('keyart', { game: meta.name }, keyartPrompt(), '16:9', path.join(outDir, 'title.jpg'));
 } catch (e) { console.error('\nart generation failed:', e.message); process.exit(1); }
 fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
