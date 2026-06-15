@@ -67,7 +67,7 @@ console.log('');
 
 // ── enemies (#21): one green-screen sheet per kind (stand + waddle) from meta.art.enemies ──
 const enemies = (meta.art && meta.art.enemies) || [];
-// 6 STATES per enemy too (every actor animates richly, not just stand+walk).
+// 7 STATES per enemy too (every actor animates richly, not just stand+walk).
 const EPOSES = [
   ['idle', 'standing idle, facing RIGHT'],
   ['walk1', 'mid-waddle step, leading side lifted, facing RIGHT'],
@@ -76,6 +76,8 @@ const EPOSES = [
   ['hurt', 'squashed and flattened, facing RIGHT, eyes shut — got stomped flat'],
   ['hop', 'hopping up, facing RIGHT, body stretched tall, little feet tucked'],
   ['happy', 'happy and bouncy, facing RIGHT, big smile, eyes bright'],
+  ['turn', 'turning around, facing FORWARD toward the viewer, startled wide eyes'],
+  ['jump', 'a big joyful jump, facing RIGHT, body fully stretched tall, feet kicked up'],
 ];
 const enemyFrames = {};
 for (const en of enemies) {
@@ -126,7 +128,7 @@ const manifest = {
 for (const en of enemies) {
   const ep = await packSheet(enemyFrames[en.key]);
   fs.writeFileSync(path.join(outDir, en.key + '.png'), Buffer.from(ep.url.split(',')[1], 'base64'));
-  manifest.enemies[en.key] = { sheet: 'sprites/' + en.key + '.png', frameWidth: ep.frameWidth, frameHeight: ep.frameHeight, anims: { idle: [0], walk: [1, 2, 3], hurt: [4], hop: [5], happy: [6] } };
+  manifest.enemies[en.key] = { sheet: 'sprites/' + en.key + '.png', frameWidth: ep.frameWidth, frameHeight: ep.frameHeight, anims: { idle: [0], walk: [1, 2, 3], hurt: [4], hop: [5], happy: [6], turn: [7], jump: [8] } };
   console.log(`  enemy ${en.key} → ${en.key}.png (${ep.count} frames)`);
 }
 await browser.close();
