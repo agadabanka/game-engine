@@ -930,52 +930,22 @@
     },
     "shorts": [
       {
-        "title": {
-          "name": "Emerald Rainforest",
-          "tag": "Lush green tangle · easy slithering · fruit everywhere",
-          "color": 2071114,
-          "theme": "rainforest"
-        },
-        "biome": {
-          "name": "Emerald Rainforest",
-          "tag": "Lush green tangle · easy slithering · fruit everywhere",
-          "color": 2071114,
-          "theme": "rainforest"
-        },
+        "title": "Emerald Rainforest",
+        "biome": "Emerald Rainforest",
         "level": 1,
-        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400794"
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448628859"
       },
       {
-        "title": {
-          "name": "Bamboo Maze",
-          "tag": "Tall bamboo corridors · twisty paths · don't box yourself in",
-          "color": 10207546,
-          "theme": "bamboo"
-        },
-        "biome": {
-          "name": "Bamboo Maze",
-          "tag": "Tall bamboo corridors · twisty paths · don't box yourself in",
-          "color": 10207546,
-          "theme": "bamboo"
-        },
+        "title": "Bamboo Maze",
+        "biome": "Bamboo Maze",
         "level": 3,
-        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400800"
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448628868"
       },
       {
-        "title": {
-          "name": "Cloud Canopy",
-          "tag": "Bright treetops · open sky · the long climb to a giant feast",
-          "color": 8963834,
-          "theme": "canopy"
-        },
-        "biome": {
-          "name": "Cloud Canopy",
-          "tag": "Bright treetops · open sky · the long climb to a giant feast",
-          "color": 8963834,
-          "theme": "canopy"
-        },
+        "title": "Cloud Canopy",
+        "biome": "Cloud Canopy",
         "level": 5,
-        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400812"
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448628874"
       }
     ]
   },
@@ -1106,58 +1076,22 @@
     },
     "shorts": [
       {
-        "title": {
-          "name": "Sunny Meadow",
-          "tag": "Gentle green hills · wide gaps · learn to flap",
-          "color": 8965802,
-          "theme": "meadow",
-          "creature": "robin"
-        },
-        "biome": {
-          "name": "Sunny Meadow",
-          "tag": "Gentle green hills · wide gaps · learn to flap",
-          "color": 8965802,
-          "theme": "meadow",
-          "creature": "robin"
-        },
+        "title": "Sunny Meadow",
+        "biome": "Sunny Meadow",
         "level": 1,
-        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448612871"
+        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448628842"
       },
       {
-        "title": {
-          "name": "Bloom Fields",
-          "tag": "Hot-pink flower forest · honeycomb columns · quicker",
-          "color": 16738740,
-          "theme": "bloom",
-          "creature": "bee"
-        },
-        "biome": {
-          "name": "Bloom Fields",
-          "tag": "Hot-pink flower forest · honeycomb columns · quicker",
-          "color": 16738740,
-          "theme": "bloom",
-          "creature": "bee"
-        },
+        "title": "Bloom Fields",
+        "biome": "Bloom Fields",
         "level": 3,
-        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448612876"
+        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448628845"
       },
       {
-        "title": {
-          "name": "Ember Peaks",
-          "tag": "Fiery orange volcano · basalt pillars · the fast finale",
-          "color": 15234347,
-          "theme": "ember",
-          "creature": "dragon"
-        },
-        "biome": {
-          "name": "Ember Peaks",
-          "tag": "Fiery orange volcano · basalt pillars · the fast finale",
-          "color": 15234347,
-          "theme": "ember",
-          "creature": "dragon"
-        },
+        "title": "Ember Peaks",
+        "biome": "Ember Peaks",
         "level": 5,
-        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448612877"
+        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448628847"
       }
     ]
   }
