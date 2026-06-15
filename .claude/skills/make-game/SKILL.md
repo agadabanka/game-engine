@@ -165,6 +165,16 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
    (the env token is an ACCOUNT token; the CLI misreads it as a project token
    under its default name). Then verify `/health`, `/api/meta`, `/api/diary`
    live, and confirm a headless page renders non-black off the live URL.
+   - **ALWAYS attach a persistent volume** so in-game notes survive redeploys
+     (the server writes `/api/notes` to `RAILWAY_VOLUME_MOUNT_PATH`, else an
+     EPHEMERAL container dir — without a volume, every redeploy WIPES the
+     owner's notes, which violates "don't lose changes"):
+     ```
+     railway link -p <game> -e production -s <game>   # link the service first
+     railway volume add -m /data                       # Railway sets RAILWAY_VOLUME_MOUNT_PATH=/data
+     railway redeploy --yes                            # mount it
+     ```
+     Verify with `railway volume list` (Attached to: <game>, Mount path: /data).
 9. **Videos — the ultimate step, never skip.** `tools/record.mjs` renders each
    level's autopilot run to MP4 off the deterministic stepper with the level's
    music muxed in; build a montage; upload ALL of them to YouTube
