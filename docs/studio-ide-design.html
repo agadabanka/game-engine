@@ -86,7 +86,8 @@
 <tr><td><b>Music</b></td><td><code>tools/music.mjs</code> (Lyria)</td><td>per-world prompt: mood, tempo, instruments</td><td>&ldquo;darker track for world 3&rdquo;</td><td>listen / approve</td></tr>
 <tr><td><b>Notes</b></td><td><code>notes.json</code> &harr; issues</td><td>triage board: route a note to a tool, status, summarize-N</td><td>&ldquo;summarize and route these 5 notes&rdquo;</td><td>closes the issue</td></tr>
 </table>
-<p class="cap">Highlighted row = the proving slice (Levels, issue #62). The others (#63) clone the proven pattern.</p>
+<p class="cap">Build order: <b>Art is the first concrete tool</b> (#64&ndash;#69, easiest to swap in/out); Levels (#62) proves the data-edit round-trip; Feel/Music/Identity (#63) follow.</p>
+<p><b>Art editing model &mdash; every edit is a Gemini call.</b> Recolor a character, redraw a sprite sheet, shift a world&rsquo;s palette, swap a tile or prop &mdash; each is a <b>Gemini nano-banana-pro</b> (<code>gemini-3-pro-image</code>) generation. To edit an <i>existing</i> asset we pass it back as a <b>reference image</b> (<code>generateImage(prompt, { refs })</code>, already supported) so the model stays on-model and changes only what was asked &mdash; <b>image-to-image editing</b>. The knobs compose the edit instruction; the agent prompt bar is free-text. Gemini is <b>required</b> for the Art tool: without <code>GEMINI_SA_JSON</code> the tool is unavailable and says so &mdash; there is no procedural &ldquo;tint&rdquo; shortcut.</p>
 
 <h2 id="roundtrip">6. The round-trip — &ldquo;edit a part and put it back&rdquo;</h2>
 <p>Every tool implements the same five steps. This is the contract the whole IDE is built around.</p>
