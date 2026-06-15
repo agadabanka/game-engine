@@ -50,8 +50,11 @@ GAME_META marks `done`. Then:
   scorecard, the live link, the playlist. Never self-declare a stage done by skimping. Then set
   `GAME_META.stages` to `done` and **re-run the command** (it closes the issue, advances the
   tracker's NEXT pointer, and flags any out-of-order completion).
-- An open issue = an unfinished step the owner can see. The owner can also drop notes as
-  issues; treat them as work items.
+- An open issue = an unfinished step the owner can see. The owner also drops **notes in-game**
+  (Pause → 📝) and **every note auto-becomes a GitHub issue** — the server (`POST /api/notes`)
+  promotes it when `NOTES_GH_REPO` + `NOTES_GH_TOKEN` are set in the Railway env (set these at
+  deploy time, every game). Treat owner notes as first-class work items: investigate, fix, and
+  close the issue with evidence. NEVER tell the owner to file an issue themselves.
 
 **Private by default (standing owner rule):** every created game repo is PRIVATE. `new-game.mjs`
 defaults to `--private`; only `--public` opts out. Shorts therefore host as Release assets via
@@ -175,6 +178,10 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
      railway redeploy --yes                            # mount it
      ```
      Verify with `railway volume list` (Attached to: <game>, Mount path: /data).
+   - **Wire notes → issues** so in-game notes auto-become GitHub issues (the server
+     promotes each `POST /api/notes`): set `NOTES_GH_REPO=<owner/repo>` and
+     `NOTES_GH_TOKEN=<PAT with issues:write>` in the Railway env
+     (`railway variables --set … --skip-deploys`; pipe the token via `--set-from-stdin`).
 9. **Videos — the ultimate step, never skip.** `tools/record.mjs` renders each
    level's autopilot run to MP4 off the deterministic stepper with the level's
    music muxed in; build a montage; upload ALL of them to YouTube
