@@ -1103,6 +1103,62 @@
         "music": "assets/music/level-{l}.mp3",
         "platformer": false
       }
-    }
+    },
+    "shorts": [
+      {
+        "title": {
+          "name": "Sunny Meadow",
+          "tag": "Gentle green hills · wide gaps · learn to flap",
+          "color": 8965802,
+          "theme": "meadow",
+          "creature": "robin"
+        },
+        "biome": {
+          "name": "Sunny Meadow",
+          "tag": "Gentle green hills · wide gaps · learn to flap",
+          "color": 8965802,
+          "theme": "meadow",
+          "creature": "robin"
+        },
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448612871"
+      },
+      {
+        "title": {
+          "name": "Bloom Fields",
+          "tag": "Hot-pink flower forest · honeycomb columns · quicker",
+          "color": 16738740,
+          "theme": "bloom",
+          "creature": "bee"
+        },
+        "biome": {
+          "name": "Bloom Fields",
+          "tag": "Hot-pink flower forest · honeycomb columns · quicker",
+          "color": 16738740,
+          "theme": "bloom",
+          "creature": "bee"
+        },
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448612876"
+      },
+      {
+        "title": {
+          "name": "Ember Peaks",
+          "tag": "Fiery orange volcano · basalt pillars · the fast finale",
+          "color": 15234347,
+          "theme": "ember",
+          "creature": "dragon"
+        },
+        "biome": {
+          "name": "Ember Peaks",
+          "tag": "Fiery orange volcano · basalt pillars · the fast finale",
+          "color": 15234347,
+          "theme": "ember",
+          "creature": "dragon"
+        },
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448612877"
+      }
+    ]
   }
 ]
