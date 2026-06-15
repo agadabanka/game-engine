@@ -237,7 +237,7 @@ function card(g){
       <div class="facts">${facts || 'in development'}</div>
       <div class="cta">
         ${base ? `<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Play</a>` : ''}
-        <a class="det" onclick="event.stopPropagation();openGame('${esc(g.id)}')">View details</a>
+        <a class="det" href="/ide?game=${esc(g.id)}" onclick="event.stopPropagation()">🎛 Open IDE</a>
       </div>
     </div>
   </div>`;
@@ -319,6 +319,7 @@ function heroBlock(g){
 function ctaBlock(g){
   const base = g.url ? g.url.replace(/\/$/, '') : null, m = g.meta || {}, a = [];
   if (base) a.push(`<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Play</a>`);
+  a.push(`<a class="sec" href="/ide?game=${esc(g.id)}" onclick="event.stopPropagation()">🎛 Open IDE</a>`);
   if (g.playlist) a.push(`<a class="watch" href="${esc(g.playlist)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ ${g.hasPlaylist ? 'Watch all on YouTube' : 'Watch the montage'}</a>`);
   if ((g.shorts || []).length) a.push(`<a class="sec" href="${esc(g.shortsPlaylist || ('/shorts.html?game=' + g.id))}" ${g.shortsPlaylist ? 'target="_blank" rel="noopener"' : ''} onclick="event.stopPropagation()">📱 Shorts (${g.shorts.length})</a>`);
   if (base) a.push(`<a class="sec" href="${esc(base + (m.builder || '/build.html'))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧱 Builder</a>`);
