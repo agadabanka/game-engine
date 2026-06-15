@@ -25,6 +25,8 @@ const WORK = path.join(OUT, '_work');
 fs.mkdirSync(WORK, { recursive: true });
 const meta = JSON.parse(fs.readFileSync(path.join(gameDir, 'GAME_META.json'), 'utf8'));
 const worlds = meta.worlds || [];
+// worlds may be plain strings OR rich objects ({name,theme}) — normalize to a display name.
+const wname = (w) => (w && typeof w === 'object') ? (w.name || w.title || w.theme || '') : String(w);
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json', '.jpg': 'image/jpeg', '.mp3': 'audio/mpeg' };
@@ -74,15 +76,15 @@ function mux(raw, track, out) {
 
 const made = [];
 for (let L = 1; L <= worlds.length; L++) {
-  const world = worlds[L - 1], s = slug(world);
+  const world = worlds[L - 1], nm = wname(world), s = slug(nm);
   const raw = path.join(WORK, `raw-${L}.mp4`), out = path.join(OUT, `level-${L}-${s}.mp4`);
-  process.stdout.write(`● L${L} ${world}… rec`);
+  process.stdout.write(`● L${L} ${nm}… rec`);
   const n = await record(L, raw);
   const track = path.join(SRC, 'assets/music', s + '.mp3');
   process.stdout.write(`(${n}f) mux`);
   mux(raw, track, out);
   fs.rmSync(raw, { force: true });
-  made.push({ level: L, world, file: out });
+  made.push({ level: L, world: nm, file: out });
   console.log(` → ${path.basename(out)} (${(fs.statSync(out).size / 1048576).toFixed(1)} MB)`);
 }
 

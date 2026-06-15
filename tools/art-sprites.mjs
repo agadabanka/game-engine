@@ -210,36 +210,34 @@ async function genCycle(keyBase, charDesc, motion, refs, label) {
 // as the run/walk (one character, not three slightly-different ones — the "make it coherent" ask).
 const COHERE = '\n\nCRITICAL COHERENCE: the LAST reference image is the SAME character mid-run. Match it EXACTLY — identical body shape, proportions, colours, shading, eyes, and any mustache/features. These are just OTHER poses of that ONE clay model, not a redesign.';
 
-// identity model sheet (shared reference → keeps the run sheet & the action sheet on-model)
-const modelPrompt = `Character model/reference sheet for "${hero}". ${STYLE_NOTE} Show the SAME character in a large clear SIDE view facing right and a three-quarter front view, full body, consistent colours and proportions, all of its features clearly visible. Plain neutral light-grey studio background. No text, no labels.`;
-const model = await genSheet('hero_model', modelPrompt, undefined, '3:2');
-console.log(`  hero model sheet${model.hit ? ' (cached)' : '✱'}`);
-const heroRef = [{ base64: fs.readFileSync(model.path).toString('base64'), mimeType: 'image/png' }];
-
-// HERO: a run-cycle sheet (validated + auto-retried) + an action sheet, conditioned on the model sheet
-process.stdout.write('  hero:');
-const heroRun = await genCycle('hero_run', hero, 'run', heroRef, 'run');
-const runFrames = heroRun.frames;
-const heroCohereRef = heroRun.sheet ? heroRef.concat([{ base64: fs.readFileSync(heroRun.sheet).toString('base64'), mimeType: 'image/png' }]) : heroRef;
-const heroAct = await genSheet('hero_actions', gridPrompt(hero, HERO_POSES) + COHERE, heroCohereRef, '3:2');
-const actFrames = await sliceSheet(heroAct.path, HERO_POSES.length);
-console.log(` actions${heroAct.hit ? '·' : '✱'}`);
-// assemble: actions first (idle,idle2,jump,fall,land,land2,hurt,cheer1,cheer2) then run1..6
-const heroAll = actFrames.concat(runFrames);
-const heroPacked = await packFrames(heroAll.map((f) => f.url));
-fs.writeFileSync(path.join(outDir, 'hero.png'), Buffer.from(heroPacked.url.split(',')[1], 'base64'));
-const nAct = actFrames.length;
-const manifest = {
-  hero: {
+// HERO sheet — skip for genres whose hero has no walk cycle (e.g. a snake renders procedurally);
+// set "art":{"skipHero":true} in GAME_META and only the enemies/critters are generated + validated.
+const manifest = { enemies: {} };
+if (meta.art && meta.art.skipHero) {
+  console.log('  hero: SKIPPED (art.skipHero — procedural/no-cycle hero)');
+} else {
+  // identity model sheet (shared reference → keeps the run sheet & the action sheet on-model)
+  const modelPrompt = `Character model/reference sheet for "${hero}". ${STYLE_NOTE} Show the SAME character in a large clear SIDE view facing right and a three-quarter front view, full body, consistent colours and proportions, all of its features clearly visible. Plain neutral light-grey studio background. No text, no labels.`;
+  const model = await genSheet('hero_model', modelPrompt, undefined, '3:2');
+  console.log(`  hero model sheet${model.hit ? ' (cached)' : '✱'}`);
+  const heroRef = [{ base64: fs.readFileSync(model.path).toString('base64'), mimeType: 'image/png' }];
+  process.stdout.write('  hero:');
+  const heroRun = await genCycle('hero_run', hero, 'run', heroRef, 'run');
+  const runFrames = heroRun.frames;
+  const heroCohereRef = heroRun.sheet ? heroRef.concat([{ base64: fs.readFileSync(heroRun.sheet).toString('base64'), mimeType: 'image/png' }]) : heroRef;
+  const heroAct = await genSheet('hero_actions', gridPrompt(hero, HERO_POSES) + COHERE, heroCohereRef, '3:2');
+  const actFrames = await sliceSheet(heroAct.path, HERO_POSES.length);
+  console.log(` actions${heroAct.hit ? '·' : '✱'}`);
+  const heroAll = actFrames.concat(runFrames);
+  const heroPacked = await packFrames(heroAll.map((f) => f.url));
+  fs.writeFileSync(path.join(outDir, 'hero.png'), Buffer.from(heroPacked.url.split(',')[1], 'base64'));
+  const nAct = actFrames.length;
+  manifest.hero = {
     sheet: 'sprites/hero.png', frameWidth: heroPacked.frameWidth, frameHeight: heroPacked.frameHeight,
-    anims: {
-      idle: [0, 1], jump: [2], fall: [3], land: [4, 5], hurt: [6], cheer: [7, 8],
-      run: Array.from({ length: runFrames.length }, (_, i) => nAct + i),
-    },
-  },
-  enemies: {},
-};
-console.log(`  hero → hero.png (${heroPacked.count} frames: ${nAct} action + ${runFrames.length} run, ${heroPacked.frameWidth}×${heroPacked.frameHeight})`);
+    anims: { idle: [0, 1], jump: [2], fall: [3], land: [4, 5], hurt: [6], cheer: [7, 8], run: Array.from({ length: runFrames.length }, (_, i) => nAct + i) },
+  };
+  console.log(`  hero → hero.png (${heroPacked.count} frames: ${nAct} action + ${runFrames.length} run, ${heroPacked.frameWidth}×${heroPacked.frameHeight})`);
+}
 
 // ENEMIES: each gets a walk-cycle sheet + an action sheet
 const enemies = (meta.art && meta.art.enemies) || [];

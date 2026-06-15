@@ -666,11 +666,28 @@
       try { var cv = scene.game && scene.game.canvas; if (cv && cv.toDataURL) scene._pauseShot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}   // clean gameplay frame for a note's screenshot (before the overlay draws)
       ov = Studio.Shell.overlay(scene, { title: 'PAUSED', accent: opt.accent, buttons: btns });
     }
-    var btn = scene.add.text(W - 18, 14, '⏸', { fontFamily: 'Arial', fontSize: '24px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(105).setInteractive({ useHandCursor: true });
-    btn.on('pointerdown', function () { ov ? close() : open(); });
+    // Two THEMED, always-visible top-right buttons (read on any backdrop): 📝 NOTE (a base option —
+    // one tap straight to the note box) and ⏸ PAUSE. Accent-tinted so the UI matches the game.
+    var accent = opt.accent != null ? opt.accent : 0xffd34d;
+    function topBtn(cx, glyph, onTap) {
+      var r = 21, cy = 16 + r;
+      var c = scene.add.circle(cx, cy, r, accent, 0.92).setScrollFactor(0).setDepth(105).setStrokeStyle(3, 0xffffff, 0.75).setInteractive({ useHandCursor: true });
+      var t = scene.add.text(cx, cy, glyph, { fontFamily: 'Arial', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(106);
+      var hit = function () { c.setScale(0.9); scene.time.delayedCall(90, function () { try { c.setScale(1); } catch (e) {} }); onTap(); };
+      c.on('pointerdown', hit); t.setInteractive({ useHandCursor: true }); t.on('pointerdown', hit);
+      return { c: c, t: t };
+    }
+    function openNote() {
+      if (ov || window.__won) return;
+      try { var cv = scene.game && scene.game.canvas; if (cv && cv.toDataURL) scene._pauseShot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}   // clean gameplay shot first
+      Studio.Shell.note(scene, { accentCss: _accCss(accent), meta: { level: scene._world || window.__startLevel || 1 } });
+    }
+    topBtn(W - 38, '⏸', function () { ov ? close() : open(); });
+    topBtn(W - 86, '📝', openNote);
     scene.input.keyboard.on('keydown-P', function () { ov ? close() : open(); });
     scene.input.keyboard.on('keydown-ESC', function () { ov ? close() : open(); });
-    return { open: open, close: close, isOpen: function () { return !!ov; } };
+    scene.input.keyboard.on('keydown-N', openNote);          // N = leave a note, anytime
+    return { open: open, close: close, note: openNote, isOpen: function () { return !!ov; } };
   };
   // win / lose banner. kind:'win'|'over'. opt:{ accent, rank, lines:[..], next, onNext, onReplay, onMenu }.
   Studio.Shell.banner = function (scene, kind, opt) {

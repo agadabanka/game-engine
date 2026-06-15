@@ -794,5 +794,189 @@
       "https://lovelump-production.up.railway.app/diary-shots/chocolate-falls.png",
       "https://lovelump-production.up.railway.app/diary-shots/cloud-nine.png"
     ]
+  },
+  {
+    "id": "clayboa",
+    "name": "Clayboa",
+    "repo": "agadabanka/clayboa",
+    "url": "https://clayboa-production.up.railway.app",
+    "tagline": "A hungry clay boa coils through five wild jungles, gobbling fruit, bugs and ancient power.",
+    "meta": {
+      "hero": "a chunky googly-eyed clay boa snake",
+      "verb": "slither · gobble · grow",
+      "worlds": [
+        {
+          "name": "Emerald Rainforest",
+          "tag": "Lush green tangle · easy slithering · fruit everywhere",
+          "color": 2071114,
+          "theme": "rainforest"
+        },
+        {
+          "name": "Mangrove Mire",
+          "tag": "Murky swamp roots · tight gaps · watch the water",
+          "color": 3828047,
+          "theme": "swamp"
+        },
+        {
+          "name": "Bamboo Maze",
+          "tag": "Tall bamboo corridors · twisty paths · don't box yourself in",
+          "color": 10207546,
+          "theme": "bamboo"
+        },
+        {
+          "name": "Lost Temple",
+          "tag": "Vine-choked ruins · stone blocks · ancient power-ups",
+          "color": 8023631,
+          "theme": "ruins"
+        },
+        {
+          "name": "Cloud Canopy",
+          "tag": "Bright treetops · open sky · the long climb to a giant feast",
+          "color": 8963834,
+          "theme": "canopy"
+        }
+      ],
+      "levelCount": 5,
+      "genre": "snake",
+      "engine": "game-engine",
+      "art": {
+        "style": "Claymation stop-motion plasticine style, handmade modeling clay with visible fingerprints and tool marks, soft diffuse jungle light, lush tropical colors, charming slightly-imperfect handmade look, shallow depth of field",
+        "skipHero": true,
+        "enemies": [
+          {
+            "key": "beetle",
+            "desc": "a round shiny emerald-green clay jungle beetle with six little legs and big googly eyes, cute"
+          },
+          {
+            "key": "frog",
+            "desc": "a plump orange-and-yellow clay tree frog with four little legs, big googly eyes, cute"
+          },
+          {
+            "key": "spider",
+            "desc": "a fuzzy purple clay jungle spider with eight skinny legs and googly eyes, a bit menacing but cute"
+          }
+        ],
+        "props": [
+          {
+            "key": "mango",
+            "desc": "a ripe red-orange clay mango fruit"
+          },
+          {
+            "key": "egg",
+            "desc": "a speckled pale-blue clay jungle egg"
+          },
+          {
+            "key": "berry",
+            "desc": "a glossy cluster of purple clay jungle berries"
+          },
+          {
+            "key": "starfruit",
+            "desc": "a glowing golden clay star-fruit that radiates light, a power-up"
+          },
+          {
+            "key": "skull",
+            "desc": "a small mossy ancient stone skull idol, a power-up totem"
+          }
+        ],
+        "tiles": [
+          {
+            "key": "vine",
+            "desc": "woven green jungle vines"
+          },
+          {
+            "key": "bark",
+            "desc": "rough brown tree bark"
+          },
+          {
+            "key": "stone",
+            "desc": "mossy grey temple stone block"
+          },
+          {
+            "key": "bamboo",
+            "desc": "pale green bamboo stalk segments"
+          },
+          {
+            "key": "mud",
+            "desc": "dark wet swamp mud"
+          }
+        ]
+      },
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "design": "done",
+        "story": "done",
+        "cast": "done",
+        "mechanics": "done",
+        "levels": "done",
+        "funtune": "done",
+        "character": "done",
+        "feel": "done",
+        "art": "done",
+        "narrative": "done",
+        "music": "done",
+        "gate": "done",
+        "deploy": "done"
+      },
+      "shorts": {
+        "levels": [
+          1,
+          3,
+          5
+        ],
+        "music": "assets/music/level-{l}.mp3",
+        "platformer": false
+      }
+    },
+    "shorts": [
+      {
+        "title": {
+          "name": "Emerald Rainforest",
+          "tag": "Lush green tangle · easy slithering · fruit everywhere",
+          "color": 2071114,
+          "theme": "rainforest"
+        },
+        "biome": {
+          "name": "Emerald Rainforest",
+          "tag": "Lush green tangle · easy slithering · fruit everywhere",
+          "color": 2071114,
+          "theme": "rainforest"
+        },
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400794"
+      },
+      {
+        "title": {
+          "name": "Bamboo Maze",
+          "tag": "Tall bamboo corridors · twisty paths · don't box yourself in",
+          "color": 10207546,
+          "theme": "bamboo"
+        },
+        "biome": {
+          "name": "Bamboo Maze",
+          "tag": "Tall bamboo corridors · twisty paths · don't box yourself in",
+          "color": 10207546,
+          "theme": "bamboo"
+        },
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400800"
+      },
+      {
+        "title": {
+          "name": "Cloud Canopy",
+          "tag": "Bright treetops · open sky · the long climb to a giant feast",
+          "color": 8963834,
+          "theme": "canopy"
+        },
+        "biome": {
+          "name": "Cloud Canopy",
+          "tag": "Bright treetops · open sky · the long climb to a giant feast",
+          "color": 8963834,
+          "theme": "canopy"
+        },
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400812"
+      }
+    ]
   }
 ]

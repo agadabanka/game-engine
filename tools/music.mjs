@@ -57,10 +57,13 @@ const worlds = meta.worlds || [];
 const music = (meta.music && typeof meta.music === 'object') ? meta.music : {};
 const style = music.style || meta.tagline || 'a cheerful instrumental game theme';
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// worlds may be plain strings OR rich objects ({name,theme,tag}) — normalize.
+const wname = (w) => (w && typeof w === 'object') ? (w.name || w.title || w.theme || '') : String(w);
+const wtheme = (w) => (w && typeof w === 'object' && w.theme) ? String(w.theme) : '';
 const outDir = path.join(gameDir, 'src/assets/music');
 fs.mkdirSync(outDir, { recursive: true });
 
-const jobs = worlds.map((w, i) => ({ key: slug(w), seed: seed0 + i + 1, prompt: (music.prompts && music.prompts[w]) || `${style} — level music for "${w}", playful, loopable, instrumental` }));
+const jobs = worlds.filter((w) => wname(w)).map((w, i) => ({ key: slug(wname(w)), seed: seed0 + i + 1, prompt: (music.prompts && music.prompts[wname(w)]) || `${style} — level music for "${wname(w)}"${wtheme(w) ? ` (a ${wtheme(w)} jungle)` : ''}, playful, loopable, instrumental` }));
 jobs.push({ key: 'title', seed: seed0, prompt: music.titlePrompt || `${style} — a warm, inviting TITLE theme, instrumental` });
 
 let ok = 0;
