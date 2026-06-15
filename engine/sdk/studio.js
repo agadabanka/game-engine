@@ -661,24 +661,50 @@
       var S = opt.manifest || ((typeof window !== 'undefined' && window.SPRITES && window.SPRITES.hero) || null);
       var key = opt.sprite || 'hero_sheet', pre = (opt.animPrefix || 'hero') + '_', spr = null, rig = null;
       if (S && scene.textures.exists(key)) {
-        var sc = (opt.height || 76) / (S.frameHeight || 128);
+        var sf = (opt.height || 76) / (S.frameHeight || 128);
         var first = (S.anims && (S.anims.idle ? S.anims.idle[0] : (S.anims[Object.keys(S.anims)[0]] || [0])[0])) || 0;
-        spr = scene.add.sprite(0, opt.feetY != null ? opt.feetY : 0, key, first).setOrigin(0.5, 1).setScale(sc);
+        spr = scene.add.sprite(0, opt.feetY != null ? opt.feetY : 0, key, first).setOrigin(0.5, 1).setScale(sf);
         wrap.add(spr);
+        // per-state frame rates + which states LOOP (idle breathes slow, run is brisk, one-shots don't loop)
+        var FR = { run: 13, walk: 6, idle: 2.6, cheer: 7, happy: 6, hurt: 1, land: 11, jump: 1, fall: 1 }, LOOP = { run: 1, walk: 1, idle: 1, cheer: 1, happy: 1 };
         Object.keys(S.anims || {}).forEach(function (a) {
           var k = pre + a; if (scene.anims.exists(k)) return;
-          var fr = a === 'run' ? 14 : a === 'walk' ? 5 : 7;
-          scene.anims.create({ key: k, frames: S.anims[a].map(function (f) { return { key: key, frame: f }; }), frameRate: fr, repeat: (a === 'run' || a === 'idle' || a === 'walk') ? -1 : 0 });
+          scene.anims.create({ key: k, frames: S.anims[a].map(function (f) { return { key: key, frame: f }; }), frameRate: FR[a] || 7, repeat: LOOP[a] ? -1 : 0 });
         });
         try { spr.play(pre + (S.anims && S.anims.idle ? 'idle' : Object.keys(S.anims)[0])); } catch (e) {}
       } else if (opt.rigDef && Studio.Toon) { rig = Studio.Toon.rig(scene, opt.rigDef, 0, 0); wrap.add(rig.root); }
-      var cur = '';
+
+      // ── procedural smoothness (the "very smooth" layer, generic to EVERY actor) ──
+      // A springy squash-and-stretch on the wrap (feet stay planted) + a gentle idle breathe + a
+      // run/walk bounce & lean. Auto-fires on the big state transitions, so any game gets the juice
+      // for free. Deterministic (frame counter + sin, no RNG) and purely visual — never the body.
+      var cur = '', t = 0, px = null, py = 0, flip = false, spx = 1, spy = 1, svx = 0, svy = 0;
+      var squash = function (sx, sy) { spx = sx; spy = sy; };
       return {
-        wrap: wrap, kind: spr ? 'sprite' : 'rig', sprite: spr, rig: rig,
-        sync: function (x, y, flipX) { wrap.setPosition(x, y); if (spr) spr.setFlipX(!!flipX); else if (rig) rig.dir = flipX ? -1 : 1; },
-        state: function (name) { if (name === cur) return; cur = name; if (spr) { var k = pre + name; if (scene.anims.exists(k)) spr.play(k, true); } else if (rig) Studio.Toon.set(rig, name); },
+        wrap: wrap, kind: spr ? 'sprite' : 'rig', sprite: spr, rig: rig, squash: squash,
+        sync: function (x, y, f) { px = x; py = y; flip = !!f; if (spr) spr.setFlipX(flip); else if (rig) rig.dir = flip ? -1 : 1; },
+        state: function (name) {
+          if (name === cur) return;
+          if (name === 'land') squash(1.28, 0.72);            // splat
+          else if (name === 'jump') squash(0.82, 1.2);        // stretch up
+          else if (name === 'hurt') squash(1.34, 0.7);        // recoil
+          else if (name === 'cheer' || name === 'hop') squash(0.84, 1.18);
+          cur = name;
+          if (spr) { var k = pre + name; spr.play(scene.anims.exists(k) ? k : (pre + 'idle'), true); }   // unknown state → idle (no crash)
+          else if (rig) Studio.Toon.set(rig, name);
+        },
         face: function (mood) { if (rig) Studio.Toon.face(rig, mood); },
-        update: function (dt) { if (rig) Studio.Toon.update(rig, dt || 16.667); }
+        update: function (dt) {
+          var f = (dt || 16.667) / 16.667; t += f;
+          var K = 0.22, C = 0.5;                               // spring the scale back to 1 — bouncy + smooth
+          svx += (-K * (spx - 1) - C * svx) * f; spx += svx * f;
+          svy += (-K * (spy - 1) - C * svy) * f; spy += svy * f;
+          var br = cur === 'run' ? 1 + Math.sin(t * 0.55) * 0.05 : cur === 'walk' ? 1 + Math.sin(t * 0.45) * 0.055 : cur === 'idle' ? 1 + Math.sin(t * 0.11) * 0.03 : 1;
+          wrap.setScale(spx, spy * br);
+          wrap.setAngle((cur === 'run' || cur === 'walk') ? (flip ? 3 : -3) : 0);
+          if (px != null) wrap.setPosition(px, py);
+          if (rig) Studio.Toon.update(rig, f * 16.667);
+        }
       };
     }
   };

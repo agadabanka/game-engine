@@ -27,15 +27,22 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const GREEN = 'FLAT SOLID GREEN (#00d800) background everywhere — nothing else: no ground, no shadow, no text, no separators.';
 const SHEET_PROMPT = `Character model sheet for "${hero}". Four views in a row (front, side facing right, 3/4, back), ${style}. Consistent proportions and colors across views, bold thick dark outlines. Plain light-grey background. No text.`;
+// 7 STATES, model-sheet-conditioned so frames stay consistent (low boil). idle/run/cheer are
+// multi-frame for fluid loops; Studio.Hero adds the procedural smoothing (squash/lerp/bob/lean).
 const POSES = [
   ['idle', 'standing idle, relaxed, gentle smile, facing RIGHT'],
+  ['idle2', 'standing idle mid-breath, facing RIGHT, chest a touch higher, very subtle bob — idle frame 2'],
   ['run1', 'mid-RUN, facing RIGHT, leading leg forward and up, arms swinging — run-cycle frame 1 of 4'],
   ['run2', 'mid-RUN, facing RIGHT, passing/contact pose, body low — run-cycle frame 2 of 4'],
   ['run3', 'mid-RUN, facing RIGHT, other leg forward and up, arms swinging opposite — run-cycle frame 3 of 4'],
   ['run4', 'mid-RUN, facing RIGHT, passing/contact pose, body low — run-cycle frame 4 of 4'],
   ['jump', 'JUMPING up, facing RIGHT, body stretched tall, arms up, legs tucked'],
   ['fall', 'FALLING, facing RIGHT, arms out for balance, legs reaching down'],
-  ['land', 'LANDING squash, facing RIGHT, knees bent, body compressed, arms out'],
+  ['land', 'LANDING squash, facing RIGHT, knees deeply bent, body compressed low, arms out'],
+  ['land2', 'recovering from a landing, facing RIGHT, rising back up, knees slightly bent, arms settling'],
+  ['hurt', 'HURT recoil, facing RIGHT, head snapped back, eyes squeezed shut, body flinching, arms up'],
+  ['cheer1', 'CELEBRATING with joy, facing RIGHT, both arms thrown up, big happy open-mouth grin, looking up'],
+  ['cheer2', 'CELEBRATING, facing RIGHT, a little hop with arms up, eyes sparkling with delight'],
 ];
 const posePrompt = (desc) => `Use the attached model sheet as the EXACT same character (${hero}: identical colors, outline, proportions, ${style}). Render ONE full-body sprite, SIDE VIEW facing RIGHT, centered, full body in frame, at the SAME size as the other frames. POSE: ${desc}. ${GREEN}`;
 
@@ -60,7 +67,16 @@ console.log('');
 
 // ── enemies (#21): one green-screen sheet per kind (stand + waddle) from meta.art.enemies ──
 const enemies = (meta.art && meta.art.enemies) || [];
-const EPOSES = [['stand', 'standing idle, facing RIGHT'], ['walk', 'mid-waddle step, one side lifted, facing RIGHT']];
+// 6 STATES per enemy too (every actor animates richly, not just stand+walk).
+const EPOSES = [
+  ['idle', 'standing idle, facing RIGHT'],
+  ['walk1', 'mid-waddle step, leading side lifted, facing RIGHT'],
+  ['walk2', 'mid-waddle, passing/contact pose, body low, facing RIGHT'],
+  ['walk3', 'mid-waddle, other side lifted, facing RIGHT'],
+  ['hurt', 'squashed and flattened, facing RIGHT, eyes shut — got stomped flat'],
+  ['hop', 'hopping up, facing RIGHT, body stretched tall, little feet tucked'],
+  ['happy', 'happy and bouncy, facing RIGHT, big smile, eyes bright'],
+];
 const enemyFrames = {};
 for (const en of enemies) {
   enemyFrames[en.key] = [];
@@ -104,13 +120,13 @@ const packed = await packSheet(frames.map((f) => f.path));
 fs.writeFileSync(path.join(outDir, 'hero.png'), Buffer.from(packed.url.split(',')[1], 'base64'));
 const manifest = {
   hero: { sheet: 'sprites/hero.png', frameWidth: packed.frameWidth, frameHeight: packed.frameHeight,
-    anims: { idle: [0], run: [1, 2, 3, 4], jump: [5], fall: [6], land: [7] } },
+    anims: { idle: [0, 1], run: [2, 3, 4, 5], jump: [6], fall: [7], land: [8, 9], hurt: [10], cheer: [11, 12] } },
   enemies: {},
 };
 for (const en of enemies) {
   const ep = await packSheet(enemyFrames[en.key]);
   fs.writeFileSync(path.join(outDir, en.key + '.png'), Buffer.from(ep.url.split(',')[1], 'base64'));
-  manifest.enemies[en.key] = { sheet: 'sprites/' + en.key + '.png', frameWidth: ep.frameWidth, frameHeight: ep.frameHeight, anims: { idle: [0], walk: [0, 1] } };
+  manifest.enemies[en.key] = { sheet: 'sprites/' + en.key + '.png', frameWidth: ep.frameWidth, frameHeight: ep.frameHeight, anims: { idle: [0], walk: [1, 2, 3], hurt: [4], hop: [5], happy: [6] } };
   console.log(`  enemy ${en.key} → ${en.key}.png (${ep.count} frames)`);
 }
 await browser.close();
