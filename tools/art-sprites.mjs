@@ -113,9 +113,15 @@ async function packSheet(paths) {
     const fr = []; for (const u of urls) fr.push(await keyTrim(u));
     const cw = Math.max(...fr.map((f) => f.w)), ch = Math.max(...fr.map((f) => f.h));
     const cellW = Math.ceil(cw * 1.04), cellH = Math.ceil(ch * 1.02);
-    const sheet = document.createElement('canvas'); sheet.width = cellW * fr.length; sheet.height = cellH; const sx = sheet.getContext('2d');
-    fr.forEach((f, i) => { const ox = i * cellW + (cellW - f.w) / 2, oy = cellH - f.h; sx.drawImage(f.canvas, Math.round(ox), Math.round(oy)); }); // feet-aligned
-    return { url: sheet.toDataURL('image/png'), frameWidth: cellW, frameHeight: cellH, count: fr.length };
+    // GRID-pack (rows × cols), capping the sheet at ~3600px each side — a single row of many frames
+    // blows past the GPU max-texture-size (≈4096 on mobile) and the whole sheet fails to load (black).
+    // Phaser slices a grid by frameWidth/frameHeight in frame order (L→R, top→bottom), so the anim
+    // frame indices are unchanged.
+    const cols = Math.max(1, Math.min(fr.length, Math.floor(3600 / cellW) || 1));
+    const rows = Math.ceil(fr.length / cols);
+    const sheet = document.createElement('canvas'); sheet.width = cellW * cols; sheet.height = cellH * rows; const sx = sheet.getContext('2d');
+    fr.forEach((f, i) => { const cx = (i % cols) * cellW, cy = ((i / cols) | 0) * cellH; sx.drawImage(f.canvas, Math.round(cx + (cellW - f.w) / 2), Math.round(cy + (cellH - f.h))); }); // feet-aligned per cell
+    return { url: sheet.toDataURL('image/png'), frameWidth: cellW, frameHeight: cellH, count: fr.length, cols: cols };
   }, urls);
 }
 const packed = await packSheet(frames.map((f) => f.path));
