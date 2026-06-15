@@ -49,6 +49,13 @@ repo that's already wired to the whole stack and showing on the hub.
    deploying as its own Railway project (`BOOTSTRAP.md` in the new repo).
 
 ## What the new game already has
+The **rich base** (`engine/game-template`): fullscreen + mobile + menued + art-ready
+out of the box — Boot→Title→Play shell · Scale.FIT/full-bleed · on-screen touch ·
+HUD + world-select menu · the `Studio.Mechanics` runtime (+ a sample) + `Studio.Enemies`
+archetypes · manifest-driven `Studio.Hero` (generated sprite → Toon rig). Plus the
+**design toolkit** (`tools/lib/*`, all unit-tested) the make-game pipeline drives:
+elements/mechanics/difficulty/reach/feelmodel/design/evolve/funmax/builders + story/
+cast/campaign/narrative/parity (see make-game's Levels + Gate stages).
 Platform (server/store/gemini/lyria) · Phaser engine (scenes/materials/levelkit/
 merge) · the level builder · the evaluation suite (0-death gate, felt-fun,
 recorder, vision judge, game-diff/feel-judge) · the notes→diary→issues loop · the

@@ -106,8 +106,27 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
 ## The pipeline (all stages must land; update GAME_META.json stages as you go)
 1. **Scaffold** — `node scripts/new-game.mjs "<Name>" --local --tagline … --hero … --verb …`
    from the game-engine repo root (needs GH_TOKEN; creates + pushes the GitHub repo).
+   Clones the **rich base** `engine/game-template` — already fullscreen + mobile +
+   menued + art-ready (shell · Scale.FIT/full-bleed · touch · HUD/world-select · the
+   `Studio.Mechanics` runtime + a sample · `Studio.Enemies` · manifest-driven `Studio.Hero`).
 2. **Identity** — name, tagline, roster/hero defs, worlds list → GAME_META.json.
-3. **Levels** — 5 themed levels/arenas as data (`src/game/levels.js`).
+3. **Levels + the DESIGN TOOLKIT** — 5 themed levels (`src/game/levels.js`), built
+   with the engine's analytics (`tools/lib/*`, all unit-tested). These are STANDING
+   steps — the difference between a rich game and a shallow one — and map 1:1 to the
+   finer pipeline stages (`scripts/make-game-issues.mjs`):
+   - **Design** `tools/design-pass.mjs` — per-level FUN (engagement/dynamics/arc/flow)
+     + interest sparklines + intent → DESIGN.md/`src/design.json`; no level dead-air.
+   - **Story** `tools/story.mjs --write` — premise/protagonist/named antagonist/per-
+     world beats → STORY.md + `src/story.json` (SHELL beats → intro cards · title arc).
+   - **Cast** `tools/lib/cast` — a named roster (hero + per-world adversaries + boss),
+     each a role + look + personality → CAST.md (drives the art pipeline + HUD portraits).
+   - **Mechanics** — teach ONE signature verb per level (`Studio.Mechanics`: conveyor/
+     dashpad/crumble/one-way/updraft/lowgrav/spring) placed via the builders
+     (`tools/lib/builders`, `signatureFor`) ramped by `tools/lib/difficulty`.
+   - **Fun-tune** `tools/fun-max.mjs --write` — hill-climb each level's FUN under the
+     0-death safety proxy, then RE-GATE. Keep coins reachable (`tools/lib/reach`).
+   - **Narrative** `tools/lib/narrative` — map every used primitive → the world's
+     fiction → NARRATIVE.md (none generic; "void replaces the pit").
 4. **Gate** — extend `eval.mjs` to the genre's win contract. The bar:
    **the eval must exercise the human path too, not just `?level=N` gameplay**:
    a menu smoke-test (Title → Select → Play + real keyboard movement, 0 page
@@ -122,6 +141,9 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
    variety/timing/surprise, threshold ~65; canonical node scorer in
    `tools/lib/mirth.mjs`, tested). Invent new felt-gates the same way: a scorer in
    the SDK + a mirror in `tools/lib/`, the game emits the events, eval gates on it.
+   **AND the PARITY GATE** (`node tools/parity.mjs <dir>`) must pass — it fails the
+   build (exit 1) if the game lacks a menu, mobile Scale.FIT + full-bleed, touch, real
+   art, ≥3 distinct mechanics, ≥2 enemy kinds, or a story. Run it alongside `eval.mjs`.
    Owner's standing rule: losing a few times is fine —
    comebacks beat sweeps; never gate on 0-death alone when a fun score fits the
    genre better. Non-black readback, BOTH renderers (webgl + canvas). Iterate
@@ -132,8 +154,10 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
    a full multi-arena scan drops from hours to minutes, and the sim is
    byte-identical to a rendered run, so winning seeds reproduce exactly.
 5. **Feel** — animation states on every actor, hitstop/shake/flash tuned, HUD.
-6. **Art** — Gemini backdrops per world + title keyart via `tools/art.mjs`
-   (GEMINI_SA_JSON). Bottom third must stay gameplay-clean. NO text in images.
+6. **Art** — one command: `node tools/full-art.mjs <dir>` (orchestrates backdrops +
+   title keyart + hero/enemy sprite sheets + clay tiles + props from `GAME_META.art`,
+   chroma-keyed + packed into `sprites.js`, `gencache`d). GEMINI_SA_JSON. Bottom third
+   stays gameplay-clean; NO text in images. `Studio.Hero` auto-prefers the generated sheet.
 7. **Music** — one Lyria loop per world + title via `tools/music.mjs`
    (Vertex lyria-002, GEMINI_SA_JSON project), mp3 loops in src/assets/music.
 8. **Deploy** — Railway, one project per game:
