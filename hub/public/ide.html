@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Studio IDE</title>
+<style>
+  /* shares the hub's dark theme tokens for visual coherence */
+  :root{ --bg:#0a0f1e; --panel:#121a30; --panel2:#0e1528; --line:#26314f; --ink:#e7edff; --dim:#9fb3e0;
+    --gold:#ffd34d; --green:#5fd66e; --blue:#6fb6f0; --violet:#c4a6ff; --orange:#ffb14d; --pink:#ff8ab0; --red:#ff7a7a; }
+  *{ box-sizing:border-box; } html,body{ height:100%; }
+  body{ margin:0; background:var(--bg); color:var(--ink); line-height:1.5; font-family:system-ui,Segoe UI,Roboto,sans-serif;
+    display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+  a{ color:#9fd6ff; text-decoration:none; } a:hover{ text-decoration:underline; }
+  /* header */
+  header{ display:flex; align-items:center; gap:12px; padding:11px 18px; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#101a36,#0a0f1e); flex:none; }
+  header .nm{ font-size:16px; font-weight:800; } header .sub{ color:var(--dim); font-size:12px; }
+  header .sp{ flex:1; }
+  header .dot{ width:10px; height:10px; border-radius:50%; } .dot.live{ background:var(--green); box-shadow:0 0 8px var(--green); }
+  .dot.idle{ background:var(--gold); } .dot.off{ background:var(--red); }
+  .pill{ font:inherit; font-size:12px; background:#1b2747; color:var(--ink); border:1px solid var(--line); border-radius:8px;
+    padding:6px 11px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  .pill:hover{ background:#23315a; text-decoration:none; } .pill.primary{ background:#2a6df0; border-color:#3a7dff; color:#fff; }
+  .bp{ font-size:12px; color:var(--dim); } .bp b{ color:#cfe0ff; }
+  /* layout grid */
+  .grid{ flex:1; display:grid; grid-template-columns:230px minmax(0,1fr) 320px; grid-template-rows:1fr 220px;
+    grid-template-areas:"blueprint stage inspector" "blueprint console inspector"; min-height:0; overflow:hidden; }
+  /* min-width:0 lets the 1fr column shrink instead of being blown out by wide children (the note <pre>) */
+  .pane,.stage,.console{ min-width:0; }
+  .pane{ border-right:1px solid var(--line); min-height:0; overflow:auto; }
+  .blueprint{ grid-area:blueprint; padding:13px; } .stage{ grid-area:stage; padding:0; overflow:hidden; display:flex; flex-direction:column; }
+  .inspector{ grid-area:inspector; border-right:0; border-left:1px solid var(--line); padding:14px; }
+  .console{ grid-area:console; border-top:1px solid var(--line); border-right:1px solid var(--line); padding:12px 14px; background:var(--panel2); }
+  .ph{ font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--dim); margin:0 0 9px; }
+  /* blueprint */
+  .phase{ margin-bottom:13px; } .phase .pl{ font-size:12px; font-weight:700; color:#cfe0ff; margin-bottom:6px; }
+  .node{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:6px 9px; border-radius:8px; border:1px solid var(--line);
+    background:#0e1730; margin-bottom:5px; cursor:default; }
+  .node .s{ width:8px; height:8px; border-radius:2px; flex:none; background:#3a4a6a; }
+  .node.done .s{ background:var(--green); } .node.partial .s,.node.weak .s{ background:var(--gold); } .node.todo .s{ background:#3a4a6a; opacity:.5; }
+  .node.tool{ cursor:pointer; } .node.tool:hover{ border-color:#3a7dff; background:#16213f; }
+  .node.active{ border-color:#3a7dff; background:#16213f; box-shadow:0 0 0 1px #3a7dff inset; }
+  .node .cnt{ margin-left:auto; font-size:10px; color:var(--orange); }
+  .node .lk{ margin-left:auto; font-size:10px; color:var(--dim); }
+  /* stage */
+  .stagebar{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line); flex:none; font-size:12px; color:var(--dim); }
+  .stage iframe{ flex:1; width:100%; border:0; background:#070b16; }
+  .stage .empty{ flex:1; display:flex; align-items:center; justify-content:center; color:var(--dim); text-align:center; padding:20px; }
+  .stageimg{ position:relative; flex:1; display:flex; align-items:center; justify-content:center; background:#070b16; overflow:hidden; }
+  .stageimg img{ width:100%; height:100%; object-fit:cover; opacity:.92; }
+  .stageimg .playov{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .stageimg .playov span{ width:66px; height:66px; border-radius:50%; background:rgba(10,16,36,.66); border:2px solid #fff; color:#fff; font-size:25px; display:flex; align-items:center; justify-content:center; }
+  .stageimg .playov:hover span{ background:#2a6df0; border-color:#3a7dff; }
+  .stageimg .scaption{ position:absolute; left:0; right:0; bottom:0; padding:9px 13px; background:linear-gradient(transparent,rgba(7,11,22,.92)); font-size:11px; color:var(--dim); }
+  /* inspector */
+  .scopes{ margin-bottom:6px; max-height:188px; overflow:auto; }
+  .scopes .grp{ font-size:9.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--dim); margin:9px 0 5px; }
+  .scopes .row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .sc{ font-size:11px; padding:4px 10px; border-radius:20px; border:1px solid var(--line); background:#0e1730; color:var(--dim); cursor:pointer; }
+  .sc:hover{ border-color:#3a7dff; } .sc.on{ background:rgba(58,125,255,.22); border-color:#3a7dff; color:#cfe0ff; }
+  label{ font-size:11px; color:var(--dim); display:block; margin:11px 0 4px; text-transform:uppercase; letter-spacing:.05em; }
+  input,textarea{ width:100%; font:inherit; font-size:13px; background:#0e1730; border:1px solid var(--line); border-radius:8px;
+    padding:8px 10px; color:var(--ink); resize:vertical; }
+  textarea{ min-height:64px; } .hint{ font-size:11px; color:var(--dim); margin-top:4px; }
+  .cand{ margin-top:12px; } .cand img{ width:100%; border-radius:10px; border:1px solid var(--line); display:block; background:#0a1124; }
+  .cand .cap{ font-size:11px; color:var(--dim); margin-top:5px; }
+  .btn{ font:inherit; font-size:13px; font-weight:700; width:100%; padding:9px; border-radius:9px; cursor:pointer; margin-top:12px; border:1px solid var(--line); background:#1b2747; color:var(--ink); }
+  .btn:hover{ filter:brightness(1.12); } .btn.gen{ background:#5a3fd6; border-color:#7a5cff; color:#fff; }
+  .btn.suggest{ background:#2a6df0; border-color:#3a7dff; color:#fff; } .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  /* console */
+  .console .ph .who{ color:var(--violet); }
+  pre.note{ background:#0a1124; border:1px solid var(--line); border-radius:8px; padding:10px; font-size:11px; color:#cfe0ff; overflow:auto; max-height:96px; margin:0; white-space:pre-wrap; word-break:break-word; }
+  .result{ font-size:12px; margin-top:9px; } .result.ok{ color:var(--green); } .result.err{ color:var(--red); }
+  .warn{ background:rgba(255,177,77,.12); border:1px solid rgba(255,177,77,.4); color:#ffd9a3; border-radius:8px; padding:8px 11px; font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="pill">← Hub</a>
+  <span class="dot off" id="dot"></span>
+  <span class="nm" id="gname">Studio IDE</span>
+  <span class="sub" id="gtag"></span>
+  <span class="sp"></span>
+  <span class="bp" id="bp"></span>
+  <a class="pill" id="playlink" target="_blank" rel="noopener" style="display:none">▶ Play</a>
+  <button class="pill" id="reload">↻</button>
+</header>
+
+<div class="grid">
+  <!-- LEFT: blueprint -->
+  <div class="pane blueprint">
+    <p class="ph">Blueprint</p>
+    <div id="tree"><p class="hint">loading…</p></div>
+  </div>
+
+  <!-- CENTER: scoped preview -->
+  <div class="stage">
+    <div class="stagebar"><span id="scopelabel">preview</span><span class="sp" style="flex:1"></span><span id="autop" class="hint"></span></div>
+    <div id="stagewrap" style="flex:1; display:flex;"><div class="empty" id="stageempty">no live preview</div></div>
+  </div>
+
+  <!-- RIGHT: inspector (Art — adapts to the game's REAL assets) -->
+  <div class="pane inspector">
+    <p class="ph">Inspector — <span id="toollabel">Art</span></p>
+    <div class="scopes" id="scopes"><p class="hint">loading the game's art…</p></div>
+    <label id="subjlabel">Subject (identity to keep)</label>
+    <input id="subject" placeholder="the asset's description" />
+    <label>House style</label>
+    <input id="style" placeholder="claymation, bold outline, glossy" />
+    <label>Edit instruction (the change)</label>
+    <textarea id="instr" placeholder="glossier scales; warmer rim light; keep the shape"></textarea>
+    <div class="hint">Knobs + prompt compose one <b>Gemini nano-banana-pro</b> instruction.</div>
+    <label style="display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;margin-top:10px;cursor:pointer">
+      <input type="checkbox" id="useref" checked style="width:auto" /> 🖼 use the current asset as reference (image-to-image)
+    </label>
+    <button class="btn gen" id="gen">✨ Generate candidate (Gemini)</button>
+    <div class="cand" id="cand"></div>
+  </div>
+
+  <!-- BOTTOM: agent + suggest -->
+  <div class="console">
+    <p class="ph">Suggest → <span class="who">handled by the notes loop</span></p>
+    <pre class="note" id="noteview">{ }</pre>
+    <button class="btn suggest" id="suggest">📝 Suggest edit — submit as a note</button>
+    <div class="result" id="result"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+let GAME = null, STAGES = [], PHASES = [], CAND = null, SURFACE = null, SCOPE = null;
+
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
+
+async function boot(){
+  const id = qs.get('game');
+  const d = await fetch('/api/dashboard').then((r) => r.json()).catch(() => null);
+  if (!d){ $('tree').innerHTML = '<p class="hint">could not load hub data.</p>'; return; }
+  STAGES = d.stages || []; PHASES = d.phases || [];
+  GAME = (d.games || []).find((g) => g.id === id) || (d.games || [])[0];
+  if (!GAME){ $('gname').textContent = 'No game'; return; }
+  renderHeader(); renderTree(); renderStage();
+  // introspect the game's REAL editable art surface (hero/enemies/tiles/props differ by genre)
+  try { SURFACE = await fetch('/api/ide/surface/' + encodeURIComponent(GAME.id)).then((r) => r.ok ? r.json() : null); } catch { SURFACE = null; }
+  $('style').value = (SURFACE && SURFACE.style) || (GAME.meta && GAME.meta.art && (GAME.meta.art.style || GAME.meta.art)) || '';
+  ['subject','style','instr'].forEach((k) => $(k).addEventListener('input', renderNote));
+  renderScopes();
+  const list = allScopes(); if (list.length) selectScope(list[0]); else renderNote();
+}
+
+// the game's real assets, flattened into selectable scopes
+function allScopes(){
+  if (!SURFACE) return [];
+  const out = [];
+  if (SURFACE.hero) out.push({ ...SURFACE.hero, group: 'Hero' });
+  for (const e of SURFACE.enemies || []) out.push({ ...e, group: 'Enemies' });
+  for (const t of SURFACE.tiles || []) out.push({ ...t, group: 'Tiles' });
+  for (const p of SURFACE.props || []) out.push({ ...p, group: 'Props' });
+  return out;
+}
+function renderScopes(){
+  const list = allScopes();
+  if (!list.length){ $('scopes').innerHTML = '<p class="hint">No generated art assets exposed by this game.</p>'; return; }
+  const groups = {}; for (const s of list) (groups[s.group] = groups[s.group] || []).push(s);
+  $('scopes').innerHTML = Object.keys(groups).map((g) => `<div class="grp">${esc(g)} · ${groups[g].length}</div><div class="row">` +
+    groups[g].map((s) => `<span class="sc${SCOPE && SCOPE.kind === s.kind && SCOPE.key === s.key ? ' on' : ''}" data-kind="${esc(s.kind)}" data-key="${esc(s.key)}" title="${esc(s.desc || '')}">${esc(s.key)}</span>`).join('') + '</div>').join('');
+  $('scopes').querySelectorAll('.sc').forEach((el) => { el.onclick = () => selectScope(list.find((s) => s.kind === el.dataset.kind && s.key === el.dataset.key)); });
+}
+function selectScope(s){
+  if (!s) return; SCOPE = s;
+  $('subject').value = s.desc || '';
+  $('subjlabel').textContent = cap(s.kind) + ' · ' + s.key + ' (identity to keep)';
+  $('scopelabel').textContent = GAME.name + ' · ' + s.kind + ': ' + s.key;
+  $('cand').innerHTML = ''; CAND = null;
+  renderScopes(); renderNote();
+}
+
+function renderHeader(){
+  const live = GAME.live ? 'live' : (GAME.diary && GAME.diary.count ? 'idle' : 'off');
+  $('dot').className = 'dot ' + live;
+  $('gname').textContent = GAME.name;
+  $('gtag').textContent = (GAME.tagline || (GAME.meta && GAME.meta.tagline) || '');
+  const p = GAME.pipeline;
+  if (p) $('bp').innerHTML = `blueprint <b>${p.pct}%</b> · ${p.done}/${p.total}`;
+  const base = GAME.url ? GAME.url.replace(/\/$/, '') : null;
+  if (base){ const pl = $('playlink'); pl.href = base; pl.style.display = ''; }
+  document.title = GAME.name + ' — Studio IDE';
+}
+
+// the blueprint tree: phases → stages; the Art node is a live TOOL (selectable)
+function renderTree(){
+  const p = GAME.pipeline; const st = (p && p.statuses) || {};
+  const notesByTool = bucketNotes();
+  const phases = PHASES.length ? PHASES : [{ id:null, label:'Pipeline' }];
+  $('tree').innerHTML = phases.map((ph) => {
+    const stages = STAGES.filter((s) => ph.id == null || s.phase === ph.id);
+    if (!stages.length) return '';
+    const rows = stages.map((s) => {
+      const status = st[s.id] || 'todo';
+      const isArt = s.id === 'art' || s.id === 'hero';
+      const cnt = isArt ? notesByTool.art : 0;
+      const cls = 'node ' + status + (isArt ? ' tool' : '') + (isArt && CURRENT_TOOL ? ' active' : '');
+      const right = isArt ? (cnt ? `<span class="cnt">● ${cnt}</span>` : `<span class="lk">open ▸</span>`) : '';
+      return `<div class="${cls}"${isArt ? ' onclick="selectArt()"' : ''} title="${esc(s.hint||'')}"><span class="s"></span>${esc(s.label)}${right}</div>`;
+    }).join('');
+    return `<div class="phase"><div class="pl">${esc(ph.label)}</div>${rows}</div>`;
+  }).join('');
+}
+let CURRENT_TOOL = 'art';
+function bucketNotes(){
+  const recent = (GAME.notes && GAME.notes.recent) || [];
+  let art = 0; for (const n of recent){ if ((n.kind||'') === 'art' || n.tool === 'art') art++; }
+  return { art };
+}
+window.selectArt = function(){ CURRENT_TOOL = 'art'; renderTree(); };
+
+function renderStage(){
+  const base = GAME.url ? GAME.url.replace(/\/$/, '') : null;
+  $('scopelabel').textContent = GAME.name + ' · art';
+  $('autop').textContent = base ? 'opens live in a new tab' : 'not deployed';
+  const cover = `/covers/${esc(GAME.id)}.jpg`;
+  const shot = (GAME.screenshots && GAME.screenshots[0]) || '';
+  const onerr = shot ? `this.onerror=null;this.src='${esc(shot)}'` : `this.style.display='none'`;
+  $('stagewrap').innerHTML = `<div class="stageimg">
+      <img src="${cover}" onerror="${onerr}" alt="${esc(GAME.name)}" />
+      ${base ? `<a class="playov" href="${esc(base)}" target="_blank" rel="noopener" title="play the live game"><span>▶</span></a>` : ''}
+      <div class="scaption">scoped preview · the live build with the AI autopilot embeds here next (#57) — for now ▶ opens the game</div>
+    </div>`;
+}
+
+// the right base prompt for the kind of asset (sprite vs ground tile vs prop)
+function basePrompt(kind){
+  if (kind === 'tile') return 'A seamless side-view claymation GROUND TILE texture, flat and even, no characters, no scene.';
+  if (kind === 'prop') return 'A single claymation PROP object, centered on a flat solid background, no scene, no ground.';
+  return 'A 2D platformer ' + (kind === 'enemy' ? 'ENEMY' : 'HERO') + ' character sprite, claymation/plasticine, bold rounded forms, glossy, soft studio light, flat solid background.';
+}
+function composePrompt(){
+  const kind = SCOPE ? SCOPE.kind : 'hero';
+  const subj = $('subject').value.trim(), style = $('style').value.trim(), instr = $('instr').value.trim();
+  return [ basePrompt(kind), subj ? `Subject: ${subj}.` : '', style ? `Style: ${style}.` : '',
+    instr ? `EDIT: ${instr}.` : '', 'Keep it on-model — change only what the edit asks. No text or letters.' ].filter(Boolean).join(' ');
+}
+const generatorFor = (kind) => kind === 'tile' ? 'art-tiles.mjs' : kind === 'prop' ? 'art-props.mjs' : 'art-sprites.mjs';
+function buildNote(){
+  const kind = SCOPE ? SCOPE.kind : 'hero', key = SCOPE ? SCOPE.key : 'hero';
+  const subj = $('subject').value.trim(), style = $('style').value.trim(), instr = $('instr').value.trim();
+  const note = {
+    text: `Art · ${kind} "${key}" edit: ` + (instr || '(no instruction)'),
+    kind: 'art', tool: 'art', scope: { kind, key },
+    prompt: composePrompt(),
+    proposal: { kind, key, desc: subj, style, instruction: instr, generator: generatorFor(kind),
+      artifact: kind === 'tile' ? 'tiles' : kind === 'prop' ? 'props' : 'sprites.js',
+      ...(kind === 'hero' ? { hero: subj } : {}) },
+    source: 'studio-ide', created_at: new Date().toISOString(), ts: Date.now(),
+  };
+  if (CAND && CAND.length < 480000) note.shot = CAND;   // attach the previewed candidate if small enough
+  return note;
+}
+function renderNote(){
+  const n = buildNote(); const view = { ...n }; if (view.shot) view.shot = '<candidate ' + Math.round(view.shot.length/1024) + 'kb>';
+  $('noteview').textContent = JSON.stringify(view, null, 2);
+}
+
+// ✨ render a Gemini candidate (nano-banana-pro)
+$('gen').onclick = async () => {
+  const b = $('gen'); b.disabled = true; b.textContent = '✨ generating…'; $('cand').innerHTML = '';
+  try{
+    const aspect = (SCOPE && (SCOPE.kind === 'tile')) ? '1:1' : '1:1';
+    const r = await fetch('/api/ide/art/preview', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ gameId: GAME.id, prompt: composePrompt(), aspect, useRef: $('useref').checked, scope: SCOPE ? { kind: SCOPE.kind, key: SCOPE.key } : null }) });
+    const j = await r.json();
+    if (!r.ok){ $('cand').innerHTML = `<div class="warn">${esc(j.message || j.error || 'generation failed')}</div>`; }
+    else { CAND = j.image; const how = j.refUsed ? 'on-model · edited the current hero art (image-to-image)' : 'text→image · no reference art found for this game'; $('cand').innerHTML = `<img src="${j.image}" alt="candidate" /><div class="cap">Gemini candidate · ${how}</div>`; renderNote(); }
+  }catch(e){ $('cand').innerHTML = `<div class="warn">${esc(String(e))}</div>`; }
+  b.disabled = false; b.textContent = '✨ Generate candidate (Gemini)';
+};
+
+// 📝 suggest = submit the structured note (handled by the notes loop)
+$('suggest').onclick = async () => {
+  const b = $('suggest'); b.disabled = true; b.textContent = 'submitting…'; $('result').className = 'result'; $('result').textContent = '';
+  try{
+    const r = await fetch('/api/ide/suggest', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ gameId: GAME.id, note: buildNote() }) });
+    const j = await r.json();
+    if (r.ok && j.ok){ $('result').className = 'result ok'; $('result').innerHTML = '✓ suggested — note submitted to <b>' + esc(GAME.name) + '</b>. It enters the notes → issues → fixes loop.'; }
+    else { $('result').className = 'result err'; $('result').textContent = '✗ ' + (j.message || j.error || ('status ' + (j.status||r.status))); }
+  }catch(e){ $('result').className = 'result err'; $('result').textContent = '✗ ' + String(e); }
+  b.disabled = false; b.textContent = '📝 Suggest edit — submit as a note';
+};
+
+$('reload').onclick = boot;
+boot();
+</script>
+</body>
+</html>

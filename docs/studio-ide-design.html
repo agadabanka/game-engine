@@ -1,0 +1,172 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Studio IDE — Design Doc</title><style>
+  body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1b1b1b;line-height:1.5;font-size:10.5pt;max-width:980px;margin:0 auto;padding:24pt}
+  h1{font-size:23pt;color:#0b2447;margin:0 0 2pt}
+  .sub{font-size:12pt;color:#445}
+  h2{font-size:15pt;color:#10325f;border-bottom:1.5pt solid #c9d6ef;padding-bottom:3pt;margin-top:24pt}
+  h3{font-size:12pt;color:#1b3a6b;margin:14pt 0 1pt}
+  p,li{font-size:10.5pt} code{font-family:Consolas,monospace;background:#eef2fa;padding:0 3pt;font-size:9.5pt;border-radius:3px}
+  table{border-collapse:collapse;width:100%;margin:8pt 0}
+  th,td{border:0.75pt solid #b9c6e0;padding:6pt 9pt;font-size:9.7pt;vertical-align:top;text-align:left}
+  th{background:#102a52;color:#fff} .muted{color:#556} .cap{font-size:9pt;color:#667;font-style:italic}
+  .now{background:#fff8e6} .mid{background:#eaf6ff} .end{background:#eefbe9}
+  .pri{background:#102a52;color:#fff;font-weight:700;border-radius:50%;display:inline-block;width:18px;height:18px;text-align:center;font-size:9pt;line-height:18px;margin-right:5px}
+  pre{background:#0e1730;color:#cfe0ff;border-radius:8px;padding:12pt;overflow:auto;font-size:9pt;line-height:1.45}
+  .tag{display:inline-block;background:#eef2fa;border:1px solid #c9d6ef;border-radius:20px;padding:1px 9px;font-size:8.5pt;color:#10325f;margin-right:4px}
+  .lead{font-size:11pt;color:#223}
+  a{color:#1b5fb8}
+  blockquote{border-left:3px solid #c9d6ef;margin:8pt 0;padding:2pt 0 2pt 12pt;color:#445}
+</style></head><body>
+
+<h1>Studio IDE — Design Doc</h1>
+<p class="sub"><b>An AI-first cockpit for one game.</b> Stay in the AI-first world; drop down to the knobs only when you want fine-grain control over a small part of a larger blueprint.</p>
+<p class="muted">Engine repo: <code>agadabanka/game-engine</code> &middot; Epic: <a href="https://github.com/agadabanka/game-engine/issues/53">#53</a> &middot; Tracks issues #54&ndash;#63 &middot; 2026-06-15</p>
+
+<h2 id="why">1. Why this exists</h2>
+<p class="lead">Today the only thing a human can author by hand on a shipped game is a free-text note.</p>
+<p>The pipeline (<code>tools/lib/pipeline.mjs</code>, 4 phases / 19 stages / 72 substeps) turns a one-line concept into a finished game, written almost entirely by AI agents. Around the result we have:</p>
+<ul>
+  <li><b>The hub</b> (<code>hub/public/index.html</code>) &mdash; read-only &ldquo;look <i>across</i> / look <i>inside</i>&rdquo; every game.</li>
+  <li><b>Per-game views</b> &mdash; <code>build.html</code> (level select), <code>design.html</code> (the lens), <code>diary.html</code>. All read-only.</li>
+  <li><b>The one write gesture</b> &mdash; in-game <code>&#9208; &rarr; &#128221; NOTE</code> (<code>Studio.Shell.note</code> &rarr; <code>POST /api/notes</code>), which auto-files a GitHub issue and captures <code>level</code>, <code>x</code>, <code>kind</code>, and a screenshot.</li>
+</ul>
+<p>So the owner can <i>describe</i> a change (a note) and wait for the whole pipeline, or hand-edit raw files / run CLIs. There is no place to sit <b>inside one game</b> and turn a <b>specific knob</b> with the AI beside you. The Studio IDE is that place &mdash; the missing middle.</p>
+
+<h2 id="vision">2. The vision &amp; principles</h2>
+<p>Keep the workflow <b>AI-first</b>: play the game, leave notes to improve it. When you want fine-grain control, <b>drop down into the IDE</b> &mdash; still an AI-first world, but focused on a smaller part of a larger <b>blueprint</b>. There you <b>suggest an edit</b> with the tool&rsquo;s knobs and a Gemini prompt; that suggestion <b>becomes a note</b>, and the note is <b>handled by the same notes&rarr;issues&rarr;fixes loop</b> that handles every other note. <b>Humans suggest; the AI handles.</b></p>
+<blockquote><b>The note is the single unit of work &mdash; on both ends.</b> The IDE does not bypass the loop; it is a high-fidelity <b>note composer</b>. A note can be <i>casual</i> (in-game free text) or <i>precise</i> (composed in a tool: exact scope + knob deltas + a Gemini-ready prompt + a reference image + a previewed candidate). Either way it is submitted the same way and handled the same way. The IDE raises the <i>fidelity</i> of a suggestion; it never changes who applies it.</blockquote>
+<table>
+<tr><th>Principle</th><th>What it means in the UI</th></tr>
+<tr><td><b>The note is the universal verb</b></td><td>At every altitude, the primary gesture is leaving a note. A note is both the <i>entry</i> that drops you into the right tool <b>and the exit</b> &mdash; what a tool produces is a (richer) note.</td></tr>
+<tr><td><b>Humans suggest, AI handles</b></td><td>The owner <i>suggests</i> (casually in-game, or precisely in a tool). The notes loop <i>handles</i> &mdash; applies the change, runs the gate, commits to the branch, writes the diary, closes the note. The same loop, whatever the note&rsquo;s fidelity.</td></tr>
+<tr><td><b>AI-first, knobs-available</b></td><td>The prompt bar is the primary input in every tool. The knobs are there for when you know exactly what you want &mdash; and they compose the <i>same</i> structured suggestion the AI prompt does, so they never drift.</td></tr>
+<tr><td><b>Nothing ships ungated</b></td><td>Handling a note must pass the stage&rsquo;s validator (0-death, parity, sprite-alternation, FUN). The blueprint never enters a state the gate didn&rsquo;t certify. (The IDE also pre-checks the gate so you preview a green suggestion before submitting.)</td></tr>
+<tr><td><b>Small notes on a large blueprint</b></td><td>Each suggestion is scoped to one artifact; handling it is one gated commit, recorded in the diary, that closes its note.</td></tr>
+<tr><td><b>Reuse, don&rsquo;t rebuild</b></td><td>The blueprint is <code>hub/lib/stages.js</code>; the preview is the existing scoped game + <code>Studio.Autopilot</code>; the gates are the existing CLIs; the submission + handling is the existing <code>POST /api/notes</code> &rarr; issues &rarr; fixes loop.</td></tr>
+</table>
+
+<h2 id="model">3. Mental model — three altitudes, one verb</h2>
+<pre> FLEET  &mdash;&mdash; the hub, across all 12 games            (exists)
+   &#9492;&#9472; GAME &mdash;&mdash; the BLUEPRINT: one game, all stages   (new: IDE home)
+        &#9492;&#9472; TOOL &mdash;&mdash; one part, knobs + AI, live          (new: the workbench)</pre>
+<ul>
+  <li><b>Fleet</b> &mdash; the hub at <code>/</code>. Where you compare games. <i>Already built.</i></li>
+  <li><b>Game (the blueprint)</b> &mdash; the pipeline made <i>interactive and per-game</i>: your pipeline tree, but every node is a tool you can open, coloured by <code>resolveStages</code>, with open notes pinned to it. The IDE home.</li>
+  <li><b>Tool (the workbench)</b> &mdash; one part of the game, with its knobs, the live preview, and the agent. Where edits happen.</li>
+</ul>
+
+<h2 id="layout">4. The IDE layout</h2>
+<p>VS-Code-shaped, but AI-first. Four panes, served as a new page in the hub at <code>/ide?game=&lt;id&gt;</code>.</p>
+<pre>&#9484;&#9472; Deepfin   &#9679; live   blueprint 64%   &#9656; 3 open notes      [&#9656; Play] [&#8635;] &#9472;&#9488;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9492;
+&#9474; BLUEPRINT  &#9474;        STAGE (live preview)      &#9474;   INSPECTOR (knobs)   &#9474;
+&#9474; &#9662; Set up   &#9474;   game runs here, scoped to     &#9474;  Level 3 &middot; "Tide Run" &#9474;
+&#9474;   &#10003; Ident. &#9474;   Level 3, AI autopilot playing &#9474;  groundY  [470] &#9472;&#9675;  &#9474;
+&#9474; &#9662; Design   &#9474;   it, &#128204; note pinned at x       &#9474;  gaps  420&ndash;560 &#9998;    &#9474;
+&#9474;   &#10003; Levels&#9679;&#9474;                                &#9474;  enemies [2] +        &#9474;
+&#9474;   &#9888; Feel    &#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9492;  mechanic &#9656; crumble &#9474;
+&#9474; &#9662; Ship     &#9474;  AGENT  &#10049; "make the gap forgiving"            boss &#8856;  &#9474;
+&#9474;   &#10003; Gate    &#9474;  DIFF  levels.js  &minus;[1100,1180] +[1100,1240]       &#9474;
+&#9474;   &#9888; Videos  &#9474;  PRE-CHECK &#9656; 0-death L3 5/5 &#10003;       [Suggest edit]&#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</pre>
+<table>
+<tr><th>Pane</th><th>Role</th><th>Built from</th></tr>
+<tr><td><b>Blueprint</b> (left)</td><td>The per-game pipeline tree. Nodes = stages = tools; badges show status + open-note count. Selecting a node sets the active tool + scope.</td><td><code>hub/lib/stages.js</code> (<code>PHASES</code>, <code>STAGES</code>, <code>resolveStages</code>)</td></tr>
+<tr><td><b>Stage</b> (center)</td><td>The real game, embedded and <i>scoped</i> to the active target. The deterministic <code>Studio.Autopilot</code> plays it, so you watch your change. Notes pinned at their <code>x</code>.</td><td><code>?level=N&amp;char=key</code> + <code>Studio.Autopilot</code> + <code>eval.mjs</code></td></tr>
+<tr><td><b>Inspector</b> (right)</td><td>The knobs &mdash; the structured fields of the artifact, rendered the right way (sliders, span lists, enum pickers, row add/remove). Direct manipulation.</td><td>New field-editor framework (schema-driven)</td></tr>
+<tr><td><b>Agent + Diff + Gate</b> (bottom)</td><td>The prompt bar (primary input) &rarr; AI proposes a diff &rarr; the gate runs as a pre-check &rarr; <b>Suggest edit</b> submits the suggestion as a structured note. Handling (the notes loop) applies + re-gates + commits.</td><td>Agent + existing CLI gates as jobs + <code>POST /api/notes</code></td></tr>
+</table>
+
+<h2 id="tools">5. The tool catalog</h2>
+<p>One tool per editable part of the game. Each composes a suggestion the same way; they differ only in <b>artifact</b>, <b>knobs</b>, and the <b>gate handling runs</b>. In every tool the output is a structured note &mdash; the &ldquo;AI verb&rdquo; below is what the owner suggests; the loop handles it.</p>
+<table>
+<tr><th>Tool</th><th>Artifact</th><th>Knobs exposed</th><th>Suggest (AI verb)</th><th>Handling gate</th></tr>
+<tr><td><b>Identity / Lens</b></td><td><code>GAME_META.json</code></td><td>name, hero, verb, <code>designLens</code>, worlds[], controls, scorecard</td><td>&ldquo;make the lens about tidal dread&rdquo;</td><td>&mdash; (instant)</td></tr>
+<tr><td class="now"><b>Levels</b></td><td><code>src/game/levels.js</code> (Level DSL)</td><td>per level: <code>tile</code>, <code>groundY</code>, <code>ground</code> spans/gaps, <code>coins[]</code>, <code>enemies[]</code>, mechanics (<code>conveyor</code>/<code>dashpad</code>/<code>crumble</code>/<code>oneway</code>/<code>fields</code>), <code>boss{x,hp}</code>, <code>spawn</code>, <code>goal</code></td><td>&ldquo;add a crumbling-bridge section before the goal&rdquo;</td><td><b>0-death</b> (<code>eval.mjs</code> / <code>Studio.Autopilot</code>)</td></tr>
+<tr><td><b>Cast</b></td><td><code>src/game/characters.js</code></td><td>per char: tint, biome, <code>special</code>, sprite ref</td><td>&ldquo;give the boss a charge attack&rdquo;</td><td>sprite leg-alternation (<code>validate-sprites.mjs</code>)</td></tr>
+<tr><td><b>Art</b></td><td><code>sprites.js</code> + <code>tools/art*.mjs</code></td><td>material palette, backdrop parallax layers, props, tiles, sprite sheet</td><td>&ldquo;warmer dusk palette; redraw the hero&rdquo;</td><td><b>parity green</b> (<code>parity.mjs</code>) + sprite validate</td></tr>
+<tr><td><b>Feel</b></td><td><code>design-pass</code>/<code>fun-max</code> + <code>Studio.Juice/Mirth</code></td><td>hitstop ms, screenshake, particle density, coyote time, jump arc</td><td>&ldquo;make landings punchier&rdquo;</td><td><b>FUN score</b> (<code>fun-max.mjs</code>)</td></tr>
+<tr><td><b>Music</b></td><td><code>tools/music.mjs</code> (Lyria)</td><td>per-world prompt: mood, tempo, instruments</td><td>&ldquo;darker track for world 3&rdquo;</td><td>listen / approve</td></tr>
+<tr><td><b>Notes</b></td><td><code>notes.json</code> &harr; issues</td><td>triage board: route a note to a tool, status, summarize-N</td><td>&ldquo;summarize and route these 5 notes&rdquo;</td><td>closes the issue</td></tr>
+</table>
+<p class="cap">Build order: <b>Art is the first concrete tool</b> (#64&ndash;#69, easiest to swap in/out); Levels (#62) proves the data-edit round-trip; Feel/Music/Identity (#63) follow.</p>
+<p><b>Art editing model &mdash; every edit is a Gemini call.</b> Recolor a character, redraw a sprite sheet, shift a world&rsquo;s palette, swap a tile or prop &mdash; each is a <b>Gemini nano-banana-pro</b> (<code>gemini-3-pro-image</code>) generation. To edit an <i>existing</i> asset we pass it back as a <b>reference image</b> (<code>generateImage(prompt, { refs })</code>, already supported) so the model stays on-model and changes only what was asked &mdash; <b>image-to-image editing</b>. The knobs compose the edit instruction; the agent prompt bar is free-text. Gemini is <b>required</b> for the Art tool: without <code>GEMINI_SA_JSON</code> the tool is unavailable and says so &mdash; there is no procedural &ldquo;tint&rdquo; shortcut.</p>
+
+<h2 id="roundtrip">6. The round-trip — suggest &rarr; handle</h2>
+<p>Every tool works the same way. Steps 1&ndash;4 are the owner <b>composing &amp; previewing a suggestion</b> in the IDE; step 5 <b>submits it as a note</b>; step 6 is the <b>same notes loop handling it</b> &mdash; the part that actually writes the game. This is the contract the whole IDE is built around.</p>
+<table>
+<tr><th>#</th><th>Step</th><th>Who</th><th>Mechanism</th></tr>
+<tr><td><span class="pri">1</span></td><td><b>Read</b> the artifact, scoped to the selected element</td><td>IDE</td><td>game <code>/api/meta</code> or the repo file (<code>levels.js</code>, <code>characters.js</code>&hellip;)</td></tr>
+<tr><td><span class="pri">2</span></td><td><b>Edit</b> via AI prompt <i>or</i> knobs &mdash; both compose the same structured <i>proposal</i></td><td>owner</td><td>agent (NL &rarr; proposal) &harr; inspector (knobs &rarr; proposal)</td></tr>
+<tr><td><span class="pri">3</span></td><td><b>Preview</b> live, scoped (for art, a Gemini-rendered candidate)</td><td>IDE</td><td>embedded game at <code>?level=N&amp;char=key</code> + <code>Studio.Autopilot</code> · nano-banana-pro</td></tr>
+<tr><td><span class="pri">4</span></td><td><b>Pre-check</b> the gate so you preview a green suggestion</td><td>IDE</td><td><code>eval.mjs</code> / <code>validate-sprites.mjs</code> / <code>parity.mjs</code> / <code>fun-max.mjs</code></td></tr>
+<tr><td><span class="pri">5</span></td><td><b>Suggest</b> &mdash; submit the proposal as a <i>structured note</i> (+ pinned scope, prompt, ref/candidate)</td><td>owner</td><td><code>POST /api/notes</code> (enriched) &rarr; a GitHub issue, like any note</td></tr>
+<tr><td><span class="pri">6</span></td><td><b>Handle</b> &mdash; the notes loop applies the proposal &middot; re-gates (authoritative) &middot; commits to the branch &middot; appends the diary &middot; closes the note + issue</td><td>AI loop</td><td>artifact write (<code>POST /api/&lt;artifact&gt;</code> / generator) + GitHub MCP commit + <code>DELETE /api/notes</code></td></tr>
+</table>
+<p class="cap">The gate runs twice on purpose: a fast <b>pre-check</b> in the IDE (so you don&rsquo;t submit a broken suggestion) and the <b>authoritative</b> gate during handling (truth beats self-report). Handling can pick up a structured note immediately, so a suggestion can feel instant while still flowing through the one loop.</p>
+
+<h2 id="flow">7. The flow — one note, two fidelities</h2>
+<p>This is the heart of the design: every path is a note that the same loop handles. The IDE just lets you author a more precise one.</p>
+<ol>
+  <li><b>Play the live game</b> (the AI-first world). A gap keeps killing you &rarr; <code>&#9208;</code> &rarr; <code>&#128221;</code> note: <i>&ldquo;this gap before the goal feels unfair.&rdquo;</i> (Works today; captures <code>level:3</code>, <code>x</code>, screenshot.)</li>
+  <li>The note lands on the <b>blueprint</b>, <b>auto-routed</b> by its metadata: <code>level</code> &rarr; Levels node, <code>kind:art</code> &rarr; Art node. The node lights up: <i>&ldquo;Levels &#9679; 1 note.&rdquo;</i></li>
+  <li>The <b>AI takes a first pass automatically</b> &mdash; it drafts a candidate fix on the note. The board reads <i>&ldquo;Level 3 &middot; 1 proposed fix.&rdquo;</i></li>
+  <li><b>If the AI&rsquo;s pass is enough &rarr; Accept from the board.</b> The loop handles it; the note closes. Never opened the IDE. <b>Casual fidelity.</b> &#10003;</li>
+  <li><b>If you want control &rarr; &ldquo;Open in IDE.&rdquo;</b> You drop into the <b>Levels tool, scoped to Level 3</b>, note pinned at its <code>x</code>, the AI&rsquo;s draft pre-loaded, knobs live. A small part of the larger blueprint, still AI-first.</li>
+  <li>Nudge the gap knob or re-prompt &rarr; preview the autopilot clear it &rarr; the <b>0-death pre-check goes green</b> &rarr; <b>Suggest edit.</b> Your refined proposal is submitted as a <b>precise note</b> (scope + knob deltas + prompt + candidate) on the <i>same</i> note/issue.</li>
+  <li>The <b>notes loop handles it</b> &mdash; applies the proposal, re-gates (authoritative), commits to the branch, writes the diary, closes the note + issue; the blueprint node goes green. <b>Precise fidelity &mdash; same loop.</b></li>
+</ol>
+
+<h2 id="api">8. The /api surface</h2>
+<p>The IDE <b>reads</b> what already exists, <b>submits</b> through the existing notes endpoint (enriched), and the <b>handler</b> uses a small set of authenticated artifact-write endpoints. The split is the point: the IDE never writes the game directly &mdash; it submits a note; the loop writes.</p>
+<h3>Reads (exist today)</h3>
+<pre>GET /api/meta     game identity + stages (drives the blueprint + Identity tool)
+GET /api/diary    the build diary (markdown)
+GET /api/notes    open/closed notes (now also carrying a structured proposal)
+GET /api/config   engine/renderer info</pre>
+<h3>Submit &mdash; what a tool produces (the IDE&rsquo;s only write)</h3>
+<pre>POST /api/notes   a note, casual OR structured. New optional fields:
+  { text, level, x, kind, shot,            // (today) casual note
+    tool,            // "levels" | "art" | "feel" | …  (routes to a tool)
+    scope,           // { level } | { char } | { world } | { tile } | { prop }
+    proposal,        // the structured edit object (knob deltas / field changes)
+    prompt,          // the Gemini-ready instruction (art)
+    ref, candidate } // reference image + previewed candidate (art)
+  &rarr; becomes a GitHub issue, exactly like any note</pre>
+<h3>Handle &mdash; what the notes loop uses to apply a note (authenticated)</h3>
+<pre>POST   /api/levels      x-admin-token  &rarr; validate + write src/game/levels.js
+POST   /api/characters  x-admin-token  &rarr; validate + write src/game/characters.js
+POST   /api/meta        x-admin-token  &rarr; merge + write GAME_META.json
+            (art/music notes &rarr; run tools/art*.mjs / music.mjs generators)
+DELETE /api/notes?id=   x-admin-token  &rarr; close a handled note   (exists today)</pre>
+<p>Handling re-gates, then persists the artifact, commits to the <code>claude/&hellip;</code> branch (GitHub MCP), appends the diary, and closes the note + issue &mdash; the same path a casual note already follows, just driven by the note&rsquo;s <code>proposal</code> instead of inferred from free text.</p>
+
+<h2 id="data">9. Architecture &amp; data flow</h2>
+<pre>  SUGGEST (the IDE) ──────────────────────┐        HANDLE (the notes loop) ───────────┐
+  hub (/ide) ─reads→ game /api/{meta,        │        issue picked up ─→ apply proposal:  │
+             notes,diary} → Blueprint/Stage  │          POST /api/&lt;artifact&gt; (authed)     │
+  agent ─proposes→ proposal  ⟷  knobs        │          / run art*.mjs · music.mjs        │
+            (same object)                     │        ─→ re-gate (authoritative)          │
+  pre-check gate (fast)                       │        ─→ GitHub MCP commit to claude/…    │
+  Suggest ─→ POST /api/notes {…, proposal} ──→ issue ─→ DIARY.md append                    │
+                                              │        ─→ DELETE /api/notes (close)         │
+                                              │        ─→ refreshed blueprint node          │
+                                              └───────────────────────────────────────────┘</pre>
+<p>The <b>proposal</b> is the spine, carried <i>inside the note</i>: the agent and the knobs both produce it, the diff renders it, the pre-check validates the artifact it would produce, and handling applies it. Putting the proposal on the note is what unifies casual and precise suggestions &mdash; both are notes, both are handled by one loop, and a precise one simply carries an explicit <code>proposal</code> instead of being inferred from free text.</p>
+
+<h2 id="milestones">10. Milestones (mapped to issues)</h2>
+<table>
+<tr><th>#</th><th>Step</th><th>Issue</th></tr>
+<tr><td>1</td><td>Design doc (this) &mdash; spec, tool contracts, <code>/api</code> surface</td><td><a href="https://github.com/agadabanka/game-engine/issues/54">#54</a></td></tr>
+<tr><td>2</td><td>IDE shell + route &mdash; a new <code>/ide</code> page reachable from the hub</td><td><a href="https://github.com/agadabanka/game-engine/issues/55">#55</a></td></tr>
+<tr><td>3</td><td>Blueprint rail &mdash; the per-game pipeline tree, nodes are tools</td><td><a href="https://github.com/agadabanka/game-engine/issues/56">#56</a></td></tr>
+<tr><td>4</td><td>Scoped live preview &mdash; the game embedded, autopilot playing it</td><td><a href="https://github.com/agadabanka/game-engine/issues/57">#57</a></td></tr>
+<tr><td>5</td><td>Inspector &mdash; the knobs framework + the Level DSL knobs</td><td><a href="https://github.com/agadabanka/game-engine/issues/58">#58</a></td></tr>
+<tr><td>6</td><td>Agent + Diff + Gate console &mdash; the bottom pane</td><td><a href="https://github.com/agadabanka/game-engine/issues/59">#59</a></td></tr>
+<tr><td>7</td><td>Put-back round-trip &mdash; write artifact, commit, diary, close note</td><td><a href="https://github.com/agadabanka/game-engine/issues/60">#60</a></td></tr>
+<tr><td>8</td><td>Notes &rarr; tool routing + &ldquo;Open in IDE&rdquo; + AI auto-draft</td><td><a href="https://github.com/agadabanka/game-engine/issues/61">#61</a></td></tr>
+<tr><td class="now">9</td><td class="now"><b>Levels tool &mdash; the proving vertical slice (end-to-end)</b></td><td class="now"><a href="https://github.com/agadabanka/game-engine/issues/62">#62</a></td></tr>
+<tr><td>10</td><td>Roll the pattern &mdash; Art &middot; Feel &middot; Music &middot; Cast &middot; Identity</td><td><a href="https://github.com/agadabanka/game-engine/issues/63">#63</a></td></tr>
+</table>
+<p class="muted">Tracking epic: <a href="https://github.com/agadabanka/game-engine/issues/53">#53</a> &middot; label <code>studio-ide</code>.</p>
+
+</body></html>

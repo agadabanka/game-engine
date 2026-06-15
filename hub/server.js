@@ -13,11 +13,15 @@ import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
 import * as store from './lib/store.js';
 import { snapshotAll } from './lib/aggregate.js';
+import { generateImage, geminiConfigured } from '../scripts/gemini.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '8mb' }));   // Studio IDE art notes can carry a small candidate image
 app.use(express.static(path.join(__dirname, 'public')));
+
+// pretty route for the Studio IDE (the static file also serves at /ide.html)
+app.get('/ide', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'ide.html')));
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
@@ -194,6 +198,101 @@ app.delete('/api/games/:id', async (req, res) => {
   games = games.filter((g) => g.id !== req.params.id);
   await store.set('games', games);
   res.json({ ok: true, count: games.length });
+});
+
+// ── Studio IDE ───────────────────────────────────────────────────────────────
+// The IDE composes a high-fidelity SUGGESTION and submits it as a NOTE; the same
+// notes → issues → fixes loop HANDLES it. The hub is the IDE's host:
+//   /api/ide/art/preview  — render a Gemini (nano-banana-pro) candidate
+//   /api/ide/suggest      — forward a structured note to the game's /api/notes
+
+// Fetch + parse a game's sprite manifest (window.SPRITES) server-side (no CORS).
+async function gameManifest(gameUrl) {
+  try {
+    const base = String(gameUrl).replace(/\/$/, '');
+    const js = await fetch(base + '/game/sprites.js', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.text() : null));
+    if (!js) return null;
+    const i = js.indexOf('{'), j = js.lastIndexOf('}');
+    if (i < 0 || j < 0) return null;
+    return JSON.parse(js.slice(i, j + 1));
+  } catch { return null; }
+}
+
+// Resolve a CHOSEN asset's image as an image-to-image REFERENCE — works across
+// genres (hero/enemy → sprite sheet; tile/prop → texture/sprite). Best-effort:
+// returns null when the game doesn't expose that asset → caller falls back to text→image.
+async function assetRef(gameUrl, scope) {
+  try {
+    const man = await gameManifest(gameUrl);
+    if (!man) return null;
+    const kind = (scope && scope.kind) || 'hero', key = scope && scope.key;
+    let rel = null;
+    if (kind === 'hero') rel = man.hero && man.hero.sheet;
+    else if (kind === 'enemy') rel = man.enemies && man.enemies[key] && man.enemies[key].sheet;
+    else if (kind === 'tile') rel = man.tiles && man.tiles[key];
+    else if (kind === 'prop') rel = man.props && man.props[key];
+    if (!rel) return null;
+    const img = await fetch(String(gameUrl).replace(/\/$/, '') + '/assets/' + rel, { signal: AbortSignal.timeout(8000) });
+    if (!img.ok) return null;
+    const buf = Buffer.from(await img.arrayBuffer());
+    if (buf.length > 6_000_000) return null;   // keep the Gemini request sane
+    return { base64: buf.toString('base64'), mimeType: img.headers.get('content-type') || 'image/png' };
+  } catch { return null; }
+}
+
+// The game's REAL editable art surface — so the IDE adapts to the genre at hand
+// (a snake has no walk-cycle hero; its art is enemies/tiles/props). Combines the
+// live /api/meta descriptors (key + desc) with the sprite manifest (what's drawn).
+app.get('/api/ide/surface/:id', async (req, res) => {
+  const game = (await getGames()).find((g) => g.id === req.params.id);
+  if (!game || !game.url) return res.status(404).json({ error: 'game-not-live' });
+  const base = String(game.url).replace(/\/$/, '');
+  let meta = {};
+  try { meta = await fetch(base + '/api/meta', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : {})); } catch {}
+  const man = await gameManifest(game.url);
+  const art = meta.art || {};
+  const heroPresent = !!(man && man.hero && man.hero.sheet);
+  const list = (arr, kind) => (Array.isArray(arr) ? arr : []).filter((a) => a && a.key).map((a) => ({ kind, key: a.key, desc: a.desc || '' }));
+  res.json({
+    id: game.id, name: game.name, url: base, archetype: meta.archetype || meta.genre || null, style: art.style || '',
+    hero: heroPresent ? { kind: 'hero', key: 'hero', desc: meta.hero || '' } : null,
+    enemies: list(art.enemies, 'enemy'), tiles: list(art.tiles, 'tile'), props: list(art.props, 'prop'),
+  });
+});
+
+// Render an art candidate. Every art edit is a Gemini call; without a Gemini SA
+// the Art tool is unavailable (clear 503), never a silent fallback. When the game
+// exposes the chosen asset we pass it as a reference (image-to-image → on-model edit).
+app.post('/api/ide/art/preview', async (req, res) => {
+  if (!geminiConfigured()) return res.status(503).json({ error: 'needs-gemini', message: 'Art editing needs Gemini — set GEMINI_SA_JSON' });
+  const { gameId, prompt, aspect = '1:1', useRef = true, scope = null } = req.body || {};
+  if (!prompt || String(prompt).trim().length < 4) return res.status(400).json({ error: 'prompt required' });
+  let refs = [], refUsed = false;
+  if (useRef && gameId) {
+    const game = (await getGames()).find((g) => g.id === gameId);
+    if (game && game.url) { const r = await assetRef(game.url, scope); if (r) { refs = [r]; refUsed = true; } }
+  }
+  try {
+    const { mimeType, base64 } = await generateImage(String(prompt), { aspectRatio: aspect, refs });
+    res.json({ image: `data:${mimeType};base64,${base64}`, refUsed });
+  } catch (e) { console.error('ide art preview', e); res.status(502).json({ error: 'gemini-failed', message: String(e && e.message || e).slice(0, 300) }); }
+});
+
+// Submit a suggestion as a note to the target game (server-to-server, no CORS).
+// The note enters the game's existing notes → GitHub issue loop unchanged.
+app.post('/api/ide/suggest', async (req, res) => {
+  const { gameId, note } = req.body || {};
+  if (!gameId || !note || typeof note !== 'object') return res.status(400).json({ error: 'gameId + note required' });
+  const game = (await getGames()).find((g) => g.id === gameId);
+  if (!game || !game.url) return res.status(404).json({ error: 'game-not-live', message: 'that game has no live URL to receive the note' });
+  const base = String(game.url).replace(/\/$/, '');
+  try {
+    const r = await fetch(base + '/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(note) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return res.status(502).json({ ok: false, status: r.status, message: 'game rejected the note' });
+    refresh().catch(() => {});   // pull the new note into the dashboard
+    res.json({ ok: true, game: gameId, result: j });
+  } catch (e) { console.error('ide suggest', e); res.status(502).json({ error: 'submit-failed', message: String(e && e.message || e).slice(0, 300) }); }
 });
 
 app.listen(PORT, () => {
