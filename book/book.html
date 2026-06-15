@@ -292,6 +292,31 @@
   </div>
 </section>
 
+<!-- CH7 — animation that reads + a world that breathes -->
+<section class="page" style="background-image:url('img/art/anim.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.78),rgba(6,10,22,.34) 46%,rgba(6,10,22,.84))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 7 · the finesse that sells it</div><h2>Animation that reads, a world that breathes</h2>
+    <div class="card tight">
+      <p class="lead" style="font-size:10.6pt">A character only feels alive if its legs actually <b class="h">alternate</b> when it runs and it looks like the <b class="h">same</b> creature whether it idles or jumps. Two upgrades made this repeatable for every game, not a hand-tuned one-off.</p>
+      <h3>1 · Characters are generated as sprite SHEETS</h3>
+      <p>Per-pose generation can't keep a run cycle consistent — it returns two “stride” frames with the <i>same</i> leg forward, which animates as a <b class="h">hop</b>. So <code>tools/art-sprites.mjs</code> asks nano-banana-pro for the whole <b class="h">6-frame cycle in ONE image</b> (legs scissor across the frames), plus an action grid, chroma-keys them, and slices frames by <b class="h">connected-component labelling</b>. The action sheet is conditioned on the cycle sheet, so idle/jump/run are one coherent clay model.</p>
+      <h3>2 · It's validated, and it self-corrects</h3>
+      <div class="mig">
+        <div class="row"><div class="was"><span class="ribbon s">check</span> &nbsp;manifest in-grid · frames non-blank</div><div class="arr">→</div><div class="now">no black-box frames &nbsp;<span class="ribbon p">gate</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">check</span> &nbsp;cycle frames move (motion ≥ 3%)</div><div class="arr">→</div><div class="now">never frozen &nbsp;<span class="ribbon p">gate</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">check</span> &nbsp;contact frames differ (alt ≥ 10%)</div><div class="arr">→</div><div class="now">legs scissor, not hop &nbsp;<span class="ribbon p">gate</span></div></div>
+      </div>
+      <p style="margin-top:6px"><code>tools/validate-sprites.mjs</code> runs after every generation and exits non-zero on failure; a weak cycle <b class="h">auto-retries</b> (cache-busted, stronger nudge) up to 3×. Proven live: one critter came out a 7% hop and auto-corrected to 44%. <code>docs/SPRITES.md</code> is the written recipe.</p>
+      <h3>3 · A world that moves — <code>Studio.Atmosphere</code></h3>
+      <p>Self-drifting parallax cloud bands (tile-scrolled) + floating motes — petals, snow, dust, bubbles, fireflies — themed per world and fully procedural (it bakes its own textures). The world breathes even when you stand still; purely visual, so it never touches the gate.</p>
+      <h3>4 · The owner's notes close the loop</h3>
+      <p>A note left in-game (Pause → 📝) now <b class="h">auto-becomes a GitHub issue</b> (server-side, on a persistent volume so a redeploy never loses it), and a new <code>add-character</code> skill turns “I want a grumpy marshmallow” into a validated, animated, wired-in actor. Describe it → it runs.</p>
+    </div>
+    <div class="pageno">10</div>
+  </div>
+</section>
+
 <!-- BACK -->
 <section class="page" style="background-image:url('img/art/back.jpg')">
   <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.5),rgba(6,10,22,.2) 42%,rgba(6,10,22,.72))"></div>
