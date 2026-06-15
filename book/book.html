@@ -60,7 +60,7 @@
       <p style="color:#dfe8ff;font-size:10.3pt;max-width:138mm;margin:9px auto 0">Eleven games now run on one rig. This edition reads the engine through a single lens: which capabilities live as <b class="h">skills</b> (recipes Claude runs by hand) and which have hardened into <b class="h">programmatic machines</b> (code that runs itself the same way every time) — and how to keep moving the line.</p>
     </div>
     <div class="foot"><div class="card tight" style="text-align:center">
-      <p style="margin:0;font-size:9.4pt;color:#cfe0ff">the <b class="h">new-game</b> button · the <b class="h">Studio SDK</b> · the <b class="h">fun-gate</b> · the <b class="h">video pipeline</b> · the <b class="h">mission-control</b> hub</p>
+      <p style="margin:0;font-size:9.4pt;color:#cfe0ff">the <b class="h">new-game</b> button · the <b class="h">Studio SDK</b> · the <b class="h">design toolkit</b> · the <b class="h">fun-gate</b> · the <b class="h">video pipeline</b> · the <b class="h">mission-control</b> hub</p>
     </div></div>
   </div>
 </section>
@@ -150,9 +150,9 @@
           <ul>
             <li><b>Studio SDK</b> — <code>engine/sdk/studio.js</code>: Materials, Textures, Toon rigs, Brawl, RNG, Juice, Audio, Cam, the harness.</li>
             <li><b>The gate</b> — per-game <code>eval.mjs</code>: determinism + win + non-black, both renderers.</li>
-            <li><b>The fun model</b> — <code>Studio.Brawl.fun</code>: action/flow/arc/closeness/variety, scored.</li>
-            <li><b>Headless sim</b> — <code>Studio._headless</code>: ~70× faster seed-scans.</li>
-            <li><b>Scaffolder</b> — <code>new-game.mjs</code>. <b>Recorder/shorts</b> — <code>record · make-shorts · host-shorts · wire-shorts</code>. <b>Hub</b> — <code>server · aggregate · store</code>.</li>
+            <li><b>The fun model</b> — <code>Studio.Brawl.fun</code> + the platformer <code>feelmodel</code> (interest curve → FUN), scored.</li>
+            <li><b>The design toolkit</b> — <code>tools/lib/*</code> (85 tests): mechanics · enemies · difficulty · reach · feelmodel · fun-max · builders · story · cast · narrative · parity.</li>
+            <li><b>Scaffolder</b> — <code>new-game.mjs</code> (rich base). <b>Recorder/shorts/Hub</b>. <b>Headless sim</b> — <code>Studio._headless</code>, ~70× scans.</li>
           </ul>
         </div>
         <div class="col skill">
@@ -166,7 +166,7 @@
           </ul>
         </div>
       </div>
-      <p style="margin-top:8px;font-size:9.5pt">The mechanics have largely crossed into code. What remains a skill is <b class="h">orchestration</b> (the make-game pipeline still runs stage-by-stage by hand) and <b class="h">creative judgment</b> (which should never be code).</p>
+      <p style="margin-top:8px;font-size:9.5pt">Even <b class="h">level &amp; story design</b> have now largely crossed into code (the design toolkit). What remains a skill is the <b class="h">creative top</b> — the concept, the art direction, the feel — and the orchestration that strings the machines together (a finer 19-stage pipeline, guarded by the parity gate).</p>
     </div>
     <div class="pageno">4</div>
   </div>
@@ -184,16 +184,46 @@
         <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“record each level, mux music, upload”</div><div class="arr">→</div><div class="now"><code>record · make-shorts · host-shorts</code> &nbsp;<span class="ribbon p">machine</span></div></div>
         <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“judge if it's fun”</div><div class="arr">→</div><div class="now"><code>Studio.Brawl.fun</code> (scored) &nbsp;<span class="ribbon p">machine</span></div></div>
         <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“scan seeds for a good match”</div><div class="arr">→</div><div class="now"><code>?r=headless</code> + scan loop &nbsp;<span class="ribbon p">machine</span></div></div>
-        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“deep-link a level per game”</div><div class="arr">→</div><div class="now"><code>?level=N</code> in the template &nbsp;<span class="ribbon p">machine</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“design a fun level · write the world”</div><div class="arr">→</div><div class="now"><code>lib/{feelmodel,funmax,builders,story,cast}</code> &nbsp;<span class="ribbon p">machine</span></div></div>
+        <div class="row"><div class="was"><span class="ribbon s">was skill</span> &nbsp;“eyeball the art &amp; richness”</div><div class="arr">→</div><div class="now"><code>full-art.mjs</code> · <code>parity.mjs</code> gate &nbsp;<span class="ribbon p">machine</span></div></div>
       </div>
       <h3 style="margin-top:9px">What should cross next</h3>
       <ul>
-        <li><b class="h">The make-game orchestration</b> → a <code>ship-game.mjs</code> that runs the deterministic stages (scaffold · gate · deploy · record · host · hub-wire) as one pipeline; the skill keeps only the creative top.</li>
-        <li><b class="h">Art &amp; music passes</b> → engine-level tools the scaffolder installs (a per-game brief in, assets out) instead of re-written per game.</li>
+        <li><b class="h">The make-game orchestration</b> → a <code>ship-game.mjs</code> that runs the deterministic stages (scaffold · design · gate · deploy · record · host · hub-wire) as one pipeline; the skill keeps only the creative top.</li>
+        <li><b class="h">A multi-stomp autopilot</b> → so the gate can certify a <code>Studio.Boss</code> finale 0-death (the runtime + drop-wall contract already ship).</li>
         <li><b class="h">Diary · screenshots · registration</b> → a <code>publish.mjs</code> that captures stills, writes the scorecard, and registers the hub card.</li>
       </ul>
     </div>
     <div class="pageno">5</div>
+  </div>
+</section>
+
+<!-- CH6 — the design toolkit (the line moved this far) -->
+<section class="page" style="background-image:url('img/art/panorama.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(6,10,22,.8),rgba(6,10,22,.4) 42%,rgba(6,10,22,.85))"></div>
+  <div class="wrap">
+    <div class="kicker">Chapter 6 · how a game gets built now</div><h2>The design toolkit</h2>
+    <div class="card tight">
+      <p class="lead" style="font-size:10.6pt">The deepest skill of all — judging a level, writing a world, feeling whether a game is <i>fun</i> — used to live entirely in the model's head. Now most of its <b class="h">mechanics</b> are machines: one tested library, <code>tools/lib/*.mjs</code> (85 unit tests), the model reaches for instead of re-deriving each time.</p>
+      <h3 style="margin-top:8px">Read a level &amp; score it</h3>
+      <ul>
+        <li><b>elements</b> — every primitive's interest weight + MDA feeling + placement rule.</li>
+        <li><b>feelmodel</b> — predicts the per-window interest curve → <b class="h">FUN</b> (engagement · dynamics · arc · flow), instantly.</li>
+        <li><b>reach</b> — geometric reachability (which coins are stranded) · <b>difficulty</b> — the rising arc (calm open, late climax).</li>
+      </ul>
+      <h3>Build &amp; improve it</h3>
+      <ul>
+        <li><b>builders</b> — gate-safe campaigns by construction (the autopilot wins 0-death) · <b>evolve</b> — edit operators + a critic.</li>
+        <li><b>funmax</b> — hill-climbs FUN under a 0-death safety proxy, rolling back any edit that regresses · <b>Studio.Mechanics</b> — conveyor/dashpad/crumble/one-way/fields, autopilot-transparent + telegraphed.</li>
+      </ul>
+      <h3>Give it a world</h3>
+      <ul>
+        <li><b>story</b> (premise · named antagonist · per-world beats) → <b>cast</b> (a named roster, each a role + personality) → <b>campaign</b> (WORLDS + arc) → <b>narrative</b> (every primitive mapped to the fiction).</li>
+        <li><b>parity</b> — fails the build if a game lacks a menu, mobile, touch, real art, ≥3 mechanics, ≥2 enemy kinds, or a story.</li>
+      </ul>
+      <p style="margin-top:7px;font-size:9.6pt">The model still owns the <i>concept</i> and the <i>feel</i>. The labour of measuring, placing, and proving is now deterministic — and an eval guards every piece.</p>
+    </div>
+    <div class="pageno">6</div>
   </div>
 </section>
 
@@ -211,6 +241,8 @@
       <p style="font-size:9.3pt;margin:3px 0">In-game note → <code>/api/notes</code> → GitHub issue on session start → fix → <code>DIARY.md</code> → the hub.</p>
       <h3>Evaluation — the AI playtester <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
       <p style="font-size:9.3pt;margin:3px 0">The win+fun gate, deterministic on both renderers; headless seed-scan bakes the highest-fun match into level data.</p>
+      <h3>Design toolkit — the new machines <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
+      <p style="font-size:9.3pt;margin:3px 0"><code>tools/lib/*</code> (85 tests): feel model · reachability · difficulty · fun-max · builders · story · cast · campaign · narrative · parity. Measures, places, and proves what was once pure judgment.</p>
       <h3>Content &amp; authoring <span style="color:#ffb14d;font-size:8pt">· skill + machine</span></h3>
       <p style="font-size:9.3pt;margin:3px 0">Gemini art &amp; Lyria music (judgment-led, tool-run); the level builder &amp; <code>?level=N</code> contract.</p>
       <h3>Engine — Studio SDK on Phaser 4 <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
@@ -218,7 +250,7 @@
       <h3>Platform · Foundations <span style="color:#5fd6c0;font-size:8pt">· machine</span></h3>
       <p style="font-size:9.3pt;margin:3px 0">Express · volume KV store · <code>gemini.js</code> · Lyria · Railway — and the-harness method beneath it all.</p>
     </div>
-    <div class="pageno">6</div>
+    <div class="pageno">7</div>
   </div>
 </section>
 
@@ -237,7 +269,7 @@
       <h3>A storefront, not a spreadsheet</h3>
       <p>The board is now visual: a gameplay-cover card per game with one coherent button system, a deep-detail modal, and a vertical <b class="h">shorts feed</b> — 23 highlight reels streamed same-origin through the hub's video proxy so private-repo assets play everywhere. Pull-model throughout: a game that isn't deployed still shows up from its GitHub repo.</p>
     </div>
-    <div class="pageno">7</div>
+    <div class="pageno">8</div>
   </div>
 </section>
 
@@ -256,7 +288,7 @@
       </ul>
       <p>The owner gives a concept; the machines do the deterministic labour; the skill spends its judgment on art, feel, and fun. Every capability moved into code is one less thing to re-decide — and one more thing that can't break twice.</p>
     </div>
-    <div class="pageno">8</div>
+    <div class="pageno">9</div>
   </div>
 </section>
 
