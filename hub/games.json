@@ -978,5 +978,131 @@
         "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400812"
       }
     ]
+  },
+  {
+    "id": "flapdoodle",
+    "name": "Flapdoodle",
+    "repo": "agadabanka/flapdoodle",
+    "url": "https://flapdoodle-production.up.railway.app",
+    "tagline": "Tap to flap five chunky clay critters through a riot of colorful worlds.",
+    "meta": {
+      "hero": "a roster of chunky googly-eyed clay flying critters",
+      "verb": "tap · flap · dodge",
+      "worlds": [
+        {
+          "name": "Sunny Meadow",
+          "tag": "Gentle green hills · wide gaps · learn to flap",
+          "color": 8965802,
+          "theme": "meadow",
+          "creature": "robin"
+        },
+        {
+          "name": "Twilight Cavern",
+          "tag": "Dusky purple caves · stalactite pillars · tighter gaps",
+          "color": 6304153,
+          "theme": "cavern",
+          "creature": "bat"
+        },
+        {
+          "name": "Bloom Fields",
+          "tag": "Hot-pink flower forest · honeycomb columns · quicker",
+          "color": 16738740,
+          "theme": "bloom",
+          "creature": "bee"
+        },
+        {
+          "name": "Coral Reef",
+          "tag": "Aqua underwater glow · coral towers · floaty drift",
+          "color": 2925275,
+          "theme": "reef",
+          "creature": "fishy"
+        },
+        {
+          "name": "Ember Peaks",
+          "tag": "Fiery orange volcano · basalt pillars · the fast finale",
+          "color": 15234347,
+          "theme": "ember",
+          "creature": "dragon"
+        }
+      ],
+      "levelCount": 5,
+      "genre": "flappy",
+      "engine": "game-engine",
+      "art": {
+        "style": "Claymation stop-motion plasticine style, handmade modeling clay with visible fingerprints and tool marks, soft studio light, vivid saturated candy colors, charming slightly-imperfect handmade look, shallow depth of field",
+        "skipHero": true,
+        "motion": "flap",
+        "enemies": [
+          {
+            "key": "robin",
+            "desc": "a round red-breasted clay robin bird with little wings and big googly eyes, cute"
+          },
+          {
+            "key": "bat",
+            "desc": "a cute round purple clay bat with big rounded wings and big googly eyes, friendly"
+          },
+          {
+            "key": "bee",
+            "desc": "a fuzzy round yellow-and-black clay bumblebee with tiny wings and big googly eyes, cute"
+          },
+          {
+            "key": "fishy",
+            "desc": "a plump teal clay fish with feathery fan wings and big googly eyes, whimsical"
+          },
+          {
+            "key": "dragon",
+            "desc": "a tiny round orange clay dragon with little bat wings and big googly eyes, adorable"
+          }
+        ],
+        "tiles": [
+          {
+            "key": "grass",
+            "desc": "lush green grassy clay"
+          },
+          {
+            "key": "rock",
+            "desc": "dark purple cavern stone"
+          },
+          {
+            "key": "honey",
+            "desc": "golden honeycomb clay"
+          },
+          {
+            "key": "coral",
+            "desc": "pink-and-teal coral clay"
+          },
+          {
+            "key": "basalt",
+            "desc": "dark volcanic basalt with glowing orange cracks"
+          }
+        ]
+      },
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "design": "done",
+        "story": "done",
+        "cast": "done",
+        "mechanics": "done",
+        "levels": "done",
+        "funtune": "done",
+        "narrative": "done",
+        "character": "done",
+        "feel": "done",
+        "art": "done",
+        "music": "done",
+        "gate": "done",
+        "deploy": "done"
+      },
+      "shorts": {
+        "levels": [
+          1,
+          3,
+          5
+        ],
+        "music": "assets/music/level-{l}.mp3",
+        "platformer": false
+      }
+    }
   }
 ]
