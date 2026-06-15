@@ -56,33 +56,54 @@ async function resolveNote() {
 
 const note = await resolveNote();
 const prop = note.proposal || {};
-const hero = prop.hero || note.hero || null;
+const scope = note.scope || {};
+// scope-aware: hero/enemy → sprite sheets; tile → ground texture; prop → object.
+// (legacy notes used scope.char='hero'.)
+const kind = prop.kind || scope.kind || (scope.char ? 'hero' : 'hero');
+const key = prop.key || scope.key || scope.char || 'hero';
+const desc = prop.desc || prop.hero || null;
 const style = prop.style || (prop.art && prop.art.style) || null;
 const instruction = prop.instruction || note.text || '';
+const GEN = { hero: 'art-sprites.mjs', enemy: 'art-sprites.mjs', tile: 'art-tiles.mjs', prop: 'art-props.mjs' };
+const generator = prop.generator || GEN[kind] || 'art-sprites.mjs';
 
 console.log(`\n🎨 handle-art-note · ${gameDir}`);
-console.log(`   note #${note.id || '—'} · scope ${JSON.stringify(note.scope || {})}`);
+console.log(`   note #${note.id || '—'} · ${kind} "${key}"`);
 console.log(`   instruction: ${instruction}`);
 
-// ── apply the proposal to GAME_META.json ──
+// ── apply the proposal to GAME_META.json (scope-aware) ──
 const metaPath = path.join(gameDir, 'GAME_META.json');
 const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-const before = { hero: meta.hero, style: (meta.art && meta.art.style) || meta.art };
-if (hero) meta.hero = hero;
-if (style) meta.art = typeof meta.art === 'object' && meta.art ? { ...meta.art, style } : { style };
+if (!meta.art || typeof meta.art !== 'object') meta.art = meta.art ? { style: String(meta.art) } : {};
+if (style) meta.art.style = style;
+
+// update the key+desc descriptor list (enemies/tiles/props) for the chosen asset
+function setDesc(listName) {
+  const arr = Array.isArray(meta.art[listName]) ? meta.art[listName] : (meta.art[listName] = []);
+  let e = arr.find((x) => x.key === key);
+  if (!e) { e = { key }; arr.push(e); }
+  const was = e.desc; if (desc) e.desc = desc;
+  return was;
+}
+let changed;
+if (kind === 'hero') { const was = meta.hero; if (desc) meta.hero = desc; changed = `meta.hero: ${was ?? '—'} → ${meta.hero ?? '—'}`; }
+else if (kind === 'enemy') { const was = setDesc('enemies'); changed = `enemy "${key}": ${was ?? '—'} → ${desc ?? '(unchanged)'}`; }
+else if (kind === 'tile')  { const was = setDesc('tiles');   changed = `tile "${key}": ${was ?? '—'} → ${desc ?? '(unchanged)'}`; }
+else if (kind === 'prop')  { const was = setDesc('props');   changed = `prop "${key}": ${was ?? '—'} → ${desc ?? '(unchanged)'}`; }
+else { changed = `(unknown kind "${kind}" — style only)`; }
 fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
-console.log(`   meta.hero:  ${before.hero ?? '—'}  →  ${meta.hero ?? '—'}`);
-console.log(`   art.style:  ${before.style ?? '—'}  →  ${(meta.art && meta.art.style) || '—'}`);
+console.log(`   ${changed}`);
+console.log(`   art.style: ${meta.art.style ?? '—'}`);
 
 if (flag('--dry-run')) {
-  console.log('\n   --dry-run: meta updated; would now run tools/art-sprites.mjs --force + validate. Stopping.');
+  console.log(`\n   --dry-run: meta updated; would now run tools/${generator} --force + validate. Stopping.`);
   process.exit(0);
 }
 
-// ── regenerate the sprite via the proven pipeline (it validates internally) ──
-console.log('\n   regenerating sprite sheet (tools/art-sprites.mjs --force)…');
+// ── regenerate via the proven pipeline (sprites validate internally) ──
+console.log(`\n   regenerating (tools/${generator} --force)…`);
 try {
-  execFileSync('node', [path.join(here, 'art-sprites.mjs'), gameDir, '--force'], { stdio: 'inherit' });
+  execFileSync('node', [path.join(here, generator), gameDir, '--force'], { stdio: 'inherit' });
 } catch (e) {
   console.error('   ✗ generation/validation failed — NOT committing.');
   process.exit(1);

@@ -54,9 +54,11 @@
   .stageimg .playov:hover span{ background:#2a6df0; border-color:#3a7dff; }
   .stageimg .scaption{ position:absolute; left:0; right:0; bottom:0; padding:9px 13px; background:linear-gradient(transparent,rgba(7,11,22,.92)); font-size:11px; color:var(--dim); }
   /* inspector */
-  .scope{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
-  .scope .sc{ font-size:11px; padding:4px 10px; border-radius:20px; border:1px solid var(--line); background:#0e1730; color:var(--dim); cursor:pointer; }
-  .scope .sc.on{ background:rgba(58,125,255,.22); border-color:#3a7dff; color:#cfe0ff; }
+  .scopes{ margin-bottom:6px; max-height:188px; overflow:auto; }
+  .scopes .grp{ font-size:9.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--dim); margin:9px 0 5px; }
+  .scopes .row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .sc{ font-size:11px; padding:4px 10px; border-radius:20px; border:1px solid var(--line); background:#0e1730; color:var(--dim); cursor:pointer; }
+  .sc:hover{ border-color:#3a7dff; } .sc.on{ background:rgba(58,125,255,.22); border-color:#3a7dff; color:#cfe0ff; }
   label{ font-size:11px; color:var(--dim); display:block; margin:11px 0 4px; text-transform:uppercase; letter-spacing:.05em; }
   input,textarea{ width:100%; font:inherit; font-size:13px; background:#0e1730; border:1px solid var(--line); border-radius:8px;
     padding:8px 10px; color:var(--ink); resize:vertical; }
@@ -98,21 +100,19 @@
     <div id="stagewrap" style="flex:1; display:flex;"><div class="empty" id="stageempty">no live preview</div></div>
   </div>
 
-  <!-- RIGHT: inspector (Art › Character) -->
+  <!-- RIGHT: inspector (Art — adapts to the game's REAL assets) -->
   <div class="pane inspector">
-    <p class="ph">Inspector — <span id="toollabel">Art · Character</span></p>
-    <div class="scope" id="scopes">
-      <span class="sc on" data-scope="hero">Hero</span>
-    </div>
-    <label>Hero (identity to keep)</label>
-    <input id="hero" placeholder="a brass-helmeted deep-sea diver" />
+    <p class="ph">Inspector — <span id="toollabel">Art</span></p>
+    <div class="scopes" id="scopes"><p class="hint">loading the game's art…</p></div>
+    <label id="subjlabel">Subject (identity to keep)</label>
+    <input id="subject" placeholder="the asset's description" />
     <label>House style</label>
     <input id="style" placeholder="claymation, bold outline, glossy" />
     <label>Edit instruction (the change)</label>
-    <textarea id="instr" placeholder="recolor to icy blue with a white belly; keep the silhouette"></textarea>
+    <textarea id="instr" placeholder="glossier scales; warmer rim light; keep the shape"></textarea>
     <div class="hint">Knobs + prompt compose one <b>Gemini nano-banana-pro</b> instruction.</div>
     <label style="display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;margin-top:10px;cursor:pointer">
-      <input type="checkbox" id="useref" checked style="width:auto" /> 🖼 use current hero art as reference (image-to-image)
+      <input type="checkbox" id="useref" checked style="width:auto" /> 🖼 use the current asset as reference (image-to-image)
     </label>
     <button class="btn gen" id="gen">✨ Generate candidate (Gemini)</button>
     <div class="cand" id="cand"></div>
@@ -130,9 +130,10 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
-let GAME = null, STAGES = [], PHASES = [], CAND = null;
+let GAME = null, STAGES = [], PHASES = [], CAND = null, SURFACE = null, SCOPE = null;
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
 
 async function boot(){
   const id = qs.get('game');
@@ -141,7 +142,40 @@ async function boot(){
   STAGES = d.stages || []; PHASES = d.phases || [];
   GAME = (d.games || []).find((g) => g.id === id) || (d.games || [])[0];
   if (!GAME){ $('gname').textContent = 'No game'; return; }
-  renderHeader(); renderTree(); renderStage(); prefillInspector(); renderNote();
+  renderHeader(); renderTree(); renderStage();
+  // introspect the game's REAL editable art surface (hero/enemies/tiles/props differ by genre)
+  try { SURFACE = await fetch('/api/ide/surface/' + encodeURIComponent(GAME.id)).then((r) => r.ok ? r.json() : null); } catch { SURFACE = null; }
+  $('style').value = (SURFACE && SURFACE.style) || (GAME.meta && GAME.meta.art && (GAME.meta.art.style || GAME.meta.art)) || '';
+  ['subject','style','instr'].forEach((k) => $(k).addEventListener('input', renderNote));
+  renderScopes();
+  const list = allScopes(); if (list.length) selectScope(list[0]); else renderNote();
+}
+
+// the game's real assets, flattened into selectable scopes
+function allScopes(){
+  if (!SURFACE) return [];
+  const out = [];
+  if (SURFACE.hero) out.push({ ...SURFACE.hero, group: 'Hero' });
+  for (const e of SURFACE.enemies || []) out.push({ ...e, group: 'Enemies' });
+  for (const t of SURFACE.tiles || []) out.push({ ...t, group: 'Tiles' });
+  for (const p of SURFACE.props || []) out.push({ ...p, group: 'Props' });
+  return out;
+}
+function renderScopes(){
+  const list = allScopes();
+  if (!list.length){ $('scopes').innerHTML = '<p class="hint">No generated art assets exposed by this game.</p>'; return; }
+  const groups = {}; for (const s of list) (groups[s.group] = groups[s.group] || []).push(s);
+  $('scopes').innerHTML = Object.keys(groups).map((g) => `<div class="grp">${esc(g)} · ${groups[g].length}</div><div class="row">` +
+    groups[g].map((s) => `<span class="sc${SCOPE && SCOPE.kind === s.kind && SCOPE.key === s.key ? ' on' : ''}" data-kind="${esc(s.kind)}" data-key="${esc(s.key)}" title="${esc(s.desc || '')}">${esc(s.key)}</span>`).join('') + '</div>').join('');
+  $('scopes').querySelectorAll('.sc').forEach((el) => { el.onclick = () => selectScope(list.find((s) => s.kind === el.dataset.kind && s.key === el.dataset.key)); });
+}
+function selectScope(s){
+  if (!s) return; SCOPE = s;
+  $('subject').value = s.desc || '';
+  $('subjlabel').textContent = cap(s.kind) + ' · ' + s.key + ' (identity to keep)';
+  $('scopelabel').textContent = GAME.name + ' · ' + s.kind + ': ' + s.key;
+  $('cand').innerHTML = ''; CAND = null;
+  renderScopes(); renderNote();
 }
 
 function renderHeader(){
@@ -185,7 +219,7 @@ window.selectArt = function(){ CURRENT_TOOL = 'art'; renderTree(); };
 
 function renderStage(){
   const base = GAME.url ? GAME.url.replace(/\/$/, '') : null;
-  $('scopelabel').textContent = GAME.name + ' · scope: hero';
+  $('scopelabel').textContent = GAME.name + ' · art';
   $('autop').textContent = base ? 'opens live in a new tab' : 'not deployed';
   const cover = `/covers/${esc(GAME.id)}.jpg`;
   const shot = (GAME.screenshots && GAME.screenshots[0]) || '';
@@ -197,33 +231,29 @@ function renderStage(){
     </div>`;
 }
 
-function prefillInspector(){
-  const m = GAME.meta || {};
-  $('hero').value = m.hero || GAME.hero || '';
-  $('style').value = (m.art && (m.art.style || (typeof m.art === 'string' ? m.art : ''))) || '';
-  $('instr').addEventListener('input', renderNote);
-  $('hero').addEventListener('input', renderNote);
-  $('style').addEventListener('input', renderNote);
+// the right base prompt for the kind of asset (sprite vs ground tile vs prop)
+function basePrompt(kind){
+  if (kind === 'tile') return 'A seamless side-view claymation GROUND TILE texture, flat and even, no characters, no scene.';
+  if (kind === 'prop') return 'A single claymation PROP object, centered on a flat solid background, no scene, no ground.';
+  return 'A 2D platformer ' + (kind === 'enemy' ? 'ENEMY' : 'HERO') + ' character sprite, claymation/plasticine, bold rounded forms, glossy, soft studio light, flat solid background.';
 }
-
 function composePrompt(){
-  const hero = $('hero').value.trim(), style = $('style').value.trim(), instr = $('instr').value.trim();
-  return [
-    `2D platformer HERO sprite, claymation/plasticine, bold rounded forms, glossy, soft studio light, flat solid background.`,
-    hero ? `Character: ${hero}.` : '',
-    style ? `Style: ${style}.` : '',
-    instr ? `EDIT: ${instr}.` : '',
-    `Keep it on-model — change only what the edit asks.`,
-  ].filter(Boolean).join(' ');
+  const kind = SCOPE ? SCOPE.kind : 'hero';
+  const subj = $('subject').value.trim(), style = $('style').value.trim(), instr = $('instr').value.trim();
+  return [ basePrompt(kind), subj ? `Subject: ${subj}.` : '', style ? `Style: ${style}.` : '',
+    instr ? `EDIT: ${instr}.` : '', 'Keep it on-model — change only what the edit asks. No text or letters.' ].filter(Boolean).join(' ');
 }
-
+const generatorFor = (kind) => kind === 'tile' ? 'art-tiles.mjs' : kind === 'prop' ? 'art-props.mjs' : 'art-sprites.mjs';
 function buildNote(){
-  const hero = $('hero').value.trim(), style = $('style').value.trim(), instr = $('instr').value.trim();
+  const kind = SCOPE ? SCOPE.kind : 'hero', key = SCOPE ? SCOPE.key : 'hero';
+  const subj = $('subject').value.trim(), style = $('style').value.trim(), instr = $('instr').value.trim();
   const note = {
-    text: 'Art · hero edit: ' + (instr || '(no instruction)'),
-    kind: 'art', tool: 'art', scope: { char: 'hero' },
+    text: `Art · ${kind} "${key}" edit: ` + (instr || '(no instruction)'),
+    kind: 'art', tool: 'art', scope: { kind, key },
     prompt: composePrompt(),
-    proposal: { artifact: 'sprites.js', hero, style, instruction: instr, generator: 'art-sprites.mjs' },
+    proposal: { kind, key, desc: subj, style, instruction: instr, generator: generatorFor(kind),
+      artifact: kind === 'tile' ? 'tiles' : kind === 'prop' ? 'props' : 'sprites.js',
+      ...(kind === 'hero' ? { hero: subj } : {}) },
     source: 'studio-ide', created_at: new Date().toISOString(), ts: Date.now(),
   };
   if (CAND && CAND.length < 480000) note.shot = CAND;   // attach the previewed candidate if small enough
@@ -238,8 +268,9 @@ function renderNote(){
 $('gen').onclick = async () => {
   const b = $('gen'); b.disabled = true; b.textContent = '✨ generating…'; $('cand').innerHTML = '';
   try{
+    const aspect = (SCOPE && (SCOPE.kind === 'tile')) ? '1:1' : '1:1';
     const r = await fetch('/api/ide/art/preview', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ gameId: GAME.id, prompt: composePrompt(), aspect: '1:1', useRef: $('useref').checked }) });
+      body: JSON.stringify({ gameId: GAME.id, prompt: composePrompt(), aspect, useRef: $('useref').checked, scope: SCOPE ? { kind: SCOPE.kind, key: SCOPE.key } : null }) });
     const j = await r.json();
     if (!r.ok){ $('cand').innerHTML = `<div class="warn">${esc(j.message || j.error || 'generation failed')}</div>`; }
     else { CAND = j.image; const how = j.refUsed ? 'on-model · edited the current hero art (image-to-image)' : 'text→image · no reference art found for this game'; $('cand').innerHTML = `<img src="${j.image}" alt="candidate" /><div class="cap">Gemini candidate · ${how}</div>`; renderNote(); }

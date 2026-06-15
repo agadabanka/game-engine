@@ -206,20 +206,33 @@ app.delete('/api/games/:id', async (req, res) => {
 //   /api/ide/art/preview  — render a Gemini (nano-banana-pro) candidate
 //   /api/ide/suggest      — forward a structured note to the game's /api/notes
 
-// Resolve a game's CURRENT hero sprite sheet as an image-to-image REFERENCE so
-// Gemini edits stay on-model. Best-effort: returns null for older games that
-// don't expose a template sprite manifest → caller falls back to text→image.
-async function heroRef(gameUrl) {
+// Fetch + parse a game's sprite manifest (window.SPRITES) server-side (no CORS).
+async function gameManifest(gameUrl) {
   try {
     const base = String(gameUrl).replace(/\/$/, '');
     const js = await fetch(base + '/game/sprites.js', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.text() : null));
     if (!js) return null;
     const i = js.indexOf('{'), j = js.lastIndexOf('}');
     if (i < 0 || j < 0) return null;
-    const sprites = JSON.parse(js.slice(i, j + 1));
-    const hero = sprites.hero || sprites[Object.keys(sprites)[0]];
-    if (!hero || !hero.sheet) return null;
-    const img = await fetch(base + '/assets/' + hero.sheet, { signal: AbortSignal.timeout(8000) });
+    return JSON.parse(js.slice(i, j + 1));
+  } catch { return null; }
+}
+
+// Resolve a CHOSEN asset's image as an image-to-image REFERENCE — works across
+// genres (hero/enemy → sprite sheet; tile/prop → texture/sprite). Best-effort:
+// returns null when the game doesn't expose that asset → caller falls back to text→image.
+async function assetRef(gameUrl, scope) {
+  try {
+    const man = await gameManifest(gameUrl);
+    if (!man) return null;
+    const kind = (scope && scope.kind) || 'hero', key = scope && scope.key;
+    let rel = null;
+    if (kind === 'hero') rel = man.hero && man.hero.sheet;
+    else if (kind === 'enemy') rel = man.enemies && man.enemies[key] && man.enemies[key].sheet;
+    else if (kind === 'tile') rel = man.tiles && man.tiles[key];
+    else if (kind === 'prop') rel = man.props && man.props[key];
+    if (!rel) return null;
+    const img = await fetch(String(gameUrl).replace(/\/$/, '') + '/assets/' + rel, { signal: AbortSignal.timeout(8000) });
     if (!img.ok) return null;
     const buf = Buffer.from(await img.arrayBuffer());
     if (buf.length > 6_000_000) return null;   // keep the Gemini request sane
@@ -227,17 +240,37 @@ async function heroRef(gameUrl) {
   } catch { return null; }
 }
 
+// The game's REAL editable art surface — so the IDE adapts to the genre at hand
+// (a snake has no walk-cycle hero; its art is enemies/tiles/props). Combines the
+// live /api/meta descriptors (key + desc) with the sprite manifest (what's drawn).
+app.get('/api/ide/surface/:id', async (req, res) => {
+  const game = (await getGames()).find((g) => g.id === req.params.id);
+  if (!game || !game.url) return res.status(404).json({ error: 'game-not-live' });
+  const base = String(game.url).replace(/\/$/, '');
+  let meta = {};
+  try { meta = await fetch(base + '/api/meta', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : {})); } catch {}
+  const man = await gameManifest(game.url);
+  const art = meta.art || {};
+  const heroPresent = !!(man && man.hero && man.hero.sheet);
+  const list = (arr, kind) => (Array.isArray(arr) ? arr : []).filter((a) => a && a.key).map((a) => ({ kind, key: a.key, desc: a.desc || '' }));
+  res.json({
+    id: game.id, name: game.name, url: base, archetype: meta.archetype || meta.genre || null, style: art.style || '',
+    hero: heroPresent ? { kind: 'hero', key: 'hero', desc: meta.hero || '' } : null,
+    enemies: list(art.enemies, 'enemy'), tiles: list(art.tiles, 'tile'), props: list(art.props, 'prop'),
+  });
+});
+
 // Render an art candidate. Every art edit is a Gemini call; without a Gemini SA
 // the Art tool is unavailable (clear 503), never a silent fallback. When the game
-// exposes its hero art we pass it as a reference (image-to-image → on-model edit).
+// exposes the chosen asset we pass it as a reference (image-to-image → on-model edit).
 app.post('/api/ide/art/preview', async (req, res) => {
   if (!geminiConfigured()) return res.status(503).json({ error: 'needs-gemini', message: 'Art editing needs Gemini — set GEMINI_SA_JSON' });
-  const { gameId, prompt, aspect = '1:1', useRef = true } = req.body || {};
+  const { gameId, prompt, aspect = '1:1', useRef = true, scope = null } = req.body || {};
   if (!prompt || String(prompt).trim().length < 4) return res.status(400).json({ error: 'prompt required' });
   let refs = [], refUsed = false;
   if (useRef && gameId) {
     const game = (await getGames()).find((g) => g.id === gameId);
-    if (game && game.url) { const r = await heroRef(game.url); if (r) { refs = [r]; refUsed = true; } }
+    if (game && game.url) { const r = await assetRef(game.url, scope); if (r) { refs = [r]; refUsed = true; } }
   }
   try {
     const { mimeType, base64 } = await generateImage(String(prompt), { aspectRatio: aspect, refs });
