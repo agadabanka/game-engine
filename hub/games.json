@@ -927,6 +927,56 @@
         "music": "assets/music/level-{l}.mp3",
         "platformer": false
       }
-    }
+    },
+    "shorts": [
+      {
+        "title": {
+          "name": "Emerald Rainforest",
+          "tag": "Lush green tangle · easy slithering · fruit everywhere",
+          "color": 2071114,
+          "theme": "rainforest"
+        },
+        "biome": {
+          "name": "Emerald Rainforest",
+          "tag": "Lush green tangle · easy slithering · fruit everywhere",
+          "color": 2071114,
+          "theme": "rainforest"
+        },
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400794"
+      },
+      {
+        "title": {
+          "name": "Bamboo Maze",
+          "tag": "Tall bamboo corridors · twisty paths · don't box yourself in",
+          "color": 10207546,
+          "theme": "bamboo"
+        },
+        "biome": {
+          "name": "Bamboo Maze",
+          "tag": "Tall bamboo corridors · twisty paths · don't box yourself in",
+          "color": 10207546,
+          "theme": "bamboo"
+        },
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400800"
+      },
+      {
+        "title": {
+          "name": "Cloud Canopy",
+          "tag": "Bright treetops · open sky · the long climb to a giant feast",
+          "color": 8963834,
+          "theme": "canopy"
+        },
+        "biome": {
+          "name": "Cloud Canopy",
+          "tag": "Bright treetops · open sky · the long climb to a giant feast",
+          "color": 8963834,
+          "theme": "canopy"
+        },
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/clayboa/releases/assets/448400812"
+      }
+    ]
   }
 ]
