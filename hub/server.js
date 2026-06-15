@@ -206,15 +206,42 @@ app.delete('/api/games/:id', async (req, res) => {
 //   /api/ide/art/preview  — render a Gemini (nano-banana-pro) candidate
 //   /api/ide/suggest      — forward a structured note to the game's /api/notes
 
+// Resolve a game's CURRENT hero sprite sheet as an image-to-image REFERENCE so
+// Gemini edits stay on-model. Best-effort: returns null for older games that
+// don't expose a template sprite manifest → caller falls back to text→image.
+async function heroRef(gameUrl) {
+  try {
+    const base = String(gameUrl).replace(/\/$/, '');
+    const js = await fetch(base + '/game/sprites.js', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.text() : null));
+    if (!js) return null;
+    const i = js.indexOf('{'), j = js.lastIndexOf('}');
+    if (i < 0 || j < 0) return null;
+    const sprites = JSON.parse(js.slice(i, j + 1));
+    const hero = sprites.hero || sprites[Object.keys(sprites)[0]];
+    if (!hero || !hero.sheet) return null;
+    const img = await fetch(base + '/assets/' + hero.sheet, { signal: AbortSignal.timeout(8000) });
+    if (!img.ok) return null;
+    const buf = Buffer.from(await img.arrayBuffer());
+    if (buf.length > 6_000_000) return null;   // keep the Gemini request sane
+    return { base64: buf.toString('base64'), mimeType: img.headers.get('content-type') || 'image/png' };
+  } catch { return null; }
+}
+
 // Render an art candidate. Every art edit is a Gemini call; without a Gemini SA
-// the Art tool is unavailable (clear 503), never a silent fallback.
+// the Art tool is unavailable (clear 503), never a silent fallback. When the game
+// exposes its hero art we pass it as a reference (image-to-image → on-model edit).
 app.post('/api/ide/art/preview', async (req, res) => {
   if (!geminiConfigured()) return res.status(503).json({ error: 'needs-gemini', message: 'Art editing needs Gemini — set GEMINI_SA_JSON' });
-  const { prompt, aspect = '1:1', refs = [] } = req.body || {};
+  const { gameId, prompt, aspect = '1:1', useRef = true } = req.body || {};
   if (!prompt || String(prompt).trim().length < 4) return res.status(400).json({ error: 'prompt required' });
+  let refs = [], refUsed = false;
+  if (useRef && gameId) {
+    const game = (await getGames()).find((g) => g.id === gameId);
+    if (game && game.url) { const r = await heroRef(game.url); if (r) { refs = [r]; refUsed = true; } }
+  }
   try {
-    const { mimeType, base64 } = await generateImage(String(prompt), { aspectRatio: aspect, refs: Array.isArray(refs) ? refs : [] });
-    res.json({ image: `data:${mimeType};base64,${base64}` });
+    const { mimeType, base64 } = await generateImage(String(prompt), { aspectRatio: aspect, refs });
+    res.json({ image: `data:${mimeType};base64,${base64}`, refUsed });
   } catch (e) { console.error('ide art preview', e); res.status(502).json({ error: 'gemini-failed', message: String(e && e.message || e).slice(0, 300) }); }
 });
 
