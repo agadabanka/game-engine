@@ -89,9 +89,11 @@
   fetch('/api/meta').then(r=>r.json()).then(m=>{ if(m&&m.name){ document.getElementById('title').innerHTML='📖 '+m.name+' — Build Diary &amp; Notes'; document.title=m.name+' — Build Diary'; } }).catch(()=>{});
   fetch('/api/diary').then(r=>r.text()).then(t=>{ document.getElementById('diary').innerHTML = md(t); })
     .catch(()=>{ document.getElementById('diary').innerHTML='<p class="empty">no diary yet</p>'; });
-  fetch('/api/notes').then(r=>r.json()).then(({notes})=>{
+  fetch('/api/notes').then(r=>r.json()).then(data=>{
     const el = document.getElementById('notes');
-    notes = (notes||[]).slice().reverse();
+    // the server serves /api/notes as a BARE array; older callers expected {notes:[…]} — accept either
+    let notes = Array.isArray(data) ? data : (data && data.notes) || [];
+    notes = notes.slice().reverse();
     document.getElementById('ncount').textContent = notes.length ? '· '+notes.length : '';
     if(!notes.length){ el.innerHTML='<p class="empty">No notes yet. In the game, hit ⏸ Pause → 📝 Leave a note, click a spot and type.</p>'; return; }
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

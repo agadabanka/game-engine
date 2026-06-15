@@ -21,7 +21,12 @@ app.get('/api/meta', (_, res) => res.type('application/json').send(read('GAME_ME
 app.get('/api/diary', (_, res) => res.type('text/markdown').send(read('DIARY.md', '# Diary')));
 app.get('/api/config', (_, res) => res.json({ engine: 'studio-phaser4', phaser: '4.1.0', renderer: 'webgl-canvas' }));
 app.get('/api/notes', (_, res) => res.json(notes()));
-app.post('/api/notes', (req, res) => { const n = notes(); n.push({ id: Date.now(), ...req.body }); fs.writeFileSync(notesFile, JSON.stringify(n, null, 2)); res.json({ ok: true }); });
+app.post('/api/notes', (req, res) => {
+  const n = notes(), b = req.body || {};
+  const shot = (typeof b.shot === 'string' && b.shot.length < 500000) ? b.shot : null;   // keep only a small JPEG screenshot
+  n.push({ id: Date.now(), ...b, shot, created_at: b.created_at || new Date().toISOString() });
+  fs.writeFileSync(notesFile, JSON.stringify(n, null, 2)); res.json({ ok: true });
+});
 
 app.use(express.static(path.join(__dirname, 'src')));
 app.listen(PORT, () => console.log('studio game-template on :' + PORT));

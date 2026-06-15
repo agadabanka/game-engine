@@ -606,6 +606,9 @@
   Studio.Shell.note = function (scene, opt) {
     opt = opt || {}; if (typeof document === 'undefined' || document.getElementById('studio-note')) return;
     var acc = opt.accentCss || '#ffd34d';
+    // capture a SCREENSHOT of the moment (the canvas needs preserveDrawingBuffer:true, which the
+    // template sets) — small JPEG so it stores < the server's 400KB cap. Shown in the diary.
+    var shot = null; try { var cv = scene && scene.game && scene.game.canvas; if (cv && cv.toDataURL) shot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}
     var box = document.createElement('div'); box.id = 'studio-note';
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(5,3,10,.6);font-family:system-ui,-apple-system,sans-serif';
     box.innerHTML = '<div style="background:#16111e;border:2px solid ' + acc + ';border-radius:14px;padding:18px;width:min(440px,92vw);color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6)">'
@@ -630,7 +633,7 @@
     box.querySelector('#sns').onclick = function () {
       var txt = (t.value || '').trim(); if (!txt) { close(); return; }
       var m = opt.meta || {};
-      fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: txt, level: m.level, x: m.x, tag: 'in-game', ts: Date.now() }) })
+      fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: txt, level: m.level, x: m.x, tag: 'in-game', kind: 'in-game', shot: shot, created_at: new Date().toISOString(), ts: Date.now() }) })
         .then(function () { box.querySelector('#snm').textContent = 'Sent — thanks! 💌'; setTimeout(close, 900); })
         .catch(function () { box.querySelector('#snm').textContent = 'Could not reach the server.'; });
     };

@@ -581,6 +581,7 @@
       var btns = [{ label: '▶ RESUME', onClick: close }, { label: '↻ RESTART', onClick: function () { close(); (opt.onRestart || function () { scene.scene.start('Play'); })(); } }, { label: '☰ MENU', onClick: function () { window.__paused = false; (opt.onMenu || function () { scene.scene.start('Title'); })(); } }];
       btns.push({ label: '📝 NOTE', onClick: function () { Studio.Shell.note(scene, { accentCss: _accCss(opt.accent != null ? opt.accent : 0xffd34d), meta: { level: scene._world || window.__startLevel || 1 } }); } });
       if (opt.diary !== false) btns.push({ label: '📖 DIARY', onClick: function () { window.location.href = (opt.diary || '/diary.html'); } });
+      try { var cv = scene.game && scene.game.canvas; if (cv && cv.toDataURL) scene._pauseShot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}   // clean gameplay frame for a note's screenshot (before the overlay draws)
       ov = Studio.Shell.overlay(scene, { title: 'PAUSED', accent: opt.accent, buttons: btns });
     }
     var btn = scene.add.text(W - 18, 14, '⏸', { fontFamily: 'Arial', fontSize: '24px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(105).setInteractive({ useHandCursor: true });
@@ -606,6 +607,11 @@
   Studio.Shell.note = function (scene, opt) {
     opt = opt || {}; if (typeof document === 'undefined' || document.getElementById('studio-note')) return;
     var acc = opt.accentCss || '#ffd34d';
+    // SCREENSHOT of the moment for the diary — prefer the clean gameplay frame captured by the pause
+    // menu BEFORE its overlay drew (scene._pauseShot); else grab the canvas now. Small JPEG (< the
+    // server's 400KB cap). Needs preserveDrawingBuffer:true on the canvas (the template sets it).
+    var shot = (scene && scene._pauseShot) || null;
+    if (!shot) try { var cv = scene && scene.game && scene.game.canvas; if (cv && cv.toDataURL) shot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}
     var box = document.createElement('div'); box.id = 'studio-note';
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(5,3,10,.6);font-family:system-ui,-apple-system,sans-serif';
     box.innerHTML = '<div style="background:#16111e;border:2px solid ' + acc + ';border-radius:14px;padding:18px;width:min(440px,92vw);color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6)">'
@@ -630,7 +636,7 @@
     box.querySelector('#sns').onclick = function () {
       var txt = (t.value || '').trim(); if (!txt) { close(); return; }
       var m = opt.meta || {};
-      fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: txt, level: m.level, x: m.x, tag: 'in-game', ts: Date.now() }) })
+      fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: txt, level: m.level, x: m.x, tag: 'in-game', kind: 'in-game', shot: shot, created_at: new Date().toISOString(), ts: Date.now() }) })
         .then(function () { box.querySelector('#snm').textContent = 'Sent — thanks! 💌'; setTimeout(close, 900); })
         .catch(function () { box.querySelector('#snm').textContent = 'Could not reach the server.'; });
     };
