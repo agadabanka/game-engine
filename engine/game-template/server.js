@@ -57,5 +57,16 @@ app.post('/api/notes', (req, res) => {
   ghIssue(note);   // → auto-create a GitHub issue (a no-op unless NOTES_GH_* env is set)
 });
 
+// admin: dismiss a handled note (or notes by kind). Guarded by NOTES_GH_TOKEN sent
+// as the `x-admin-token` header — so only the owner can prune the in-game notes list.
+app.delete('/api/notes', (req, res) => {
+  const token = process.env.NOTES_GH_TOKEN;
+  if (!token || req.get('x-admin-token') !== token) return res.status(403).json({ ok: false });
+  const all = notes(), id = req.query.id, kind = req.query.kind;
+  const kept = all.filter((n) => (id ? String(n.id) !== String(id) : true) && (kind ? n.kind !== kind : true));
+  fs.writeFileSync(notesFile, JSON.stringify(kept, null, 2));
+  res.json({ ok: true, removed: all.length - kept.length, remaining: kept.length });
+});
+
 app.use(express.static(path.join(__dirname, 'src')));
 app.listen(PORT, () => console.log('studio game-template on :' + PORT));
