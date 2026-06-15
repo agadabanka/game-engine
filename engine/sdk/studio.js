@@ -541,7 +541,15 @@
         preload: function () {
           var S = window.SHELL || {}, sc = this;
           if (S.titleArt) sc.load.image('shell_title', S.titleArt);
-          (S.thumbs || []).forEach(function (t, i) { if (t) sc.load.image('shell_thumb' + i, t); });
+          // Per-world menu THUMBNAILS. Explicit S.thumbs[i] wins; otherwise fall back to the
+          // screenshot CONVENTION `assets/shots/level<N>.jpg` (captured by tools/shots.mjs) so
+          // every game shows real level stills on its menu for free. A missing file trips
+          // loaderror below and the card draws its flat world color instead — never blank.
+          var wn = (S.worlds || window.LEVELS || []).length || (S.thumbs || []).length;
+          for (var ti = 0; ti < wn; ti++) {
+            var src = (S.thumbs && S.thumbs[ti]) || ('assets/shots/level' + (ti + 1) + '.jpg');
+            if (src) sc.load.image('shell_thumb' + ti, src);
+          }
           sc.load.on('loaderror', function () {});
         },
         create: function () {
@@ -592,7 +600,18 @@
           sel(0);
           var prompt = scene.add.text(W / 2, H - 42, '▶  PICK A WORLD  ·  OR PRESS SPACE', { fontFamily: 'Arial Black, Arial', fontSize: '15px', color: '#ffffff', stroke: '#1c1320', strokeThickness: 6 }).setOrigin(0.5);
           scene.tweens.add({ targets: prompt, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
-          var Lk = S.links || {}, lx = W - 22, ly = 22;
+          // 📝 NOTE — a BASE menu option (themed, top-right circle). One tap opens the note box
+          // straight from the title/level-select so a player can leave feedback before even playing;
+          // the server auto-promotes each note to a GitHub issue. Mirrors the in-game pause button.
+          (function () {
+            var bx = W - 34, by = 30, rr = 21;
+            var cc = scene.add.circle(bx, by, rr, accent, 0.95).setStrokeStyle(3, 0xffffff, 0.8).setDepth(60);
+            scene.add.text(bx, by, '📝', { fontFamily: 'Arial', fontSize: '19px' }).setOrigin(0.5).setDepth(61);
+            var zz = scene.add.zone(bx, by, 52, 52).setDepth(62).setInteractive({ useHandCursor: true });   // generous tap target
+            var openNote = function () { cc.setScale(0.88); scene.time.delayedCall(90, function () { try { cc.setScale(1); } catch (e) {} }); if (Studio.Shell.note) Studio.Shell.note(scene, { accentCss: accCss, meta: { level: scene._sel + 1 } }); };
+            zz.on('pointerdown', openNote); scene.input.keyboard.on('keydown-N', openNote);
+          })();
+          var Lk = S.links || {}, lx = W - 22, ly = 60;
           function link(label, href, color) { if (!href) return; var t = scene.add.text(lx, ly, label, { fontFamily: 'Arial', fontSize: '14px', color: color }).setOrigin(1, 0).setInteractive({ useHandCursor: true }); t.on('pointerdown', function () { window.location.href = href; }); ly += 25; }
           link('📖 diary', Lk.diary, '#ffd98a'); link('🧱 builder', Lk.build, '#9fd6ff'); link('✏️ design', Lk.design, '#c9a7ff');
           scene.input.keyboard.on('keydown-RIGHT', function () { sel((scene._sel + 1) % n); });
@@ -671,11 +690,15 @@
     var accent = opt.accent != null ? opt.accent : 0xffd34d;
     function topBtn(cx, glyph, onTap) {
       var r = 21, cy = 16 + r;
-      var c = scene.add.circle(cx, cy, r, accent, 0.92).setScrollFactor(0).setDepth(105).setStrokeStyle(3, 0xffffff, 0.75).setInteractive({ useHandCursor: true });
+      var c = scene.add.circle(cx, cy, r, accent, 0.92).setScrollFactor(0).setDepth(105).setStrokeStyle(3, 0xffffff, 0.75);
       var t = scene.add.text(cx, cy, glyph, { fontFamily: 'Arial', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(106);
+      // A generous INVISIBLE hit zone (50px, bigger than the 42px circle) so the button is easy to
+      // TAP on a phone — small corner circles were fiddly to hit. Zones hit-test more reliably than
+      // setInteractive() on a Shape, which is why notes felt unclickable. Topmost zone wins overlaps.
+      var z = scene.add.zone(cx, cy, 50, 50).setScrollFactor(0).setDepth(107).setInteractive({ useHandCursor: true });
       var hit = function () { c.setScale(0.9); scene.time.delayedCall(90, function () { try { c.setScale(1); } catch (e) {} }); onTap(); };
-      c.on('pointerdown', hit); t.setInteractive({ useHandCursor: true }); t.on('pointerdown', hit);
-      return { c: c, t: t };
+      z.on('pointerdown', hit);
+      return { c: c, t: t, z: z };
     }
     function openNote() {
       if (ov || window.__won) return;

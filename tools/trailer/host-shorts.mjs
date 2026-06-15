@@ -21,7 +21,10 @@ async function gh(route, method = 'GET', body, raw) {
 }
 function label(g, lv) {
   const w = (g.meta && Array.isArray(g.meta.worlds)) ? g.meta.worlds : [];
-  if (w[lv - 1]) return w[lv - 1];
+  // worlds may be strings OR objects ({name,theme,…}) — derive a DISPLAY STRING either way.
+  // (returning the raw object here is the bug that wrote [object Object] titles into the registry.)
+  const wn = w[lv - 1];
+  if (wn) return typeof wn === 'object' ? (wn.name || wn.title || wn.theme || `Level ${lv}`) : wn;
   const vids = (g.meta && g.meta.videos) || {};
   for (const k of Object.keys(vids)) { const m = new RegExp(`level-?${lv}(?:-(.+))?$`, 'i').exec(k); if (m && m[1]) return m[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
   return `Level ${lv}`;

@@ -88,7 +88,8 @@ The tools are engine-level (operate on a game id/dir); a new game does NOT carry
 | gate | game `eval.mjs` + `tools/lib/mirth.mjs` | FUN (`Studio.Brawl.fun`) + optional funny gate (`Studio.Mirth`) |
 | art | `tools/full-art.mjs` (orchestrator) → `art.mjs`+`art-sprites.mjs`+`art-tiles.mjs`+`art-props.mjs` | backdrops/keyart · generated hero+enemy **sprite sheets** (model-sheet→keyed→packed) · clay **tile** materials · **props** — all from `GAME_META.art.{style,enemies,tiles,props}`, chroma-keyed, merged into one `sprites.js` manifest, cached via `gencache`. `Studio.Hero` renders the sprite or falls back to the `Studio.Toon` rig |
 | music | `tools/music.mjs` → `lib/lyria.js` | Lyria loop per world (or procedural `Studio.Audio` fallback) |
-| shorts | `tools/trailer/make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed, auto-wired (see ENGINE.md) |
+| shots | `tools/shots.mjs <dir>` | per-level menu THUMBNAILS — boots the game's own server, drives the autopilot a couple seconds in, writes `src/assets/shots/level<N>.jpg`. `Studio.Shell.title` auto-loads them (convention `assets/shots/level<N>.jpg`) so the level-select shows real screenshots, not flat color. Commit + redeploy. |
+| shorts | `tools/trailer/ship-shorts.mjs <id>` (record→host→wire→commit→push→verify, ONE program) — wraps `make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed. Use ship-shorts so the registry edit can never be left staged/uncommitted (the bug that left a game with no visible shorts). It pushes branch+main (auto-deploys the hub) and POLLS the live hub until the shorts appear. |
 | videos | `tools/record.mjs` + `tools/trailer/yt-upload.mjs` | per-level landscape MP4 (music muxed) + montage → YouTube (YT_* secrets; write the refresh token to /tmp/yt-creds.json). Playlist needs the broader `youtube` scope — an upload-scoped token 403s, so fall back to the montage link. |
 | safety net | `tools/eval-all.mjs` | run the golden set + this game before merge |
 Anything still scattered in a game repo is a migration target — lift it here and update this table.
@@ -229,13 +230,16 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
   selectable count to `LEVELS.length`), not gate behind progression — players and
   deep-links can jump anywhere. Keep the default cursor on the highest reached.
 - Shorts subsystem (engine ability — see `docs/ENGINE.md` "The shorts subsystem").
-  A new game gets the whole vertical-shorts feed for FREE; you just run two commands:
+  A new game gets the whole vertical-shorts feed for FREE. Prefer the ONE-command
+  shipper so the flow can never be left half-done (the bug that left a game with no
+  visible shorts: the registry edit sat staged-but-uncommitted):
   ```
-  node tools/trailer/make-shorts.mjs <id>     # records levels 1/3/5 off the LIVE
-                                              # deploy, mobile-encoded (~2MB each)
-  node tools/trailer/host-shorts.mjs <id>     # uploads to a GitHub Release AND wires
-                                              # hub/games.json → then deploy the hub
+  node tools/trailer/ship-shorts.mjs <id>     # record → host (GitHub Release) → wire
+                                              # hub/games.json → commit → push branch+main
+                                              # (auto-deploys hub) → POLL hub till shorts live
   ```
+  (The underlying steps `make-shorts.mjs <id>` + `host-shorts.mjs <id>` still exist if
+  you need to run them piecemeal; ship-shorts just guarantees the loop closes.)
   - **Auto-plan**: no per-game config needed (defaults to levels 1/3/5). To customize,
     add a `meta.shorts` block to the game's `hub/games.json` entry:
     `{ mode, levels, music:"assets/music/level-{l}.mp3", menuStart, platformer, skip }`.

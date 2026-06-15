@@ -1,5 +1,5 @@
 // scripts/build-status.mjs — a LIVE build-progress board for a game, pinned at the TOP.
-// Reads the game's GAME_META.stages against the 19-stage pipeline (single source of truth:
+// Reads the game's GAME_META.stages against the full pipeline (single source of truth:
 // tools/lib/pipeline.mjs) and renders a progress bar + the stage tree (✓/○) + the NEXT pointer.
 // It PINS this at the very top of <game>/README.md (between markers) so it's the first thing on the
 // repo's front page, and prints it. Run it after every stage (it's idempotent):
