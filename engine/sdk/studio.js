@@ -685,7 +685,7 @@
         spr = scene.add.sprite(0, opt.feetY != null ? opt.feetY : 0, key, first).setOrigin(0.5, 1).setScale(sf);
         wrap.add(spr);
         // per-state frame rates + which states LOOP (idle breathes slow, run is brisk, one-shots don't loop)
-        var FR = { run: 13, walk: 6, idle: 2.6, cheer: 7, happy: 6, hurt: 1, land: 11, jump: 1, fall: 1 }, LOOP = { run: 1, walk: 1, idle: 1, cheer: 1, happy: 1 };
+        var FR = { run: 14, walk: 9, idle: 2.6, cheer: 7, happy: 6, hurt: 1, land: 11, jump: 1, fall: 1 }, LOOP = { run: 1, walk: 1, idle: 1, cheer: 1, happy: 1 };
         Object.keys(S.anims || {}).forEach(function (a) {
           var k = pre + a; if (scene.anims.exists(k)) return;
           scene.anims.create({ key: k, frames: S.anims[a].map(function (f) { return { key: key, frame: f }; }), frameRate: FR[a] || 7, repeat: LOOP[a] ? -1 : 0 });
@@ -718,20 +718,13 @@
           var K = 0.22, C = 0.5;                               // spring the impact squash back to 1 — bouncy + smooth
           svx += (-K * (spx - 1) - C * svx) * f; spx += svx * f;
           svy += (-K * (spy - 1) - C * svy) * f; spy += svy * f;
-          // ── gait: a real bouncing run/walk cycle so even a legless, few-frame sprite reads as RUNNING,
-          // very smoothly. The body LIFTS between foot-plants (bob), squashes wide on contact + stretches
-          // tall at the apex (volume-preserving), and leans forward with a per-step rock. idle just breathes.
+          // ── gait: the generated run/walk SHEET already carries the bob + squash + leg scissor in the
+          // ART (frames drawn as a real cycle), so the procedural layer stays MINIMAL here — just a gentle
+          // forward lean into travel. Adding a big procedural bob on top double-bounces into a "hop", which
+          // is exactly what we DON'T want. idle still breathes; impacts still spring (squash()).
           var gx = 1, gy = 1, bob = 0, lean = 0;
           if (cur === 'run' || cur === 'walk') {
-            var run = cur === 'run';
-            var spd = run ? 0.46 : 0.32;                       // stride cadence (run is brisk)
-            var amp = run ? 0.13 : 0.085;                      // squash/stretch depth
-            var ph = t * spd;
-            var lift = Math.abs(Math.sin(ph));                 // 0 at each foot-plant, 1 mid-stride (airborne)
-            bob = -(run ? 13 : 7) * lift;                      // rise between steps (px, purely visual)
-            gy = 1 + (lift - 0.5) * 2 * amp;                   // tall at the apex, short on contact
-            gx = 1 - (lift - 0.5) * 2 * amp * 0.7;             // thin at the apex, wide on contact (volume-ish)
-            lean = (flip ? -5 : 5) + Math.sin(ph * 2) * (run ? 4 : 2.5);  // forward lean (into travel) + a per-step rock
+            lean = flip ? -4 : 4;                              // lean into the direction of travel; the frames do the rest
           } else if (cur === 'idle') {
             gy = 1 + Math.sin(t * 0.11) * 0.03;                // gentle breathe
           } else if (cur === 'cheer' || cur === 'happy' || cur === 'hop') {

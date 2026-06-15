@@ -11,8 +11,15 @@ session and end with links.
 
 ## Standing preferences (from the owner — apply to every game)
 - **Polished toony look** by default: bold outlines, big eyes, squash-and-stretch.
-  Characters should be procedural rigs (`Studio.Toon`) so they animate richly
-  (15+ states: idle/run/jump/fall/flip/land/attacks/hit/KO/victory/defeat…).
+- **Animate characters from SPRITE SHEETS** (`tools/art-sprites.mjs`, nano-banana-pro):
+  generate the run/walk as a **6-frame CYCLE in ONE image** so the legs visibly
+  ALTERNATE (per-pose generation can't keep a cycle consistent — it reads as a
+  HOP, not a run), plus an action-pose grid (idle/jump/fall/land/hurt/cheer). Slice
+  by connected components, pack, and let `Studio.Hero` play them. Keep the procedural
+  layer MINIMAL (a gentle lean only) — the bob/scissor lives in the art, so adding a
+  big procedural bob double-bounces into a hop. `Studio.Toon` is the rig FALLBACK when
+  no generated sheet is present. Be THOROUGH + specific in the Gemini prompt (exact
+  grid, per-frame leg choreography, flat chroma-green background, no text).
 - **Lots of juice**: particles on every event (hits, pickups, KOs, landings),
   rings/sparks/confetti/popups (`Studio.Juice`), procedural SFX (`Studio.Audio`).
 - **Variety as a theme**: levels/arenas should each be a distinct biome/world
