@@ -481,8 +481,17 @@
           if (scene.textures.exists('shell_title')) { var bg = scene.add.image(W / 2, H / 2, 'shell_title'); var src = bg.texture.getSourceImage(); bg.setScale(Math.max(W / src.width, H / src.height)); }
           else scene.add.rectangle(W / 2, H / 2, W, H, S.sky != null ? S.sky : 0x16121f);
           scene.add.rectangle(W / 2, H / 2, W, H, 0x0a0710, 0.34);
+          // a dark→transparent top banner behind the title block so the name + tagline always read on
+          // busy keyart (baked once; generic to every game). Vertical fade = looks like a title treatment.
+          var tsk = 'shell_titlescrim';
+          if (!scene.textures.exists(tsk)) {
+            var ctc = scene.textures.createCanvas(tsk, 16, 170), tcx = ctc.getContext();
+            var gv = tcx.createLinearGradient(0, 0, 0, 170); gv.addColorStop(0, 'rgba(6,4,12,0.78)'); gv.addColorStop(0.6, 'rgba(6,4,12,0.5)'); gv.addColorStop(1, 'rgba(6,4,12,0)');
+            tcx.fillStyle = gv; tcx.fillRect(0, 0, 16, 170); ctc.refresh();
+          }
+          scene.add.image(0, 0, tsk).setOrigin(0, 0).setDisplaySize(W, 170);
           scene.add.text(34, 24, S.name || 'STUDIO GAME', { fontFamily: 'Arial Black, Arial', fontSize: '46px', color: '#ffffff', stroke: '#140b12', strokeThickness: 8 }).setShadow(0, 4, '#000', 10, true, true);
-          if (S.tagline) scene.add.text(36, 80, S.tagline, { fontFamily: 'Arial', fontSize: '15px', color: accCss, stroke: '#140b12', strokeThickness: 3, wordWrap: { width: W * 0.62 } });
+          if (S.tagline) scene.add.text(36, 80, S.tagline, { fontFamily: 'Arial', fontSize: '15px', color: '#ffffff', stroke: '#140b12', strokeThickness: 4, wordWrap: { width: W * 0.62 } }).setShadow(0, 2, '#000', 6, false, true);
           if (S.premise) scene.add.text(36, 108, S.premise, { fontFamily: 'Arial', fontSize: '12px', color: '#cdd6f0', stroke: '#140b12', strokeThickness: 2, wordWrap: { width: W * 0.6 } }).setAlpha(0.92);   // the STORY arc (#42)
           var worlds = S.worlds || (window.LEVELS || []).map(function (l) { return { name: l.name, color: l.sky }; });
           var n = worlds.length || 1;
@@ -581,6 +590,7 @@
       var btns = [{ label: '▶ RESUME', onClick: close }, { label: '↻ RESTART', onClick: function () { close(); (opt.onRestart || function () { scene.scene.start('Play'); })(); } }, { label: '☰ MENU', onClick: function () { window.__paused = false; (opt.onMenu || function () { scene.scene.start('Title'); })(); } }];
       btns.push({ label: '📝 NOTE', onClick: function () { Studio.Shell.note(scene, { accentCss: _accCss(opt.accent != null ? opt.accent : 0xffd34d), meta: { level: scene._world || window.__startLevel || 1 } }); } });
       if (opt.diary !== false) btns.push({ label: '📖 DIARY', onClick: function () { window.location.href = (opt.diary || '/diary.html'); } });
+      try { var cv = scene.game && scene.game.canvas; if (cv && cv.toDataURL) scene._pauseShot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}   // clean gameplay frame for a note's screenshot (before the overlay draws)
       ov = Studio.Shell.overlay(scene, { title: 'PAUSED', accent: opt.accent, buttons: btns });
     }
     var btn = scene.add.text(W - 18, 14, '⏸', { fontFamily: 'Arial', fontSize: '24px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(105).setInteractive({ useHandCursor: true });
@@ -606,9 +616,11 @@
   Studio.Shell.note = function (scene, opt) {
     opt = opt || {}; if (typeof document === 'undefined' || document.getElementById('studio-note')) return;
     var acc = opt.accentCss || '#ffd34d';
-    // capture a SCREENSHOT of the moment (the canvas needs preserveDrawingBuffer:true, which the
-    // template sets) — small JPEG so it stores < the server's 400KB cap. Shown in the diary.
-    var shot = null; try { var cv = scene && scene.game && scene.game.canvas; if (cv && cv.toDataURL) shot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}
+    // SCREENSHOT of the moment for the diary — prefer the clean gameplay frame captured by the pause
+    // menu BEFORE its overlay drew (scene._pauseShot); else grab the canvas now. Small JPEG (< the
+    // server's 400KB cap). Needs preserveDrawingBuffer:true on the canvas (the template sets it).
+    var shot = (scene && scene._pauseShot) || null;
+    if (!shot) try { var cv = scene && scene.game && scene.game.canvas; if (cv && cv.toDataURL) shot = cv.toDataURL('image/jpeg', 0.55); } catch (e) {}
     var box = document.createElement('div'); box.id = 'studio-note';
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(5,3,10,.6);font-family:system-ui,-apple-system,sans-serif';
     box.innerHTML = '<div style="background:#16111e;border:2px solid ' + acc + ';border-radius:14px;padding:18px;width:min(440px,92vw);color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6)">'
@@ -699,13 +711,31 @@
         face: function (mood) { if (rig) Studio.Toon.face(rig, mood); },
         update: function (dt) {
           var f = (dt || 16.667) / 16.667; t += f;
-          var K = 0.22, C = 0.5;                               // spring the scale back to 1 — bouncy + smooth
+          var K = 0.22, C = 0.5;                               // spring the impact squash back to 1 — bouncy + smooth
           svx += (-K * (spx - 1) - C * svx) * f; spx += svx * f;
           svy += (-K * (spy - 1) - C * svy) * f; spy += svy * f;
-          var br = cur === 'run' ? 1 + Math.sin(t * 0.55) * 0.05 : cur === 'walk' ? 1 + Math.sin(t * 0.45) * 0.055 : cur === 'idle' ? 1 + Math.sin(t * 0.11) * 0.03 : 1;
-          wrap.setScale(spx, spy * br);
-          wrap.setAngle((cur === 'run' || cur === 'walk') ? (flip ? 3 : -3) : 0);
-          if (px != null) wrap.setPosition(px, py);
+          // ── gait: a real bouncing run/walk cycle so even a legless, few-frame sprite reads as RUNNING,
+          // very smoothly. The body LIFTS between foot-plants (bob), squashes wide on contact + stretches
+          // tall at the apex (volume-preserving), and leans forward with a per-step rock. idle just breathes.
+          var gx = 1, gy = 1, bob = 0, lean = 0;
+          if (cur === 'run' || cur === 'walk') {
+            var run = cur === 'run';
+            var spd = run ? 0.46 : 0.32;                       // stride cadence (run is brisk)
+            var amp = run ? 0.13 : 0.085;                      // squash/stretch depth
+            var ph = t * spd;
+            var lift = Math.abs(Math.sin(ph));                 // 0 at each foot-plant, 1 mid-stride (airborne)
+            bob = -(run ? 13 : 7) * lift;                      // rise between steps (px, purely visual)
+            gy = 1 + (lift - 0.5) * 2 * amp;                   // tall at the apex, short on contact
+            gx = 1 - (lift - 0.5) * 2 * amp * 0.7;             // thin at the apex, wide on contact (volume-ish)
+            lean = (flip ? -5 : 5) + Math.sin(ph * 2) * (run ? 4 : 2.5);  // forward lean (into travel) + a per-step rock
+          } else if (cur === 'idle') {
+            gy = 1 + Math.sin(t * 0.11) * 0.03;                // gentle breathe
+          } else if (cur === 'cheer' || cur === 'happy' || cur === 'hop') {
+            bob = -Math.abs(Math.sin(t * 0.4)) * 7;            // little joy hops
+          }
+          wrap.setScale(spx * gx, spy * gy);
+          wrap.setAngle(lean);
+          if (px != null) wrap.setPosition(px, py + bob);
           if (rig) Studio.Toon.update(rig, f * 16.667);
         }
       };

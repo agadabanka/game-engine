@@ -32,10 +32,10 @@ const SHEET_PROMPT = `Character model sheet for "${hero}". Four views in a row (
 const POSES = [
   ['idle', 'standing idle, relaxed, gentle smile, facing RIGHT'],
   ['idle2', 'standing idle mid-breath, facing RIGHT, chest a touch higher, very subtle bob — idle frame 2'],
-  ['run1', 'mid-RUN, facing RIGHT, leading leg forward and up, arms swinging — run-cycle frame 1 of 4'],
-  ['run2', 'mid-RUN, facing RIGHT, passing/contact pose, body low — run-cycle frame 2 of 4'],
-  ['run3', 'mid-RUN, facing RIGHT, other leg forward and up, arms swinging opposite — run-cycle frame 3 of 4'],
-  ['run4', 'mid-RUN, facing RIGHT, passing/contact pose, body low — run-cycle frame 4 of 4'],
+  ['run1', 'SPRINTING hard to the RIGHT, whole body LEANING FAR FORWARD over its toes (momentum), legs in a WIDE running stride — front leg lifted high with the knee bent up, the back leg kicked straight out behind, arms pumping like a sprinter (front arm forward, back arm back). Dynamic and airborne, clearly mid-RUN — NOT standing upright — run-cycle frame 1 of 4'],
+  ['run2', 'SPRINTING to the RIGHT, leaning forward, the PASSING pose — legs crossing close under the body, one foot just pushing off the ground and the other swinging through, arms swapping. Low, compressed and fast, clearly running — NOT standing — run-cycle frame 2 of 4'],
+  ['run3', 'SPRINTING hard to the RIGHT, body LEANING FAR FORWARD, legs in the OPPOSITE wide stride now — the other leg lifted high and forward with the knee up, the first leg extended straight behind, arms pumping the other way. Dynamic and airborne, clearly mid-RUN — NOT standing — run-cycle frame 3 of 4'],
+  ['run4', 'SPRINTING to the RIGHT, leaning forward, the other PASSING pose — legs crossing close under the body, the opposite foot pushing off, arms swapping. Low, compressed and fast, clearly running — NOT standing — run-cycle frame 4 of 4'],
   ['jump', 'JUMPING up, facing RIGHT, body stretched tall, arms up, legs tucked'],
   ['fall', 'FALLING, facing RIGHT, arms out for balance, legs reaching down'],
   ['land', 'LANDING squash, facing RIGHT, knees deeply bent, body compressed low, arms out'],
@@ -70,9 +70,9 @@ const enemies = (meta.art && meta.art.enemies) || [];
 // 7 STATES per enemy too (every actor animates richly, not just stand+walk).
 const EPOSES = [
   ['idle', 'standing idle, facing RIGHT'],
-  ['walk1', 'mid-waddle step, leading side lifted, facing RIGHT'],
-  ['walk2', 'mid-waddle, passing/contact pose, body low, facing RIGHT'],
-  ['walk3', 'mid-waddle, other side lifted, facing RIGHT'],
+  ['walk1', 'mid-WALK step to the RIGHT, leaning into the step, one stubby foot lifted and reaching FORWARD, the other foot planted behind, body tilted forward — clearly walking, NOT standing still'],
+  ['walk2', 'mid-WALK, the PASSING pose, both feet close together under the body, body bobbed slightly low, facing RIGHT — clearly mid-stride'],
+  ['walk3', 'mid-WALK step to the RIGHT, the OTHER stubby foot now lifted and reaching FORWARD, body tilted the other way — clearly walking, NOT standing still'],
   ['hurt', 'squashed and flattened, facing RIGHT, eyes shut — got stomped flat'],
   ['hop', 'hopping up, facing RIGHT, body stretched tall, little feet tucked'],
   ['happy', 'happy and bouncy, facing RIGHT, big smile, eyes bright'],
