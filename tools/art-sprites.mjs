@@ -193,7 +193,7 @@ async function cycleScore(frames) {
 // Generate a 6-frame locomotion CYCLE, validating ALTERNATION inline and RETRYING (cache-busted,
 // with a stronger nudge) up to 3× so the legs reliably scissor — the repeatable guarantee.
 async function genCycle(keyBase, charDesc, motion, refs, label) {
-  let best = null, bestScore = -1;
+  let best = null, bestScore = -1, bestSheet = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     const k = attempt ? keyBase + '_v' + attempt : keyBase;
     const nudge = attempt ? `\n\nCRITICAL — VARIATION ${attempt}: make the leg ALTERNATION unmistakable. Between the two CONTACT frames the FORWARD leg MUST swap to the OPPOSITE side (right foot far ahead in one contact frame, LEFT foot far ahead in the other), legs SPREAD WIDE. Do NOT draw the same stride twice.` : '';
@@ -201,11 +201,14 @@ async function genCycle(keyBase, charDesc, motion, refs, label) {
     const frames = await sliceSheet(sheet.path, 6);
     const score = await cycleScore(frames);
     process.stdout.write(` ${label}${sheet.hit ? '·' : '✱'}[alt${(score * 100) | 0}%${frames.length !== 6 ? '/' + frames.length + 'f' : ''}]`);
-    if (frames.length === 6 && score > bestScore) { bestScore = score; best = frames; }
+    if (frames.length === 6 && score > bestScore) { bestScore = score; best = frames; bestSheet = sheet.path; }
     if (frames.length === 6 && score >= 0.12) break;   // a margin above the 0.10 validation gate
   }
-  return best || [];
+  return { frames: best || [], sheet: bestSheet };
 }
+// COHERENCE: condition the action sheet on the CYCLE sheet so idle/jump/etc. are the SAME clay model
+// as the run/walk (one character, not three slightly-different ones — the "make it coherent" ask).
+const COHERE = '\n\nCRITICAL COHERENCE: the LAST reference image is the SAME character mid-run. Match it EXACTLY — identical body shape, proportions, colours, shading, eyes, and any mustache/features. These are just OTHER poses of that ONE clay model, not a redesign.';
 
 // identity model sheet (shared reference → keeps the run sheet & the action sheet on-model)
 const modelPrompt = `Character model/reference sheet for "${hero}". ${STYLE_NOTE} Show the SAME character in a large clear SIDE view facing right and a three-quarter front view, full body, consistent colours and proportions, all of its features clearly visible. Plain neutral light-grey studio background. No text, no labels.`;
@@ -215,8 +218,10 @@ const heroRef = [{ base64: fs.readFileSync(model.path).toString('base64'), mimeT
 
 // HERO: a run-cycle sheet (validated + auto-retried) + an action sheet, conditioned on the model sheet
 process.stdout.write('  hero:');
-const runFrames = await genCycle('hero_run', hero, 'run', heroRef, 'run');
-const heroAct = await genSheet('hero_actions', gridPrompt(hero, HERO_POSES), heroRef, '3:2');
+const heroRun = await genCycle('hero_run', hero, 'run', heroRef, 'run');
+const runFrames = heroRun.frames;
+const heroCohereRef = heroRun.sheet ? heroRef.concat([{ base64: fs.readFileSync(heroRun.sheet).toString('base64'), mimeType: 'image/png' }]) : heroRef;
+const heroAct = await genSheet('hero_actions', gridPrompt(hero, HERO_POSES) + COHERE, heroCohereRef, '3:2');
 const actFrames = await sliceSheet(heroAct.path, HERO_POSES.length);
 console.log(` actions${heroAct.hit ? '·' : '✱'}`);
 // assemble: actions first (idle,idle2,jump,fall,land,land2,hurt,cheer1,cheer2) then run1..6
@@ -243,8 +248,10 @@ for (const en of enemies) {
   const eModel = await genSheet('en_' + en.key + '_model', `Character reference sheet for ${eDesc}. ${STYLE_NOTE} A clear side view facing right + a three-quarter view, full body, consistent. Plain light-grey background. No text.`, undefined, '3:2');
   const eRef = [{ base64: fs.readFileSync(eModel.path).toString('base64'), mimeType: 'image/png' }];
   process.stdout.write('  ' + en.key + ':');
-  const wF = await genCycle('en_' + en.key + '_walk', eDesc, 'walk', eRef, 'walk');
-  const eAct = await genSheet('en_' + en.key + '_actions', gridPrompt(eDesc, ENEMY_POSES), eRef, '3:2');
+  const eWalk = await genCycle('en_' + en.key + '_walk', eDesc, 'walk', eRef, 'walk');
+  const wF = eWalk.frames;
+  const eCohereRef = eWalk.sheet ? eRef.concat([{ base64: fs.readFileSync(eWalk.sheet).toString('base64'), mimeType: 'image/png' }]) : eRef;
+  const eAct = await genSheet('en_' + en.key + '_actions', gridPrompt(eDesc, ENEMY_POSES) + COHERE, eCohereRef, '3:2');
   const aF = await sliceSheet(eAct.path, ENEMY_POSES.length);
   process.stdout.write(` actions${eAct.hit ? '·' : '✱'}\n`);
   const all = aF.concat(wF);

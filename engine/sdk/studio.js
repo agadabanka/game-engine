@@ -439,6 +439,79 @@
     return image;
   };
 
+  // ----------------------------------------------------------------- Atmosphere
+  // The "living world" finesse: SELF-DRIFTING parallax cloud bands + floating motes that move on their
+  // OWN (independent of the camera), so the world breathes even when you stand still. Fully procedural —
+  // bakes a seamless tileable cloud strip + a soft mote sprite, so it works for EVERY game with no art.
+  // Self-driven via the scene 'update' event (no per-game wiring). PURELY visual: it never touches the
+  // snapshot/physics, so it's gate-safe + deterministic where it matters.
+  //   Studio.Atmosphere.create(scene, { theme:'candy' });   // or pass clouds:[…]/kind/tints to tune
+  Studio.Atmosphere = {
+    THEMES: {
+      candy:  { clouds: 0xffffff, mote: 0xff8fc7, kind: 'petal' },
+      lagoon: { clouds: 0xffffff, mote: 0xeafff8, kind: 'bubble' },
+      bloom:  { clouds: 0xffffff, mote: 0xff9ad1, kind: 'petal' },
+      cocoa:  { clouds: 0xe8c9a6, mote: 0xffe6c0, kind: 'dust' },
+      sky:    { clouds: 0xffffff, mote: 0xffffff, kind: 'snow' },
+      night:  { clouds: 0x7a7ab8, mote: 0xfff3b0, kind: 'firefly' },
+      default:{ clouds: 0xc7d4ef, mote: 0xffffff, kind: 'dust' },
+    },
+    _rng: function (s) { return function () { s |= 0; s = (s + 0x6D2B79F5) | 0; var t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; },
+    _bakeClouds: function (scene) {
+      var key = 'atmo_clouds'; if (scene.textures.exists(key)) return key;
+      var w = 512, h = 168, ct = scene.textures.createCanvas(key, w, h), x = ct.getContext(), rnd = this._rng(1337);
+      for (var i = 0; i < 24; i++) {
+        var cx = rnd() * w, cy = h * 0.28 + rnd() * h * 0.5, r = 26 + rnd() * 46;
+        [cx - w, cx, cx + w].forEach(function (px) {   // draw wrapped copies → seamless horizontal tiling
+          var g = x.createRadialGradient(px, cy, 0, px, cy, r); g.addColorStop(0, 'rgba(255,255,255,0.5)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+          x.fillStyle = g; x.beginPath(); x.arc(px, cy, r, 0, 7); x.fill();
+        });
+      }
+      ct.refresh(); return key;
+    },
+    _bakeMote: function (scene, kind) {
+      var key = 'atmo_mote_' + kind; if (scene.textures.exists(key)) return key;
+      var s = 24, ct = scene.textures.createCanvas(key, s, s), x = ct.getContext();
+      if (kind === 'petal') { x.fillStyle = '#ffffff'; x.beginPath(); x.ellipse(s / 2, s / 2, s * 0.42, s * 0.22, 0.7, 0, 7); x.fill(); }
+      else { var soft = kind === 'bubble' ? 0.25 : 0.85; var g = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(kind === 'bubble' ? 0.72 : 0.5, 'rgba(255,255,255,' + soft + ')'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.beginPath(); x.arc(s / 2, s / 2, s / 2, 0, 7); x.fill(); }
+      ct.refresh(); return key;
+    },
+    create: function (scene, opt) {
+      opt = opt || {};
+      var W = scene.scale.width, H = scene.scale.height, T = this.THEMES[opt.theme] || this.THEMES.default;
+      var kind = opt.kind || T.kind, cloudKey = this._bakeClouds(scene), moteKey = this._bakeMote(scene, kind), drift = [];
+      // 3 cloud bands: far = slow + faint, near = quicker + bigger (depth via scrollFactor, drift via tilePosition)
+      var bands = opt.clouds || [
+        { y: H * 0.16, h: 120, scroll: 0.10, speed: 0.08, alpha: 0.22, scale: 0.85 },
+        { y: H * 0.28, h: 150, scroll: 0.22, speed: 0.20, alpha: 0.30, scale: 1.1 },
+        { y: H * 0.44, h: 170, scroll: 0.38, speed: 0.36, alpha: 0.22, scale: 1.4 },
+      ];
+      var cloudDepth = opt.cloudDepth != null ? opt.cloudDepth : -96;   // override for an opaque PHOTO backdrop (sit in front of it)
+      bands.forEach(function (b, i) {
+        try {
+          var ts = scene.add.tileSprite(W / 2, b.y, W + 8, b.h, cloudKey).setScrollFactor(b.scroll, 0).setDepth(cloudDepth + i).setAlpha(b.alpha).setTint(opt.cloudTint != null ? opt.cloudTint : T.clouds);
+          ts.tileScaleX = ts.tileScaleY = b.scale || 1; drift.push({ ts: ts, speed: b.speed });
+        } catch (e) {}
+      });
+      // floating motes drifting across the view (camera-pinned wide band)
+      var em = null;
+      try {
+        var down = !(kind === 'bubble' || kind === 'firefly');
+        em = scene.add.particles(0, 0, moteKey, {
+          x: { min: -20, max: W + 20 }, y: down ? { min: -20, max: H * 0.5 } : { min: H * 0.2, max: H + 10 },
+          lifespan: opt.moteLife || 7000, quantity: 1, frequency: opt.moteFreq || 240,
+          speedX: { min: -10, max: -42 }, speedY: down ? { min: 8, max: 30 } : { min: -28, max: -8 },
+          scale: { min: 0.22, max: 0.58 }, alpha: { start: kind === 'firefly' ? 0.9 : 0.6, end: 0 },
+          rotate: kind === 'petal' ? { min: 0, max: 360 } : 0, blendMode: kind === 'firefly' ? 'ADD' : 'NORMAL',
+          tint: opt.moteTint != null ? opt.moteTint : T.mote,
+        }).setScrollFactor(0.6).setDepth(opt.moteDepth != null ? opt.moteDepth : -78);
+      } catch (e) {}
+      var step = function () { for (var i = 0; i < drift.length; i++) drift[i].ts.tilePositionX += drift[i].speed; };
+      scene.events.on('update', step);
+      return { drifters: drift, emitter: em, destroy: function () { try { scene.events.off('update', step); } catch (e) {} drift.forEach(function (d) { try { d.ts.destroy(); } catch (e) {} }); if (em) try { em.destroy(); } catch (e) {} } };
+    },
+  };
+
   // Keep a FIT-scaled game correctly sized on mobile. Real phones report the WRONG viewport
   // size for a beat after load/rotate (address bar, 100dvh, safe-area insets) — Phaser fits to
   // that stale size and the canvas ends up stretched (every circle an ellipse) until you rotate.
