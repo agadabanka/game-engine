@@ -20,6 +20,8 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { treeMarkdown } from '../tools/lib/pipeline.mjs';
 
 const argv = process.argv.slice(2);
 const name = argv.find((a) => !a.startsWith('--'));
@@ -82,7 +84,7 @@ edit('README.md', (s) => `# ${name}\n\n> ${tagline}\n\n_Scaffolded from \`${base
 // 3. a fresh diary + the meta the hub reads
 const today = new Date().toISOString().slice(0, 10);
 fs.writeFileSync(path.join(dir, 'DIARY.md'),
-  `# ${name} — build diary\n\nNewest at the bottom. Viewable in-game at **/diary.html**.\n\n---\n\n### Day one — scaffolded from the engine (${today})\n- Created with \`new-game\` off \`${baseRepo}\`: a complete, playable platformer wired to the\n  whole stack (server/store/Gemini/Lyria · Phaser engine · level DSL + merge · the 0-death\n  gate, felt-fun, recorder, vision judge · in-game notes → diary → issues · the builder).\n- Next: re-skin the hero ("${hero}"), define the core verb ("${verb}"), generate the art\n  + a Lyria score, rework the worlds, and deploy. Leave notes in-game as you playtest.\n`);
+  `# ${name} — build diary\n\nNewest at the bottom. Viewable in-game at **/diary.html**.\n\n---\n\n### Day one — scaffolded from the engine (${today})\n- Created with \`new-game\` off \`${baseRepo}\`: a complete, playable platformer wired to the\n  whole stack (server/store/Gemini/Lyria · Phaser engine · level DSL + merge · the 0-death\n  gate, felt-fun, recorder, vision judge · in-game notes → diary → issues · the builder).\n- Next: re-skin the hero ("${hero}"), define the core verb ("${verb}"), generate the art\n  + a Lyria score, rework the worlds, and deploy. Leave notes in-game as you playtest.\n\n## The build plan — every step\nEach stage below is also a GitHub issue (created automatically), worked **strictly in order**.\nThe pinned **Build tracker** issue always names the next step.\n\n${treeMarkdown()}\n`);
 
 const meta = {
   name, tagline, hero, verb,
@@ -133,6 +135,13 @@ try {
 run('git', ['remote', 'add', 'origin', `https://x-access-token:${GH}@github.com/${repoFull}.git`], { cwd: dir });
 run('git', ['push', '-u', 'origin', 'main'], { cwd: dir });
 console.log(`• pushed → https://github.com/${repoFull}`);
+
+// 5b. create ALL pipeline issues + the pinned Build tracker (every stage × sub-steps, in order).
+try {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  run('node', [path.join(here, 'make-game-issues.mjs'), repoFull, '--game-dir', dir], { env: { ...process.env, GH_TOKEN: GH } });
+  console.log('• created all pipeline issues + the pinned Build tracker (the build plan as ordered work items).');
+} catch (e) { console.log(`• (could not create pipeline issues: ${String(e.message || e).slice(0, 120)} — run \`node scripts/make-game-issues.mjs ${repoFull}\` manually)`); }
 
 // 6. register with the hub (so it shows up on mission control immediately)
 if (hubUrl) {

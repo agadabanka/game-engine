@@ -24,6 +24,9 @@
   .diary th { background:#16203a; color:#cfe1ff; }
   .diary img { display:block; margin:12px 0; max-width:100%; border-radius:10px; border:1px solid var(--line); box-shadow:0 6px 20px rgba(0,0,0,.35); }
   .diary blockquote { margin:8px 0; padding:6px 14px; border-left:3px solid var(--accent); color:#c8d6f5; background:#101a30; border-radius:0 8px 8px 0; }
+  .diary pre { margin:12px 0; padding:12px 14px; background:#0a1124; border:1px solid var(--line); border-radius:10px; overflow-x:auto; line-height:1.35; }
+  .diary pre code { font-family:"SF Mono",Menlo,Consolas,monospace; font-size:11.5px; color:#bfe0d4; white-space:pre; background:none; padding:0; }
+  .diary details { margin:10px 0; } .diary summary { cursor:pointer; color:var(--accent); font-weight:700; }
   .note { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:12px; }
   .note .meta { font-size:12px; color:var(--dim); display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
   .note .tag { background:#1c2740; border-radius:6px; padding:1px 7px; }
@@ -60,10 +63,15 @@
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
       .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
       .replace(/`(.+?)`/g,'<code>$1</code>');
-    const lines = src.split('\n'); let out=[], inList=false, tbl=null;
+    const lines = src.split('\n'); let out=[], inList=false, tbl=null, code=null;
     const flushList=()=>{ if(inList){out.push('</ul>');inList=false;} };
     const flushTbl=()=>{ if(tbl){ out.push('<table>'+tbl.map((r,i)=>{const c=r.split('|').slice(1,-1).map(x=>x.trim());const tag=i===0?'th':'td';return '<tr>'+c.map(x=>`<${tag}>${inline(x)}</${tag}>`).join('')+'</tr>';}).join('')+'</table>'); tbl=null; } };
     for (let ln of lines){
+      // fenced code block (```) — renders the pipeline tree monospace + preserved
+      if(/^```/.test(ln)){ if(code===null){ flushList(); flushTbl(); code=[]; } else { out.push('<pre><code>'+code.join('\n')+'</code></pre>'); code=null; } continue; }
+      if(code!==null){ code.push(esc(ln)); continue; }
+      // <details>/<summary> pass through (the tracker-style collapsibles)
+      if(/^<\/?(details|summary)/.test(ln.trim())){ flushList(); out.push(ln); continue; }
       if(/^\|(.+)\|\s*$/.test(ln)){ if(/^\|[\s:|-]+\|\s*$/.test(ln)){continue;} if(!tbl)tbl=[]; tbl.push(ln); continue; } else flushTbl();
       if(/^###\s+/.test(ln)){ flushList(); out.push('<h3>'+inline(ln.replace(/^###\s+/,''))+'</h3>'); }
       else if(/^##\s+/.test(ln)){ flushList(); out.push('<h3>'+inline(ln.replace(/^##\s+/,''))+'</h3>'); }
@@ -74,7 +82,7 @@
       else if(/^\s*$/.test(ln)){ flushList(); }
       else { flushList(); out.push('<p>'+inline(ln)+'</p>'); }
     }
-    flushTbl(); flushList();
+    flushTbl(); flushList(); if(code!==null) out.push('<pre><code>'+code.join('\n')+'</code></pre>');
     return out.join('\n');
   }
   // title from meta
