@@ -36,16 +36,26 @@ const STYLE_NOTE = `polished CLAYMATION / plasticine style (${style}); bold roun
 // A 6-frame locomotion CYCLE in a 2×3 grid, with explicit per-frame leg choreography so the legs
 // ALTERNATE (the whole point — one coherent image keeps the cycle consistent).
 function cyclePrompt(charDesc, motion) {
-  const m = motion.toUpperCase(), lo = motion.toLowerCase();
-  return `Create a 2D platformer ${m}-CYCLE sprite sheet. ${STYLE_NOTE}
+  const m = motion.toUpperCase(), lo = motion.toLowerCase(), flap = motion === 'flap';
+  const head = `Create a 2D game ${m}-CYCLE sprite sheet. ${STYLE_NOTE}
 
 THE CHARACTER: ${charDesc}. Keep EVERY frame the IDENTICAL character — same colours, same proportions, same eyes, same size, same details.
 
-LAYOUT — a clean sprite sheet of EXACTLY 6 frames in a grid of 2 ROWS × 3 COLUMNS (top row = frames 1,2,3 left→right; bottom row = frames 4,5,6 left→right). Every frame the SAME cell size, evenly spaced, with a clear even green margin between frames. In each frame the character is CENTERED, drawn at the SAME scale, with its feet on the SAME horizontal baseline. Side profile; the character faces and moves to the RIGHT in all 6 frames. Nothing cropped — each whole character fits inside its cell.
+LAYOUT — a clean sprite sheet of EXACTLY 6 frames in a grid of 2 ROWS × 3 COLUMNS (top row = frames 1,2,3 left→right; bottom row = frames 4,5,6 left→right). Every frame the SAME cell size, evenly spaced, with a clear even green margin between frames. In each frame the character is CENTERED, drawn at the SAME scale${flap ? '' : ', with its feet on the SAME horizontal baseline'}. Side profile; the character faces ${flap ? 'and flies' : 'and moves'} to the RIGHT in all 6 frames. Nothing cropped — each whole character fits inside its cell.
 
 ${GREEN}
-
-THE ${m} CYCLE — a smooth, looping, athletic ${lo} where the legs/feet CLEARLY ALTERNATE (scissor) left/right across the six frames. Draw the legs LONG and obvious so the motion reads:
+`;
+  if (flap) {
+    return head + `\nTHE FLAP CYCLE — a smooth, looping WING-BEAT where the wings CLEARLY swap between fully UP and fully DOWN across the six frames (an unmistakable flap, never a held single pose). The body bobs gently with the beat. Draw the WINGS big and obvious so the motion reads:
+• Frame 1 — UPSTROKE TOP: both wings RAISED fully UP above the body, tips nearly touching; the body dips slightly LOW.
+• Frame 2 — DOWNSTROKE begins: wings sweeping DOWN and forward to horizontal; body lifting.
+• Frame 3 — DOWNSTROKE BOTTOM: both wings pressed fully DOWN and back beneath the body; the body is at its HIGHEST (the lift of the beat).
+• Frame 4 — UPSTROKE begins: wings sweeping back UP to horizontal; body settling.
+• Frame 5 — UPSTROKE TOP (like frame 1): both wings RAISED fully UP again; body dips LOW.
+• Frame 6 — DOWNSTROKE mid: wings angled DOWN between up and bottom; body lifting.
+The sequence loops seamlessly 6→1. Across the sheet the wings visibly beat UP↔DOWN every frame — a clear flapping flight, never static.`;
+  }
+  return head + `\nTHE ${m} CYCLE — a smooth, looping, athletic ${lo} where the legs/feet CLEARLY ALTERNATE (scissor) left/right across the six frames. Draw the legs LONG and obvious so the motion reads:
 • Frame 1 — CONTACT: the RIGHT leg reaches FORWARD and plants ahead of the body; the LEFT leg is stretched far BACK, pushing off. Body leans forward. Left arm forward, right arm back.
 • Frame 2 — DOWN / RECOIL: both legs gather UNDER the body, knees bent, the body dips to its LOWEST.
 • Frame 3 — PASSING: the LEFT leg swings FORWARD with the knee lifted HIGH; the RIGHT leg trails straight behind; the body rises to its TALLEST.
@@ -196,7 +206,9 @@ async function genCycle(keyBase, charDesc, motion, refs, label) {
   let best = null, bestScore = -1, bestSheet = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     const k = attempt ? keyBase + '_v' + attempt : keyBase;
-    const nudge = attempt ? `\n\nCRITICAL — VARIATION ${attempt}: make the leg ALTERNATION unmistakable. Between the two CONTACT frames the FORWARD leg MUST swap to the OPPOSITE side (right foot far ahead in one contact frame, LEFT foot far ahead in the other), legs SPREAD WIDE. Do NOT draw the same stride twice.` : '';
+    const nudge = !attempt ? '' : (motion === 'flap'
+      ? `\n\nCRITICAL — VARIATION ${attempt}: make the WING-BEAT unmistakable. The wings MUST be fully UP (raised above the body) in some frames and fully DOWN (pressed beneath the body) in others — a big swing between up and down. Do NOT hold the wings in one pose.`
+      : `\n\nCRITICAL — VARIATION ${attempt}: make the leg ALTERNATION unmistakable. Between the two CONTACT frames the FORWARD leg MUST swap to the OPPOSITE side (right foot far ahead in one contact frame, LEFT foot far ahead in the other), legs SPREAD WIDE. Do NOT draw the same stride twice.`);
     const sheet = await genSheet(k, cyclePrompt(charDesc, motion) + nudge, refs, '3:2');
     const frames = await sliceSheet(sheet.path, 6);
     const score = await cycleScore(frames);
@@ -239,14 +251,16 @@ if (meta.art && meta.art.skipHero) {
   console.log(`  hero → hero.png (${heroPacked.count} frames: ${nAct} action + ${runFrames.length} run, ${heroPacked.frameWidth}×${heroPacked.frameHeight})`);
 }
 
-// ENEMIES: each gets a walk-cycle sheet + an action sheet
+// ENEMIES: each gets a locomotion-cycle sheet (walk legs, or 'flap' wings — GAME_META.art.motion)
+// + an action sheet. The manifest always names the cycle 'walk' so the game reads one key.
+const ENEMY_MOTION = (meta.art && meta.art.motion) || 'walk';
 const enemies = (meta.art && meta.art.enemies) || [];
 for (const en of enemies) {
   const eDesc = `${en.desc}, a small game critter`;
   const eModel = await genSheet('en_' + en.key + '_model', `Character reference sheet for ${eDesc}. ${STYLE_NOTE} A clear side view facing right + a three-quarter view, full body, consistent. Plain light-grey background. No text.`, undefined, '3:2');
   const eRef = [{ base64: fs.readFileSync(eModel.path).toString('base64'), mimeType: 'image/png' }];
   process.stdout.write('  ' + en.key + ':');
-  const eWalk = await genCycle('en_' + en.key + '_walk', eDesc, 'walk', eRef, 'walk');
+  const eWalk = await genCycle('en_' + en.key + '_' + ENEMY_MOTION, eDesc, ENEMY_MOTION, eRef, ENEMY_MOTION);
   const wF = eWalk.frames;
   const eCohereRef = eWalk.sheet ? eRef.concat([{ base64: fs.readFileSync(eWalk.sheet).toString('base64'), mimeType: 'image/png' }]) : eRef;
   const eAct = await genSheet('en_' + en.key + '_actions', gridPrompt(eDesc, ENEMY_POSES) + COHERE, eCohereRef, '3:2');
