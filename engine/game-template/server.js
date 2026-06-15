@@ -27,6 +27,10 @@ async function ghIssue(note) {
   const repo = process.env.NOTES_GH_REPO, token = process.env.NOTES_GH_TOKEN;
   const text = ((note && note.text) || '').trim();
   if (!repo || !token || text.length < 3 || note.issue) return;
+  // dedup: a double-tap can store the same note twice — if an identical note was already
+  // promoted in the last 30s, reuse its issue instead of opening a duplicate.
+  const dup = notes().find((x) => x.id !== note.id && x.issue && (x.text || '').trim() === text && Math.abs((x.id || 0) - (note.id || 0)) < 30000);
+  if (dup) { const all = notes(), i = all.findIndex((x) => x.id === note.id); if (i >= 0) { all[i].issue = dup.issue; all[i].issueUrl = dup.issueUrl; fs.writeFileSync(notesFile, JSON.stringify(all, null, 2)); } return; }
   const H = { Authorization: 'token ' + token, Accept: 'application/vnd.github+json', 'User-Agent': 'studio-notes', 'Content-Type': 'application/json' };
   try {
     if (!_labelTried) { _labelTried = true; await fetch('https://api.github.com/repos/' + repo + '/labels', { method: 'POST', headers: H, body: JSON.stringify({ name: 'in-game-note', color: 'ff5d8f', description: 'A note left in-game by the owner' }) }).catch(() => {}); }

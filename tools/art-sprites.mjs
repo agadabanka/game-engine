@@ -32,10 +32,10 @@ const SHEET_PROMPT = `Character model sheet for "${hero}". Four views in a row (
 const POSES = [
   ['idle', 'standing idle, relaxed, gentle smile, facing RIGHT'],
   ['idle2', 'standing idle mid-breath, facing RIGHT, chest a touch higher, very subtle bob — idle frame 2'],
-  ['run1', 'SPRINTING hard to the RIGHT, whole body LEANING FAR FORWARD over its toes (momentum), legs in a WIDE running stride — front leg lifted high with the knee bent up, the back leg kicked straight out behind, arms pumping like a sprinter (front arm forward, back arm back). Dynamic and airborne, clearly mid-RUN — NOT standing upright — run-cycle frame 1 of 4'],
-  ['run2', 'SPRINTING to the RIGHT, leaning forward, the PASSING pose — legs crossing close under the body, one foot just pushing off the ground and the other swinging through, arms swapping. Low, compressed and fast, clearly running — NOT standing — run-cycle frame 2 of 4'],
-  ['run3', 'SPRINTING hard to the RIGHT, body LEANING FAR FORWARD, legs in the OPPOSITE wide stride now — the other leg lifted high and forward with the knee up, the first leg extended straight behind, arms pumping the other way. Dynamic and airborne, clearly mid-RUN — NOT standing — run-cycle frame 3 of 4'],
-  ['run4', 'SPRINTING to the RIGHT, leaning forward, the other PASSING pose — legs crossing close under the body, the opposite foot pushing off, arms swapping. Low, compressed and fast, clearly running — NOT standing — run-cycle frame 4 of 4'],
+  ['run1', 'A BIG cartoon RUNNING stride to the RIGHT, the LEGS are the focal point and must be unmistakable: the LEFT leg lifted HIGH and forward with the knee bent sharply up toward the belly and the foot reaching ahead, the RIGHT leg kicked STRAIGHT OUT far behind and pushing off — legs SPREAD WIDE apart, long and clearly visible. Body leaning forward over the front foot, arms pumping (right arm forward, left arm back). Exaggerated, dynamic, airborne — NOT standing — run-cycle frame 1 of 4'],
+  ['run2', 'RUNNING to the RIGHT, the PASSING pose between strides: both legs together and bent directly UNDER the body, one foot just touching down and the other lifting through, body bobbed LOW and compact, leaning forward. Clearly mid-run, legs gathered — NOT standing — run-cycle frame 2 of 4'],
+  ['run3', 'A BIG cartoon RUNNING stride to the RIGHT, the exact MIRROR of frame 1 — legs swapped: now the RIGHT leg lifted HIGH and forward with the knee bent sharply up and the foot ahead, the LEFT leg kicked STRAIGHT OUT far behind pushing off — legs SPREAD WIDE the OTHER way, long and clearly visible. Body leaning forward, arms pumping opposite (left arm forward, right arm back). The legs are obviously alternated from frame 1 — NOT standing — run-cycle frame 3 of 4'],
+  ['run4', 'RUNNING to the RIGHT, the other PASSING pose between strides: both legs together and bent UNDER the body, the opposite foot just touching down, body bobbed LOW and compact, leaning forward. Clearly mid-run, legs gathered — NOT standing — run-cycle frame 4 of 4'],
   ['jump', 'JUMPING up, facing RIGHT, body stretched tall, arms up, legs tucked'],
   ['fall', 'FALLING, facing RIGHT, arms out for balance, legs reaching down'],
   ['land', 'LANDING squash, facing RIGHT, knees deeply bent, body compressed low, arms out'],
@@ -70,9 +70,9 @@ const enemies = (meta.art && meta.art.enemies) || [];
 // 7 STATES per enemy too (every actor animates richly, not just stand+walk).
 const EPOSES = [
   ['idle', 'standing idle, facing RIGHT'],
-  ['walk1', 'mid-WALK step to the RIGHT, leaning into the step, one stubby foot lifted and reaching FORWARD, the other foot planted behind, body tilted forward — clearly walking, NOT standing still'],
-  ['walk2', 'mid-WALK, the PASSING pose, both feet close together under the body, body bobbed slightly low, facing RIGHT — clearly mid-stride'],
-  ['walk3', 'mid-WALK step to the RIGHT, the OTHER stubby foot now lifted and reaching FORWARD, body tilted the other way — clearly walking, NOT standing still'],
+  ['walk1', 'a clear WALKING stride to the RIGHT, feet/legs are the focal point: the LEFT foot lifted and stepping FORWARD (clearly ahead of the body), the RIGHT foot planted behind — feet SPREAD APART, body leaning into the step. Obviously walking, NOT standing still'],
+  ['walk2', 'mid-WALK, the PASSING pose: both feet together directly under the body, body bobbed slightly low, facing RIGHT — between steps'],
+  ['walk3', 'a clear WALKING stride to the RIGHT, the MIRROR of frame 1 — the RIGHT foot lifted and stepping FORWARD now (clearly ahead), the LEFT foot planted behind — feet SPREAD APART the other way, body leaning. Obviously walking, the feet alternated from frame 1, NOT standing still'],
   ['hurt', 'squashed and flattened, facing RIGHT, eyes shut — got stomped flat'],
   ['hop', 'hopping up, facing RIGHT, body stretched tall, little feet tucked'],
   ['happy', 'happy and bouncy, facing RIGHT, big smile, eyes bright'],

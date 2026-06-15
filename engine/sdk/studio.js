@@ -642,12 +642,16 @@
     box.addEventListener('keydown', swallow); box.addEventListener('keyup', swallow); box.addEventListener('keypress', swallow);
     var close = function () { try { if (kb && kb.enableGlobalCapture) kb.enableGlobalCapture(); } catch (e) {} try { box.remove(); } catch (e) {} };
     box.querySelector('#snx').onclick = close;
+    var sending = false;
     box.querySelector('#sns').onclick = function () {
+      if (sending) return;                                  // guard a double-tap → one note, one issue (no dupes)
       var txt = (t.value || '').trim(); if (!txt) { close(); return; }
+      sending = true;
       var m = opt.meta || {};
+      box.querySelector('#snm').textContent = 'Sending…';
       fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: txt, level: m.level, x: m.x, tag: 'in-game', kind: 'in-game', shot: shot, created_at: new Date().toISOString(), ts: Date.now() }) })
         .then(function () { box.querySelector('#snm').textContent = 'Sent — thanks! 💌'; setTimeout(close, 900); })
-        .catch(function () { box.querySelector('#snm').textContent = 'Could not reach the server.'; });
+        .catch(function () { sending = false; box.querySelector('#snm').textContent = 'Could not reach the server.'; });
     };
   };
 
