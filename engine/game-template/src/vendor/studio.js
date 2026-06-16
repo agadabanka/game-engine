@@ -556,6 +556,12 @@
           var scene = this, W = scene.scale.width, H = scene.scale.height, S = window.SHELL || {};
           var p = new URLSearchParams(location.search);
           if (p.get('level')) { scene.scene.start('Play'); return; }   // deep-link / eval → straight to Play
+          // RESET the re-entry guard. Phaser REUSES the scene instance across shutdown/restart, so a
+          // property set on `scene` (here `_starting`, set when a card launches Play) survives back into
+          // the menu — without this reset it stays true forever and every card click after you exit a
+          // level is silently swallowed by `if (scene._starting) return`. (owner note: "menu click does
+          // not work once we exit from a level".)
+          scene._starting = false;
           if (Studio.uistate) Studio.uistate.set(scene.game, 'menu');
           var accent = S.accent != null ? S.accent : 0xffd34d;
           var accCss = '#' + ('000000' + accent.toString(16)).slice(-6);
@@ -862,6 +868,11 @@
     create: function (scene, opt) {
       opt = opt || {};
       var accent = opt.accent != null ? opt.accent : 0xffd34d, wantFire = !!opt.fire, wantDown = !!opt.down;
+      // side: which half the analog stick lives in ('left' default, or 'right'). jumpBtn: show the
+      // standalone ⤒ button (default true; pass false when the stick already gives all directions —
+      // e.g. a grid snake driven entirely by the joystick, owner note: "joystick on the right side").
+      var side = opt.side === 'right' ? 'right' : 'left';
+      var wantJumpBtn = opt.jumpBtn != null ? !!opt.jumpBtn : true;
       var state = { left: false, right: false, jump: false, down: false, fire: false };
       var isTouch = (scene.sys && scene.sys.game && scene.sys.game.device.input.touch) || (typeof window !== 'undefined' && 'ontouchstart' in window);
       var show = opt.show != null ? opt.show : (isTouch || (typeof location !== 'undefined' && /[?&]touch=1/.test(location.search)));
@@ -879,21 +890,21 @@
       function build() {
         if (!show) return;
         var W = scene.scale.width, H = scene.scale.height, y = H - 84;
-        viz.jump = btn(W - 96, y, 56, '⤒', '#fff'); hold(viz.jump, 'jump');
+        if (wantJumpBtn) { viz.jump = btn(side === 'right' ? 96 : W - 96, y, 56, '⤒', '#fff'); hold(viz.jump, 'jump'); }   // opposite the stick
         if (wantFire) { viz.fire = btn(W - 96, y - 132, 48, '●', '#ff8088'); hold(viz.fire, 'fire'); }
         if (dpad) {
           viz.left = btn(96, y, 50, '◀'); hold(viz.left, 'left');
           viz.right = btn(214, y, 50, '▶'); hold(viz.right, 'right');
           if (wantDown) { viz.down = btn(W - 214, y, 44, '▼'); hold(viz.down, 'down'); }
         } else {
-          var bx = 132, by = H - 96, R = 76;
+          var bx = side === 'right' ? W - 132 : 132, by = H - 96, R = 76;
           var base = scene.add.circle(bx, by, R, 0x0f1528, 0.42).setScrollFactor(0).setDepth(DEPTH).setStrokeStyle(3, 0xffffff, 0.28);
           var thumb = scene.add.circle(bx, by, 34, 0x2a3556, 0.95).setScrollFactor(0).setDepth(DEPTH + 2).setStrokeStyle(3, accent, 0.85);
           objs.push(base, thumb);
           joy = { bx: bx, by: by, R: R, thumb: thumb, pid: null };
           var setFrom = function (px, py) { var dx = px - bx, dy = py - by, m = Math.hypot(dx, dy) || 1; if (m > R) { dx = dx / m * R; dy = dy / m * R; } thumb.setPosition(bx + dx, by + dy); var nx = dx / R, ny = dy / R; state.left = nx < -0.35; state.right = nx > 0.35; state.jump = ny < -0.55; if (wantDown) state.down = ny > 0.55; };
           var rel = function () { joy.pid = null; thumb.setPosition(bx, by); state.left = state.right = state.down = false; state.jump = false; };
-          joy._down = function (p) { if (joy.pid != null) return; if (p.x > W * 0.5) return; joy.pid = p.id; resume(); setFrom(p.x, p.y); };
+          joy._down = function (p) { if (joy.pid != null) return; var onSide = side === 'right' ? p.x > W * 0.5 : p.x < W * 0.5; if (!onSide) return; joy.pid = p.id; resume(); setFrom(p.x, p.y); };
           joy._move = function (p) { if (p.id === joy.pid) setFrom(p.x, p.y); };
           joy._up = function (p) { if (p.id === joy.pid) rel(); };
           scene.input.on('pointerdown', joy._down); scene.input.on('pointermove', joy._move); scene.input.on('pointerup', joy._up);
