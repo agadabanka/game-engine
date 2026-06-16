@@ -1201,6 +1201,26 @@
         "music": "done",
         "shots": "done"
       }
-    }
+    },
+    "shorts": [
+      {
+        "title": "Pinewood Base",
+        "biome": "Pinewood Base",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/vesper-peak/releases/assets/449615411"
+      },
+      {
+        "title": "Windward Spires",
+        "biome": "Windward Spires",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/vesper-peak/releases/assets/449615423"
+      },
+      {
+        "title": "Starlit Summit",
+        "biome": "Starlit Summit",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/vesper-peak/releases/assets/449615426"
+      }
+    ]
   }
 ]
