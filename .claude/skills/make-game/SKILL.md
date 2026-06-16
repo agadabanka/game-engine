@@ -31,6 +31,12 @@ session and end with links.
   `engine/sdk/studio.js` (game-engine repo, the session's work branch), kept
   byte-identical with `engine/game-template/src/vendor/studio.js` and the game's
   `src/vendor/studio.js`. Note every engine investment in the diary.
+- **Log engine changes for traceability + rollback.** After shipping engine
+  changes, run `node scripts/engine-change-issues.mjs --since <ref>` — it logs each
+  engine-code commit as a labeled GitHub issue on `agadabanka/game-engine` with the
+  files, the commit, and the EXACT deterministic rollback (incl. re-propagating
+  `studio.js` to consumer game repos), plus a pinned ledger. Print any one plan with
+  `--rollback <sha>`. So "undo whatever was changed in the engine" is programmatic.
 - **The diary is the deliverable the owner reads.** Write DIARY.md as you go:
   what was built, engine investments, gotchas + fixes, the scorecard, links.
 
