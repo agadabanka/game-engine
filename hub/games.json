@@ -1094,5 +1094,113 @@
         "mp4": "https://api.github.com/repos/agadabanka/flapdoodle/releases/assets/448628847"
       }
     ]
+  },
+  {
+    "id": "vesper-peak",
+    "name": "Vesper Peak",
+    "repo": "agadabanka/vesper-peak",
+    "url": "https://vesper-peak-production.up.railway.app",
+    "tagline": "Dash, cling, and climb a shifting dusk-lit mountain — one breath from the summit.",
+    "meta": {
+      "hero": "Pip, a tiny round clay mountaineer with a red beanie and a red scarf",
+      "verb": "dash · cling · climb",
+      "worlds": [
+        {
+          "name": "Pinewood Base",
+          "tag": "Soft green foothills · learn to dash + cling",
+          "color": 1450303,
+          "theme": "pine forest foothills",
+          "accent": 10215780
+        },
+        {
+          "name": "Frostfall Cliffs",
+          "tag": "Blue ice walls · slick ledges · keep your nerve",
+          "color": 1192007,
+          "theme": "blue glacial ice cliffs",
+          "accent": 9425919
+        },
+        {
+          "name": "Windward Spires",
+          "tag": "Pink dusk spires · trust the springs",
+          "color": 3808586,
+          "theme": "pink dusk wind-carved spires",
+          "accent": 16751057
+        },
+        {
+          "name": "Embercore Caldera",
+          "tag": "Glowing basalt · spikes between the breaths",
+          "color": 3806224,
+          "theme": "glowing volcanic basalt caldera",
+          "accent": 16758531
+        },
+        {
+          "name": "Starlit Summit",
+          "tag": "Night sky · out-climb your own shadow",
+          "color": 658470,
+          "theme": "starlit night summit",
+          "accent": 13215231
+        }
+      ],
+      "levelCount": 5,
+      "genre": "platformer",
+      "engine": "game-engine",
+      "art": {
+        "style": "Claymation stop-motion plasticine style, handmade modeling clay with visible fingerprints and tool marks, soft dusk studio light, vivid saturated colors, bold dark outlines, big expressive eyes, charming slightly-imperfect handmade toy look",
+        "motion": "walk",
+        "hero": {
+          "key": "pip",
+          "desc": "a tiny round clay mountaineer with a red knit beanie and a red scarf, big determined googly eyes, stubby arms, plucky"
+        },
+        "enemies": [
+          {
+            "key": "umbra",
+            "desc": "a dark violet shadow-self clay figure that mirrors the hero's round shape, glowing pale eyes, smoky translucent edges, eerie but cute"
+          },
+          {
+            "key": "wisp",
+            "desc": "a small drifting clay wind-wisp, a swirl of pale blue cloud-clay with two little eyes, floaty and mischievous"
+          }
+        ],
+        "tiles": [
+          {
+            "key": "pine",
+            "desc": "mossy green clay rock with a grassy lit top"
+          },
+          {
+            "key": "ice",
+            "desc": "pale blue glacial ice clay, glossy"
+          },
+          {
+            "key": "spire",
+            "desc": "rosy dusk wind-carved stone clay"
+          },
+          {
+            "key": "basalt",
+            "desc": "dark volcanic basalt clay with glowing orange cracks"
+          },
+          {
+            "key": "night",
+            "desc": "deep indigo summit stone clay flecked with starlight"
+          }
+        ]
+      },
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "design": "done",
+        "story": "done",
+        "cast": "done",
+        "mechanics": "done",
+        "levels": "done",
+        "funtune": "done",
+        "narrative": "done",
+        "feel": "done",
+        "gate": "done",
+        "character": "done",
+        "art": "done",
+        "music": "done",
+        "shots": "done"
+      }
+    }
   }
 ]
