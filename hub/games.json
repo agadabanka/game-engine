@@ -1199,7 +1199,12 @@
         "character": "done",
         "art": "done",
         "music": "done",
-        "shots": "done"
+        "shots": "done",
+        "diary": "done",
+        "deploy": "done",
+        "shorts": "done",
+        "videos": "done",
+        "loop": "done"
       }
     },
     "shorts": [
@@ -1221,6 +1226,15 @@
         "level": 5,
         "mp4": "https://api.github.com/repos/agadabanka/vesper-peak/releases/assets/449615426"
       }
-    ]
+    ],
+    "playlist": "https://youtu.be/6u1LcQrrbDk",
+    "videos": {
+      "montage": "https://youtu.be/6u1LcQrrbDk",
+      "level-1-pinewood-base": "https://youtu.be/EPtoxCd22Dc",
+      "level-2-frostfall-cliffs": "https://youtu.be/nh1WipJt204",
+      "level-3-windward-spires": "https://youtu.be/57jR2V0Dngk",
+      "level-4-embercore-caldera": "https://youtu.be/DFXmtds7vas",
+      "level-5-starlit-summit": "https://youtu.be/-lov_Xa8lwU"
+    }
   }
 ]
