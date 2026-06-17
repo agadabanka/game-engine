@@ -21,6 +21,14 @@ export function seedRoom() {
   return { solids: [[40, 480, 880, 40], [360, 360, 320, 22]], spikes: [], springs: [], crystals: [], entranceIdx: 0, exitIdx: 1, floorKill: 600 };
 }
 
+/** Pick a STARTER biased toward the required vocabulary — so we don't try to evolve a spring room out of
+ *  a dash seed. A spring seed: a left ground + a spring + an offset ledge too high for jump+dash (only the
+ *  spring, or spring→dash, reaches it). Stacking a ledge above it graduates the room to require spring+dash. */
+export function seedRoomFor(requires = []) {
+  if ((requires || []).includes('spring')) return { solids: [[40, 480, 300, 40], [360, 280, 320, 22]], spikes: [], springs: [[200, 480]], crystals: [], entranceIdx: 0, exitIdx: 1, floorKill: 600 };
+  return seedRoom();
+}
+
 const MAX_LEDGES = 6;               // a tall climb tops out here (keeps a room on one screen-ish)
 const topIdx = (room) => room.solids.length - 1;   // the gating (exit) ledge is always the last solid
 
@@ -58,6 +66,12 @@ const OPS = [
   },
   (room, r) => { room.spikes = []; return { room, op: 'clear-spikes', params: {} }; },
   (room, r) => { const li = ri(r, 1, topIdx(room)); const L = room.solids[li]; room.crystals = [[Math.round(L[0] + L[2] / 2), Math.round(L[1] + 24)]]; return { room, op: 'add-crystal', params: { li } }; },
+  // slide the SPRING along its ground (varies the launch line) — no-op fallback to a shift if there's no spring
+  (room, r) => {
+    if (!(room.springs || []).length) { const L = room.solids[topIdx(room)]; const dx = (r() < 0.5 ? -1 : 1) * ri(r, 20, 50); L[0] = Math.max(60, Math.min(620, L[0] + dx)); return { room, op: 'ledge-shift', params: { dx } }; }
+    const g = room.solids[0], dx = (r() < 0.5 ? -1 : 1) * ri(r, 20, 60); room.springs[0][0] = Math.max(g[0] + 30, Math.min(g[0] + g[2] - 30, room.springs[0][0] + dx));
+    return { room, op: 'move-spring', params: { dx } };
+  },
 ];
 
 /** Apply ONE random edit. */
@@ -114,8 +128,8 @@ const verdict = (res) => res.solvable ? `solvable · requires [${(res.requires |
  */
 export function evolveRoom(spec, target, { seed = 1, budget = 160, rec = null } = {}) {
   const r = rng(seed);
-  let cur = seedRoom(), curRes = solveRoom(cur, spec), curScore = score(curRes, target), attempts = 0;
-  rec && rec.log('seed', 'start from a ground + one ledge', { target, seed }, 'the simplest solvable room', cur);
+  let cur = seedRoomFor(target.requires), curRes = solveRoom(cur, spec), curScore = score(curRes, target), attempts = 0;
+  rec && rec.log('seed', (target.requires || []).includes('spring') ? 'start from a spring + an offset ledge' : 'start from a ground + one ledge', { target, seed }, 'the simplest room biased toward the required vocabulary', cur);
   rec && rec.log('solve', 'seed verdict', curRes, verdict(curRes) + ` · score ${curScore}`, cur);
   for (let step = 0; step < budget && curScore > 0; step++) {
     const { room: cand, op, params } = mutateRoom(cur, r); attempts++;

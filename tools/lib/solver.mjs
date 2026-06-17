@@ -48,16 +48,16 @@ function simMove(room, cfg, fromIdx, tox, prim) {
   const solids = room.solids || [], sd = solids[fromIdx];
   const s = spawn(tox, top(sd) - BODY.h / 2 - 1);   // standing on the take-off
   for (let i = 0; i < 6 && !s.onGround; i++) step(s, {}, room, cfg);   // settle so onGround=true before launching (else the jump can't fire)
-  let phase = 'approach', t = 0, minMargin = 999, sprung = false;
+  let phase = 'approach', t = 0, minMargin = 999, sprung = false, sprungDashed = false;
   for (let f = 0; f < MAXF; f++) {
     if (s.vy < -650) sprung = true;   // only a spring (~-760) exceeds the jump impulse (-570) → attribute the launch to the spring
     const inp = {};
     // track tightness: closest approach to any spike during the move
     for (const sp of room.spikes || []) { const dx = Math.max(sp[0] - s.x, 0, s.x - (sp[0] + sp[2])); const dy = Math.max(sp[1] - s.y, 0, s.y - (sp[1] + (sp[3] || 14))); minMargin = Math.min(minMargin, Math.hypot(dx, dy)); }
-    if (prim.id === 'spring' && phase !== 'air' && s.vy < -300) { phase = 'air'; t = 0; }   // a spring launched us → drift to land
+    if (prim.id.indexOf('spring') === 0 && phase !== 'air' && s.vy < -300) { phase = 'air'; t = 0; }   // a spring launched us → drift / apex-dash to land
     if (phase === 'approach') {
       if (Math.abs(s.x - tox) > 5) inp[tox > s.x ? 'right' : 'left'] = true;
-      else if (s.onGround && prim.id !== 'spring') { phase = prim.id.indexOf('dash') === 0 ? 'launch-dash' : (prim.wj != null ? 'launch-wj' : 'launch'); t = 0; }
+      else if (s.onGround && prim.id.indexOf('spring') !== 0) { phase = prim.id.indexOf('dash') === 0 ? 'launch-dash' : (prim.wj != null ? 'launch-wj' : 'launch'); t = 0; }
       // spring: just stand on it (no input) and let postMove bounce us
     } else if (phase === 'launch') { inp.jump = true; phase = 'air'; t = 0; }
     else if (phase === 'launch-wj') { inp.jump = true; phase = 'air'; t = 0; }          // hop toward a wall, then wall-jump in air
@@ -69,6 +69,7 @@ function simMove(room, cfg, fromIdx, tox, prim) {
       t++;
       if (prim.id === 'jump' && t < (prim.hold || 14) && s.vy < -20) inp.jump = true;   // hold for full height
       if (prim.wj != null) inp.jump = true;                                             // keep trying to wall-jump while clinging
+      if (prim.id === 'spring-dash' && !sprungDashed && s.dashReady && s.vy > -260) { inp.dash = true; inp.dashX = prim.dx; inp.dashY = prim.dy; sprungDashed = true; }   // spring→dash: dash near the apex of the bounce (the two-element interaction)
       if (prim.drift > 0) inp.right = true; else if (prim.drift < 0) inp.left = true;
       if (s.onGround && t > 4) { const land = standingOn(s, solids); if (land >= 0) return { land, margin: minMargin, frames: f, sprung }; phase = 'approach'; }
     }
@@ -84,7 +85,7 @@ function buildGraph(room, cfg, verbs) {
   const solids = room.solids || [], prims = primitives(verbs), edges = solids.map(() => []);
   const addEdge = (i, r, move) => {
     if (r.land == null || r.land < 0 || r.land === i) return;
-    if (r.sprung) move = 'spring';   // a spring did the lifting → attribute it to the spring, not the primitive that walked onto it
+    if (r.sprung && move.indexOf('spring') !== 0) move = 'spring';   // a spring did the lifting → attribute it to the spring (but keep spring-dash chains labelled)
     const verb = move.split(':')[0], ex = edges[i].find((e) => e.to === r.land && e.verb === verb);
     if (!ex || r.margin > ex.margin) { if (ex) Object.assign(ex, { tox: r.tox, move, margin: r.margin, frames: r.frames }); else edges[i].push({ to: r.land, verb, tox: r.tox, move, margin: r.margin, frames: r.frames }); }
   };
@@ -94,6 +95,8 @@ function buildGraph(room, cfg, verbs) {
     for (const sp of room.springs || []) {
       if (sp[0] < left(solids[i]) - 4 || sp[0] > right(solids[i]) + 4 || Math.abs(sp[1] - top(solids[i])) > 24) continue;
       for (const drift of [-1, 0, 1]) addEdge(i, { ...simMove(room, cfg, i, sp[0], { id: 'spring', drift }), tox: sp[0] }, 'spring');
+      // spring → apex-dash combos (the two-element INTERACTION): bounce, then dash up/sideways to an offset ledge
+      if (verbs.includes('dash')) for (const [dx, dy] of [[1, -1], [-1, -1], [0, -1], [1, 0], [-1, 0]]) addEdge(i, { ...simMove(room, cfg, i, sp[0], { id: 'spring-dash', dx, dy, drift: dx }), tox: sp[0] }, 'spring-dash');
     }
   }
   return edges;
@@ -122,6 +125,10 @@ export function solveRoom(room, spec) {
     if (v === 'run' || v === 'jump') continue;   // always available
     const without = verbs.filter((x) => x !== v);
     if (!bfs(buildGraph(room, cfg, without), room.entranceIdx, room.exitIdx)) requires.push(v);
+  }
+  // which CONTRAPTIONS are load-bearing? remove all of a kind → if unsolvable, the room REQUIRES it.
+  for (const [kind, key] of [['spring', 'springs'], ['crystal', 'crystals']]) {
+    if ((room[key] || []).length && !bfs(buildGraph({ ...room, [key]: [] }, cfg, verbs), room.entranceIdx, room.exitIdx)) requires.push(kind);
   }
   const usedVerbs = [...new Set(full.map((m) => m.verb))];
   const tightness = Math.round(Math.min(...full.map((m) => m.margin)));   // px to nearest spike on the chosen line (lower = harder)

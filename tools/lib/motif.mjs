@@ -43,9 +43,11 @@ export function generateMotifs(spec, { seed = 1, rec = null, population = 16, le
 
   rec && rec.log('seed', 'mine a population of rooms for recurring move-chains', { population }, 'Strategy E: evolve rooms, read the solver\'s OWN paths, and let mechanics emerge from what recurs', snap(-1));
 
-  // ── evolve the population at VARIED targets; collect each solved room's move sequence ──
+  // ── evolve the population at VARIED targets + VARIED vocabularies (some dash rooms, some spring rooms)
+  //    so the motifs that emerge span the moveset — including the spring→dash *interaction* ──
   for (let i = 0; i < population; i++) {
-    const lo = 26 + (i % 5) * 8, target = { requires: ['dash'], difficulty: [lo, lo + 22], tightness: [40, 170] };
+    const lo = 26 + (i % 5) * 8, useSpring = i % 3 === 0;
+    const target = useSpring ? { requires: ['spring'], difficulty: [Math.max(18, lo - 8), lo + 16], tightness: [40, 170] } : { requires: ['dash'], difficulty: [lo, lo + 22], tightness: [40, 170] };
     const out = evolveRoom(spec, target, { seed: ((seed * 100 + i * 13 + 1) >>> 0), budget: leafBudget });
     const sol = solveRoom(out.room, spec);
     if (!sol.solvable || !sol.path) continue;

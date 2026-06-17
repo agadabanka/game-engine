@@ -36,12 +36,14 @@ export function generateChain(spec, { seed = 1, rec = null, rooms = 6, leafBudge
 
   rec && rec.log('seed', 'bottom-up: grow rooms independently, then chain', { rooms: N, difficulty }, 'Strategy B (dual of A): no tree up front — grow diverse rooms blind, then arrange + dock them into a curve', snapGrow(null));
 
-  // ── GROW PHASE: evolve each room independently toward its own (shuffled) target ──
+  // ── GROW PHASE: evolve each room independently toward its own (shuffled) target + VARIED vocabulary
+  //    (every other room is a SPRING room) so the chained level mixes mechanics, not just dash ──
   centers.forEach((center, k) => {
-    const target = { requires: ['dash'], difficulty: [center - 10, center + 10], tightness: [40, 170] };
+    const useSpring = k % 2 === 1;
+    const target = useSpring ? { requires: ['spring'], difficulty: [Math.max(18, center - 12), center + 8], tightness: [40, 170] } : { requires: ['dash'], difficulty: [center - 10, center + 10], tightness: [40, 170] };
     const id = 'g' + k;
-    rec && rec.log('propose', `grow room ${k + 1} — blind, target ~${center}`, { target, order: k + 1, of: N },
-      `evolve an independent room toward difficulty ~${center} (it does not yet know its place in the level)`, snapGrow(k));
+    rec && rec.log('propose', `grow room ${k + 1} — blind, ${useSpring ? 'SPRING' : 'dash'} room, target ~${center}`, { target, order: k + 1, of: N, vocab: useSpring ? 'spring' : 'dash' },
+      `evolve an independent ${useSpring ? 'spring' : 'dash'} room toward difficulty ~${center} (it does not yet know its place in the level)`, snapGrow(k));
     const out = evolveRoom(spec, target, { seed: ((seed * 131 + k * 17 + 3) >>> 0), budget: leafBudget, rec: rec ? rec.scope(id) : null });
     grown.push({ id, room: out.room, result: out.result, place: placement(slot(grown.length), out.room), target: center });
     grown.forEach((g, i) => { g.place = placement(slot(i), g.room); });   // re-place as the stack grows
