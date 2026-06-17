@@ -63,6 +63,37 @@ const OPS = [
 /** Apply ONE random edit. */
 export function mutateRoom(room, r) { const op = OPS[Math.floor(r() * OPS.length)]; return op(clone(room), r); }
 
+// OPS indices the guided oracle steers by: 0 top-up · 1 top-down · 4 add-ledge(grow) · 5 remove-ledge ·
+// 6 add-spike · 7 clear-spikes · 2 shift · 3 resize.
+/**
+ * The GUIDED proposer (a deterministic stand-in for an LLM-as-node-oracle): read the solver verdict vs
+ * the target and pick the edit that most directly attacks the largest residual — instead of a blind
+ * random op. This is Strategy C's "oracle"; the duel shows it converges in far fewer attempts.
+ */
+export function guidedMutate(room, res, target, r) {
+  const want = target.requires || [], db = target.difficulty;
+  const pick = (i) => { const o = OPS[i](clone(room), r); o.guidedWhy = WHY[i]; return o; };
+  // The oracle knows the INTENT, so it makes DECISIVE, intent-sized edits — not the timid random nudges
+  // (an 8-22px raise can't cross jump→dash range in one move, so reusing it stalls the climb).
+  const decisiveTop = (room, dy, op, why) => { const m = clone(room), ti = m.solids.length - 1, below = (m.solids[ti - 1] || [0, 480])[1]; m.solids[ti][1] = Math.max(60, Math.min(below - 112, m.solids[ti][1] + dy)); return { room: m, op, guidedWhy: why }; };
+  if (!res || !res.solvable) return decisiveTop(room, 56, 'guided-lower', WHY[1]);                    // broke it → bring the top ledge decisively back into reach
+  const reqDash = (res.requires || []).includes('dash');
+  if (want.includes('dash') && !reqDash) { const m = clone(room), ti = m.solids.length - 1, below = (m.solids[ti - 1] || [0, 480])[1]; m.solids[ti][1] = Math.max(60, below - 160); return { room: m, op: 'guided-raise', guidedWhy: WHY[0] }; }   // raise clear into dash range in ONE move
+  if (db && res.difficulty < db[0]) return pick(4);                                                   // below band → add a dash-gap ledge (a longer climb)
+  if (db && res.difficulty > db[1]) return pick(5);                                                   // above band → remove the top ledge
+  return r() < 0.5 ? pick(2) : pick(3);                                                               // on-band → fine-tune the line
+}
+const WHY = {
+  0: 'not demanding dash → raise the top ledge past jump range',
+  1: 'unsolvable → lower the top ledge back into reach',
+  2: 'on-band → nudge the ledge sideways to vary the line',
+  3: 'on-band → resize the ledge to vary the runway',
+  4: 'difficulty below band → add a dash-gap ledge (longer climb)',
+  5: 'too hard / unsolvable → remove the top ledge',
+  6: 'difficulty below band → hang spikes under the climb (tighter)',
+  7: 'difficulty above band → clear the spikes',
+};
+
 // ── fitness: distance to target (lower = better; 0 = on target). Hard-fails an unsolvable room. ──
 const band = (x, lo, hi) => (x < lo ? lo - x : x > hi ? x - hi : 0);
 export function score(res, target) {

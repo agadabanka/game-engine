@@ -23,7 +23,7 @@ const ordinal = (n) => n + (['th', 'st', 'nd', 'rd'][(n % 100 - n % 10 === 10 ? 
 
 // ── placing an evolved LOCAL room into its region slot (purely for drawing — the solver runs on the
 //    local coords where the physics is tuned; `place` is the local→level transform the sandbox uses) ──
-function roomBounds(room) {
+export function roomBounds(room) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   const add = (x, y, w = 0, h = 0) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); };
   (room.solids || []).forEach((s) => add(s[0], s[1], s[2], s[3]));
@@ -33,7 +33,7 @@ function roomBounds(room) {
   if (x0 > x1) { x0 = 0; y0 = 0; x1 = 960; y1 = 600; }
   return { x0, y0, w: x1 - x0, h: y1 - y0 };
 }
-function placement(region, room) {
+export function placement(region, room) {
   const b = roomBounds(room), pad = 0.10;
   const rw = region.w * (1 - 2 * pad), rh = region.h * (1 - 2 * pad);
   const scale = Math.min(rw / (b.w || 960), rh / (b.h || 600));
