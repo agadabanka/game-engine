@@ -21,23 +21,43 @@ export function seedRoom() {
   return { solids: [[40, 480, 880, 40], [360, 360, 320, 22]], spikes: [], springs: [], crystals: [], entranceIdx: 0, exitIdx: 1, floorKill: 600 };
 }
 
+const MAX_LEDGES = 6;               // a tall climb tops out here (keeps a room on one screen-ish)
+const topIdx = (room) => room.solids.length - 1;   // the gating (exit) ledge is always the last solid
+
 // ── EDIT OPERATORS (deterministic; each returns {room, op, params}) ──
-// The key lever for "requires dash" is the LEDGE HEIGHT: ~110px gap = jump-able, ~150px = needs the dash.
+// Two difficulty levers the solver can read: (1) LEDGE HEIGHT — ~110px gap is jump-able, ~150px needs
+// the dash; (2) PATH LENGTH — each extra dash-gap ledge adds a move (and the room grows taller, so a
+// hard room *looks* hard). Spikes hung under the climb line tighten the margins (a third lever).
 const OPS = [
-  (room, r) => { const L = room.solids[1]; const dy = -ri(r, 8, 22); L[1] += dy; return { room, op: 'ledge-up', params: { dy } }; },
-  (room, r) => { const L = room.solids[1]; const dy = ri(r, 8, 22); L[1] = Math.min(458, L[1] + dy); return { room, op: 'ledge-down', params: { dy } }; },
-  (room, r) => { const L = room.solids[1]; const dx = (r() < 0.5 ? -1 : 1) * ri(r, 20, 60); L[0] = Math.max(60, Math.min(620, L[0] + dx)); return { room, op: 'ledge-shift', params: { dx } }; },
-  (room, r) => { const w = (r() < 0.5 ? -1 : 1) * ri(r, 20, 50); room.solids[1][2] = Math.max(180, Math.min(360, room.solids[1][2] + w)); return { room, op: 'ledge-resize', params: { dw: w } }; },
-  (room, r) => { const x = ri(r, 300, 520), w = ri(r, 90, 160); room.spikes = [[x, 466, w, 14]]; return { room, op: 'add-spike', params: { x, w } }; },   // raises tightness/difficulty
-  (room, r) => { room.spikes = []; return { room, op: 'clear-spikes', params: {} }; },
-  (room, r) => { const x = ri(r, 250, 360); room.crystals = [[x, 380]]; return { room, op: 'add-crystal', params: { x } }; },
-  // add a SECOND ledge above the first → a 2-move climb (raises difficulty / lets the curve breathe)
+  // nudge the TOP (gating) ledge up/down — tunes whether the last gap demands the dash
+  (room, r) => { const L = room.solids[topIdx(room)]; const dy = -ri(r, 8, 22); L[1] = Math.max(60, L[1] + dy); return { room, op: 'top-up', params: { dy } }; },
+  (room, r) => { const L = room.solids[topIdx(room)]; const dy = ri(r, 8, 22); L[1] = Math.min((room.solids[topIdx(room) - 1] || [0, 460])[1] - 110, L[1] + dy); return { room, op: 'top-down', params: { dy } }; },
+  // shift / resize the top ledge (variety + reachability)
+  (room, r) => { const L = room.solids[topIdx(room)]; const dx = (r() < 0.5 ? -1 : 1) * ri(r, 24, 64); L[0] = Math.max(60, Math.min(620, L[0] + dx)); return { room, op: 'ledge-shift', params: { dx } }; },
+  (room, r) => { const L = room.solids[topIdx(room)]; const w = (r() < 0.5 ? -1 : 1) * ri(r, 20, 50); L[2] = Math.max(180, Math.min(360, L[2] + w)); return { room, op: 'ledge-resize', params: { dw: w } }; },
+  // GROW the climb: stack another dash-gap ledge above the top (raises path length → difficulty, and height)
   (room, r) => {
-    if (room.solids.length >= 3) { const T = room.solids[room.solids.length - 1]; const dy = -ri(r, 8, 20); T[1] += dy; return { room, op: 'top-ledge-up', params: { dy } }; }
-    const L1 = room.solids[1]; const x = Math.max(60, Math.min(560, L1[0] + (r() < 0.5 ? -1 : 1) * ri(r, 50, 120))); const y = L1[1] - ri(r, 115, 150);
-    room.solids.push([x, y, 300, 22]); room.exitIdx = room.solids.length - 1;
+    if (topIdx(room) >= MAX_LEDGES) { const L = room.solids[topIdx(room)]; const dy = -ri(r, 6, 16); L[1] = Math.max(60, L[1] + dy); return { room, op: 'top-up', params: { dy } }; }
+    const T = room.solids[topIdx(room)]; const dx = (r() < 0.5 ? -1 : 1) * ri(r, 30, 120); const x = Math.max(60, Math.min(560, T[0] + dx));
+    const y = Math.max(60, T[1] - ri(r, 140, 168)); const w = ri(r, 240, 320);
+    room.solids.push([x, y, w, 22]); room.exitIdx = room.solids.length - 1;
     return { room, op: 'add-ledge', params: { x, y } };
   },
+  // SHRINK the climb: drop the top ledge (lets the hill-climb lower difficulty for an easy room)
+  (room, r) => {
+    if (topIdx(room) <= 1) { const L = room.solids[1]; const dy = ri(r, 6, 16); L[1] = Math.min(458, L[1] + dy); return { room, op: 'top-down', params: { dy } }; }
+    room.solids.pop(); room.exitIdx = room.solids.length - 1;
+    room.spikes = (room.spikes || []).filter((s) => s[1] < room.solids[topIdx(room)][1] + 120);   // drop spikes orphaned above the new top
+    return { room, op: 'remove-ledge', params: {} };
+  },
+  // hang a SPIKE strip just under a random ledge's approach → the dash up to it skims them (tightness ↑)
+  (room, r) => {
+    const li = ri(r, 1, topIdx(room)); const L = room.solids[li];
+    const x = Math.round(L[0] + ri(r, 0, Math.max(0, L[2] - 110))), w = ri(r, 80, 140), y = Math.round(L[1] + ri(r, 40, 90));
+    room.spikes = [[x, y, w, 14]]; return { room, op: 'add-spike', params: { x, y, w } };
+  },
+  (room, r) => { room.spikes = []; return { room, op: 'clear-spikes', params: {} }; },
+  (room, r) => { const li = ri(r, 1, topIdx(room)); const L = room.solids[li]; room.crystals = [[Math.round(L[0] + L[2] / 2), Math.round(L[1] + 24)]]; return { room, op: 'add-crystal', params: { li } }; },
 ];
 
 /** Apply ONE random edit. */
