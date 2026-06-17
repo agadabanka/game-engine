@@ -11,6 +11,17 @@ if (!inPath) { console.error('usage: node tools/build-doc-pdf.mjs <input.md> [ou
 const outPath = process.argv[3] || inPath.replace(/\.md$/i, '.pdf');
 const md = fs.readFileSync(inPath, 'utf8');
 
+// inline an image file as a base64 data URI (paths relative to the markdown file) so the PDF is self-contained
+const baseDir = path.dirname(inPath);
+function imgDataUri(src) {
+  try {
+    if (/^data:/.test(src)) return src;
+    const p = path.isAbsolute(src) ? src : path.join(baseDir, src);
+    const ext = (path.extname(p).slice(1) || 'png').toLowerCase(), mime = ext === 'jpg' ? 'jpeg' : ext;
+    return `data:image/${mime};base64,` + fs.readFileSync(p).toString('base64');
+  } catch { return src; }
+}
+
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const inline = (s) => esc(s)
   .replace(/`([^`]+)`/g, (_, c) => `<code>${c}</code>`)
@@ -33,8 +44,10 @@ function mdToHtml(src) {
       out.push(`<table><thead><tr>${head.map((h) => `<th>${inline(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
       continue;
     }
-    // headings
+    // image block: ![caption](src) on its own line → a figure (alt text becomes the caption)
     let m;
+    if ((m = ln.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/))) { out.push(`<figure><img src="${imgDataUri(m[2])}" alt="${esc(m[1])}"/>${m[1] ? `<figcaption>${inline(m[1])}</figcaption>` : ''}</figure>`); i++; continue; }
+    // headings
     if ((m = ln.match(/^(#{1,4})\s+(.*)$/))) { out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); i++; continue; }
     // hr
     if (/^---+\s*$/.test(ln)) { out.push('<hr>'); i++; continue; }
@@ -45,7 +58,7 @@ function mdToHtml(src) {
     // blank
     if (/^\s*$/.test(ln)) { i++; continue; }
     // paragraph (gather until blank / block start)
-    { const buf = []; while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,4}\s|```|>|\s*[-*]\s|\||---+\s*$)/.test(lines[i])) buf.push(lines[i++]); out.push(`<p>${inline(buf.join(' '))}</p>`); }
+    { const buf = []; while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,4}\s|```|>|\s*[-*]\s|\||!\[|---+\s*$)/.test(lines[i])) buf.push(lines[i++]); out.push(`<p>${inline(buf.join(' '))}</p>`); }
   }
   return out.join('\n');
 }
@@ -73,6 +86,9 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
   th, td { border: 1px solid #dde3ee; padding: 5pt 8pt; text-align: left; vertical-align: top; }
   th { background: #f0f3fa; color:#1b2440; }
   hr { border: none; border-top: 1px solid #e2e7f1; margin: 16pt 0; }
+  figure { margin: 13pt 0; text-align: center; break-inside: avoid; }
+  figure img { max-width: 100%; max-height: 148mm; border: 1px solid #d4dae8; border-radius: 7px; }
+  figcaption { font-size: 8.6pt; color: #6b7488; margin-top: 5pt; font-style: italic; padding: 0 6mm; }
   h1,h2,h3 { break-after: avoid; } pre, table, blockquote { break-inside: avoid; }
 </style></head><body>${body}</body></html>`;
 
