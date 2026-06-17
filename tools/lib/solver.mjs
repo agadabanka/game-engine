@@ -43,9 +43,10 @@ function primitives(verbs) {
   return P;
 }
 
-// Simulate ONE move from take-off x on solid `from` and report where it lands.
-function simMove(room, cfg, fromIdx, tox, prim) {
-  const solids = room.solids || [], sd = solids[fromIdx];
+// Simulate ONE move from take-off x on solid `from` and report where it lands. `allSolids` is the
+// foothold list the graph is built over (room.solids + crumbles), so the hero can land on a crumble.
+function simMove(room, cfg, fromIdx, tox, prim, allSolids) {
+  const solids = allSolids || room.solids || [], sd = solids[fromIdx];
   const s = spawn(tox, top(sd) - BODY.h / 2 - 1);   // standing on the take-off
   for (let i = 0; i < 6 && !s.onGround; i++) step(s, {}, room, cfg);   // settle so onGround=true before launching (else the jump can't fire)
   let phase = 'approach', t = 0, minMargin = 999, sprung = false, sprungDashed = false;
@@ -82,7 +83,10 @@ function simMove(room, cfg, fromIdx, tox, prim) {
 
 // Build the reachability graph: edge from→to with the move + tightness, by simulation.
 function buildGraph(room, cfg, verbs) {
-  const solids = room.solids || [], prims = primitives(verbs), edges = solids.map(() => []);
+  // crumble blocks are footholds too (they are solid until you dwell) — append them so the solver can
+  // route over them; their indices come after the real solids so entrance/exit indices stay valid.
+  const solids = (room.crumbles && room.crumbles.length) ? [...(room.solids || []), ...room.crumbles] : (room.solids || []);
+  const prims = primitives(verbs), edges = solids.map(() => []);
   const addEdge = (i, r, move) => {
     if (r.land == null || r.land < 0 || r.land === i) return;
     if (r.sprung && move.indexOf('spring') !== 0) move = 'spring';   // a spring did the lifting → attribute it to the spring (but keep spring-dash chains labelled)
@@ -90,13 +94,13 @@ function buildGraph(room, cfg, verbs) {
     if (!ex || r.margin > ex.margin) { if (ex) Object.assign(ex, { tox: r.tox, move, margin: r.margin, frames: r.frames }); else edges[i].push({ to: r.land, verb, tox: r.tox, move, margin: r.margin, frames: r.frames }); }
   };
   for (let i = 0; i < solids.length; i++) {
-    for (const tox of takeoffs(solids[i])) for (const p of prims) addEdge(i, { ...simMove(room, cfg, i, tox, p), tox }, p.id);
+    for (const tox of takeoffs(solids[i])) for (const p of prims) addEdge(i, { ...simMove(room, cfg, i, tox, p, solids), tox }, p.id);
     // SPRING edges: a spring resting on this solid is a launch option (drift each way to land elsewhere).
     for (const sp of room.springs || []) {
       if (sp[0] < left(solids[i]) - 4 || sp[0] > right(solids[i]) + 4 || Math.abs(sp[1] - top(solids[i])) > 24) continue;
-      for (const drift of [-1, 0, 1]) addEdge(i, { ...simMove(room, cfg, i, sp[0], { id: 'spring', drift }), tox: sp[0] }, 'spring');
+      for (const drift of [-1, 0, 1]) addEdge(i, { ...simMove(room, cfg, i, sp[0], { id: 'spring', drift }, solids), tox: sp[0] }, 'spring');
       // spring → apex-dash combos (the two-element INTERACTION): bounce, then dash up/sideways to an offset ledge
-      if (verbs.includes('dash')) for (const [dx, dy] of [[1, -1], [-1, -1], [0, -1], [1, 0], [-1, 0]]) addEdge(i, { ...simMove(room, cfg, i, sp[0], { id: 'spring-dash', dx, dy, drift: dx }), tox: sp[0] }, 'spring-dash');
+      if (verbs.includes('dash')) for (const [dx, dy] of [[1, -1], [-1, -1], [0, -1], [1, 0], [-1, 0]]) addEdge(i, { ...simMove(room, cfg, i, sp[0], { id: 'spring-dash', dx, dy, drift: dx }, solids), tox: sp[0] }, 'spring-dash');
     }
   }
   return edges;
@@ -127,7 +131,8 @@ export function solveRoom(room, spec) {
     if (!bfs(buildGraph(room, cfg, without), room.entranceIdx, room.exitIdx)) requires.push(v);
   }
   // which CONTRAPTIONS are load-bearing? remove all of a kind → if unsolvable, the room REQUIRES it.
-  for (const [kind, key] of [['spring', 'springs'], ['crystal', 'crystals']]) {
+  // (wind/updraft, bumper, dream block, crumble all work through the solver's forward-sim for free.)
+  for (const [kind, key] of [['spring', 'springs'], ['crystal', 'crystals'], ['wind', 'winds'], ['bumper', 'bumpers'], ['dream', 'dreams'], ['crumble', 'crumbles']]) {
     if ((room[key] || []).length && !bfs(buildGraph({ ...room, [key]: [] }, cfg, verbs), room.entranceIdx, room.exitIdx)) requires.push(kind);
   }
   const usedVerbs = [...new Set(full.map((m) => m.verb))];

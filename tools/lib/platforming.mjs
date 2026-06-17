@@ -13,7 +13,7 @@ const DT = 1 / 60, BW = 22, BH = 30;   // fixed timestep + body half-extents com
 export function spawn(x, y) {
   return { x, y, vx: 0, vy: 0, onGround: false, onWallL: false, onWallR: false, facing: 1,
     dashReady: true, dashTimer: 0, dvx: 0, dvy: 0, dashCool: 0, coyote: 0, jumpBuf: 0, jumpLatch: false, jumping: false,
-    dead: false, won: false, frame: 0 };
+    bumpCool: 0, dreamt: false, dead: false, won: false, frame: 0 };
 }
 
 function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) { return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by; }
@@ -47,7 +47,13 @@ function moveAxis(s, dx, dy, solids) {
  */
 export function step(s, input, room, cfg) {
   if (s.dead || s.won) return s;
-  const inp = input || {}, solids = room.solids || [], C = cfg;
+  const inp = input || {}, C = cfg;
+  // CRUMBLE blocks are solid (they dissolve only after you DWELL — a manual-play timing detail; a single
+  // foothold→foothold move passes over them, so the solver treats them as solid). DREAM blocks are solid
+  // when NOT dashing, but you pass THROUGH them while dashing (handled in the dash branch).
+  const baseSolids = (room.crumbles && room.crumbles.length) ? [...(room.solids || []), ...room.crumbles] : (room.solids || []);
+  const dreams = room.dreams || [];
+  const solids = dreams.length ? [...baseSolids, ...dreams] : baseSolids;
   s.frame++;
   // timers
   if (s.onGround) { s.coyote = C.COYOTE; s.jumping = false; if (!C.DASH || (C.DASH.refillOn || []).includes('land')) s.dashReady = true; }
@@ -66,8 +72,9 @@ export function step(s, input, room, cfg) {
     }
     if (s.dashTimer > 0) {
       s.vx = s.dvx; s.vy = s.dvy; s.dashTimer--;
-      if (s.dashTimer === 0) { s.vx = s.dvx * C.DASH.keep; s.vy = s.dvy < 0 ? s.dvy * 0.35 : 0; }
-      moveAxis(s, s.vx * DT, s.vy * DT, solids);
+      for (const d of dreams) if (rectsOverlap(s.x - BW / 2, s.y - BH / 2, BW, BH, d[0], d[1], d[2], d[3])) s.dreamt = true;   // passing through a dream block
+      if (s.dashTimer === 0) { s.vx = s.dvx * C.DASH.keep; s.vy = s.dvy < 0 ? s.dvy * 0.35 : 0; if (s.dreamt) { s.dashReady = true; s.dreamt = false; } }   // a dream-dash refills the dash
+      moveAxis(s, s.vx * DT, s.vy * DT, baseSolids);   // while dashing, dream blocks are NOT solid → pass through
       return postMove(s, room, C);
     }
   }
@@ -77,6 +84,14 @@ export function step(s, input, room, cfg) {
 
   // ── gravity ──
   s.vy = Math.min(C.TERMINAL, s.vy + C.GRAV * DT);
+
+  // ── WIND / UPDRAFT zones — push the hero while inside (but NOT while dashing: the dash branch returns
+  //    above, so this only runs in normal motion — authentic Celeste). [x,y,w,h, fx, fy]. ──
+  for (const w of room.winds || []) {
+    if (!rectsOverlap(s.x - BW / 2, s.y - BH / 2, BW, BH, w[0], w[1], w[2], w[3])) continue;
+    s.vx += (w[4] || 0) * DT;
+    if (w[5]) { s.vy += w[5] * DT; if (w[5] < 0 && s.vy < w[5] * 0.62) s.vy = w[5] * 0.62; }   // an updraft (fy<0) lifts toward a terminal rise
+  }
 
   // ── wall slide ──
   let sliding = 0;
@@ -103,6 +118,13 @@ function postMove(s, room, C) {
   // springs (bounce when falling onto one)
   for (const sp of room.springs || []) {
     if (rectsOverlap(s.x - BW / 2, s.y - BH / 2, BW, BH, sp[0] - 17, sp[1] - 8, 34, 16) && s.vy > -30) { s.vy = -760; s.dashReady = true; s.jumping = false; }
+  }
+  // BUMPERS — fling the hero radially away from the centre + refill the dash (Celeste, Reflection). A
+  // short cool-down stops it re-triggering while you are still inside the radius. [x,y]
+  if (s.bumpCool > 0) s.bumpCool--;
+  for (const bp of room.bumpers || []) {
+    const dx = s.x - bp[0], dy = s.y - bp[1], d = Math.hypot(dx, dy);
+    if (d < 40 && s.bumpCool <= 0) { const m = d || 1; s.vx = (dx / m) * 330; s.vy = (dy / m) * 330 - 70; s.dashReady = true; s.jumping = false; s.bumpCool = 16; }
   }
   // crystals (refill dash)
   if (C.DASH) for (const c of room.crystals || []) { if (rectsOverlap(s.x - BW / 2, s.y - BH / 2, BW, BH, c[0] - 14, c[1] - 14, 28, 28)) s.dashReady = true; }
