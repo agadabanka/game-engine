@@ -952,6 +952,9 @@
         s.homeX = e.x; s.dir = e.dir || (fly ? -1 : 1); s.patrol = e.patrol || 60;
         s.kind = e.kind || null; s.big = !!e.big; s._fly = fly; s._spd = e.speed || (fly ? 1.15 : 0.6);
         if (fly) { s._x0 = e.x - (e.range || 130); s._x1 = e.x + (e.range || 130); s._baseY = y; s._bob = e.bob || 10; s._phase = e.x % 17; }
+        // FSM (#50): a level enemy may name a built-in behaviour chain — `{ state:'sentry' }` — and
+        // Studio.Actors drives it instead of the legacy archetype motion (opt-in; default unchanged).
+        if (e.state && Studio.Actors && Studio.Actors.LIB[e.state]) Studio.Actors.attach(s, Studio.Actors.LIB[e.state](e));
       });
       return {
         platforms: platforms, hazards: hazards, coins: coins, enemies: enemies, crumble: crumble,
@@ -1075,7 +1078,7 @@
       if (!world || !world.enemies) return;
       var K = this.KIND_SPD;
       world.enemies.getChildren().forEach(function (e) {
-        if (!e.active) return;
+        if (!e.active || e.state) return;   // stateful actors are driven by Studio.Actors (FSM); legacy bodies fall through
         if (e._fly) {
           e.x += e.dir * (e._spd || 1.15); if (e.x <= e._x0 || e.x >= e._x1) { e.dir *= -1; e.x = Math.max(e._x0, Math.min(e._x1, e.x)); }
           e.y = e._baseY + Math.sin((frame + (e._phase || 0)) * 0.06) * (e._bob || 10);
@@ -1086,6 +1089,85 @@
           e.x += e.dir * spd; if (Math.abs(e.x - e.homeX) > e.patrol) e.dir *= -1;
         }
       });
+    }
+  };
+
+  // ------------------------------------------------------------- Actors (#50)
+  // A declarative actor STATE MACHINE — Commander Keen's `statetype` in JS (the white-paper
+  // parallel: scarce-resource elegance still pays off — a tiny data-driven brain beats bespoke
+  // per-enemy code). A state is { tic, xmove?, ymove?, enter?, react?, think?, contact?, next }.
+  // Each frame the actor moves by xmove*dir / ymove, runs react (walls/edges) then think
+  // (behaviour, which may transition early), and after `tic` frames advances to `next` (looping).
+  //   • OPT-IN + byte-safe: only enemies carrying a `.state` are driven here — stateless enemies
+  //     keep the EXACT legacy Studio.Enemies.step path, so existing levels stay bit-identical.
+  //   • DETERMINISTIC: all motion is frame/tic driven; any randomness MUST use Studio.RNG (never
+  //     Math.random) so a run replays bit-identically under the gate. think() reads world.player
+  //     (the game sets world.player, or it falls back to scene.player).
+  // Wiring: a level enemy can name a built-in chain — `{ x, patrol, state:'sentry' }` — and
+  // Level.build attaches it; or a game calls Studio.Actors.attach(enemy, chain). Drive every
+  // frame with Studio.Actors.step(scene, world, frame) and route overlaps through .contact().
+  function turnAtPatrol(e) { if (Math.abs(e.x - e.homeX) > e.patrol) e.dir *= -1; }   // bounce within ±patrol
+  function facePlayer(e, world) { var p = world && world.player; if (p) e.dir = p.x < e.x ? -1 : 1; }
+  Studio.Actors = {
+    // Resolve string links (next/and any *State key) in a chain {key:state,…} into the real
+    // state objects, once at load. Returns the chain so factories can capture it in a closure.
+    define: function (chain) {
+      Object.keys(chain).forEach(function (k) {
+        var s = chain[k];
+        if (typeof s.next === 'string') s.next = chain[s.next];
+      });
+      return chain;
+    },
+    // Put an actor into a state (resets the per-state tic counter; fires enter()).
+    attach: function (e, state) { e.state = state; e._tic = 0; if (state && state.enter) state.enter(e); return e; },
+    // Drive every stateful enemy one frame. react/think may call Studio.Actors.attach to
+    // transition early (e.g. a sentry that charges when it SEES the player).
+    step: function (scene, world, frame) {
+      if (!world || !world.enemies) return;
+      if (!world.player && scene && scene.player) world.player = scene.player;
+      world.enemies.getChildren().forEach(function (e) {
+        if (!e.active || !e.state) return;
+        var s = e.state;
+        e._tic = (e._tic || 0) + 1;
+        if (typeof s.xmove === 'number') e.x += e.dir * s.xmove;
+        if (typeof s.ymove === 'number') e.y += s.ymove;
+        if (s.react) s.react(e, world, frame);
+        if (s.think) s.think(e, world, frame);
+        if (e.state === s && s.next && e._tic >= (s.tic || 1)) Studio.Actors.attach(e, s.next);   // not transitioned early
+      });
+    },
+    // Route a player↔enemy overlap through the current state's contact handler (game decides damage).
+    contact: function (world, player, e) { return (e && e.state && e.state.contact) ? e.state.contact(e, player, world) : undefined; },
+    // ── reusable behaviour chains (each factory reads the level enemy `e` for tuning) ──
+    LIB: {
+      // pace ±patrol forever — a 1-state loop, behaviourally the legacy walker (a baseline/example).
+      patroller: function (e) {
+        var spd = e.speed || e._spd || 0.6;
+        return Studio.Actors.define({ walk: { tic: 1, xmove: spd, react: turnAtPatrol, next: 'walk' } }).walk;
+      },
+      // pace, then PAUSE periodically (a telegraph beat), then resume — 2 states.
+      sentry: function (e) {
+        var spd = e.speed || 0.7, pace = e.pace || 90, rest = e.rest || 40;
+        return Studio.Actors.define({
+          walk:  { tic: pace, xmove: spd, react: turnAtPatrol, next: 'pause' },
+          pause: { tic: rest, xmove: 0,   next: 'walk' }
+        }).walk;
+      },
+      // pace; when the player comes within `range` on roughly the same level, FACE them, wind up
+      // (telegraph), DASH toward them, then recover — Keen's pea-pod walk→spit, as a ground charge.
+      // 4 states, gravity-free + deterministic. NOTE: a charge is a new threat on the path — re-gate
+      // (autopilot 0-death) any level that places a pouncer on the critical route.
+      pouncer: function (e) {
+        var spd = e.speed || 0.6, range = e.range || 130, dash = e.dash || 2.6, wind = e.wind || 12, recover = e.recover || 24;
+        var chain = Studio.Actors.define({
+          walk:   { tic: 1, xmove: spd, react: turnAtPatrol, next: 'walk',
+            think: function (a, w) { var p = w && w.player; if (p && Math.abs(p.x - a.x) <= range && Math.abs(p.y - a.y) <= 44) { facePlayer(a, w); Studio.Actors.attach(a, chain.windup); } } },
+          windup: { tic: wind,    xmove: 0,    next: 'dash' },
+          dash:   { tic: 18,      xmove: dash, react: turnAtPatrol, next: 'rest' },
+          rest:   { tic: recover, xmove: 0,    next: 'walk' }
+        });
+        return chain.walk;
+      }
     }
   };
 
