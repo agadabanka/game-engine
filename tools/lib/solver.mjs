@@ -18,7 +18,7 @@ const top = (sd) => sd[1], left = (sd) => sd[0], right = (sd) => sd[0] + sd[2];
 function takeoffs(sd) {
   const a = left(sd) + BODY.w / 2 + 2, b = right(sd) - BODY.w / 2 - 2, out = [];
   if (b < a) return [(a + b) / 2];
-  for (let x = a; x <= b + 0.1; x += Math.max(24, (b - a) / 6)) out.push(Math.round(x));
+  for (let x = a; x <= b + 0.1; x += Math.max(18, (b - a) / 16)) out.push(Math.round(x));   // dense enough to find the runway a specific gap needs
   if (out[out.length - 1] < b - 2) out.push(Math.round(b));
   return out;
 }
@@ -48,14 +48,17 @@ function simMove(room, cfg, fromIdx, tox, prim) {
   const solids = room.solids || [], sd = solids[fromIdx];
   const s = spawn(tox, top(sd) - BODY.h / 2 - 1);   // standing on the take-off
   for (let i = 0; i < 6 && !s.onGround; i++) step(s, {}, room, cfg);   // settle so onGround=true before launching (else the jump can't fire)
-  let phase = 'approach', t = 0, minMargin = 999;
+  let phase = 'approach', t = 0, minMargin = 999, sprung = false;
   for (let f = 0; f < MAXF; f++) {
+    if (s.vy < -650) sprung = true;   // only a spring (~-760) exceeds the jump impulse (-570) → attribute the launch to the spring
     const inp = {};
     // track tightness: closest approach to any spike during the move
     for (const sp of room.spikes || []) { const dx = Math.max(sp[0] - s.x, 0, s.x - (sp[0] + sp[2])); const dy = Math.max(sp[1] - s.y, 0, s.y - (sp[1] + (sp[3] || 14))); minMargin = Math.min(minMargin, Math.hypot(dx, dy)); }
+    if (prim.id === 'spring' && phase !== 'air' && s.vy < -300) { phase = 'air'; t = 0; }   // a spring launched us → drift to land
     if (phase === 'approach') {
       if (Math.abs(s.x - tox) > 5) inp[tox > s.x ? 'right' : 'left'] = true;
-      else if (s.onGround) { phase = prim.id.indexOf('dash') === 0 ? 'launch-dash' : (prim.wj != null ? 'launch-wj' : 'launch'); t = 0; }
+      else if (s.onGround && prim.id !== 'spring') { phase = prim.id.indexOf('dash') === 0 ? 'launch-dash' : (prim.wj != null ? 'launch-wj' : 'launch'); t = 0; }
+      // spring: just stand on it (no input) and let postMove bounce us
     } else if (phase === 'launch') { inp.jump = true; phase = 'air'; t = 0; }
     else if (phase === 'launch-wj') { inp.jump = true; phase = 'air'; t = 0; }          // hop toward a wall, then wall-jump in air
     else if (phase === 'launch-dash') {
@@ -67,7 +70,7 @@ function simMove(room, cfg, fromIdx, tox, prim) {
       if (prim.id === 'jump' && t < (prim.hold || 14) && s.vy < -20) inp.jump = true;   // hold for full height
       if (prim.wj != null) inp.jump = true;                                             // keep trying to wall-jump while clinging
       if (prim.drift > 0) inp.right = true; else if (prim.drift < 0) inp.left = true;
-      if (s.onGround && t > 4) { const land = standingOn(s, solids); if (land >= 0) return { land, margin: minMargin, frames: f }; phase = 'approach'; }
+      if (s.onGround && t > 4) { const land = standingOn(s, solids); if (land >= 0) return { land, margin: minMargin, frames: f, sprung }; phase = 'approach'; }
     }
     step(s, inp, room, cfg);
     if (s.dead) return { land: -1, died: true, margin: minMargin, frames: f };
@@ -79,17 +82,18 @@ function simMove(room, cfg, fromIdx, tox, prim) {
 // Build the reachability graph: edge from→to with the move + tightness, by simulation.
 function buildGraph(room, cfg, verbs) {
   const solids = room.solids || [], prims = primitives(verbs), edges = solids.map(() => []);
+  const addEdge = (i, r, move) => {
+    if (r.land == null || r.land < 0 || r.land === i) return;
+    if (r.sprung) move = 'spring';   // a spring did the lifting → attribute it to the spring, not the primitive that walked onto it
+    const verb = move.split(':')[0], ex = edges[i].find((e) => e.to === r.land && e.verb === verb);
+    if (!ex || r.margin > ex.margin) { if (ex) Object.assign(ex, { tox: r.tox, move, margin: r.margin, frames: r.frames }); else edges[i].push({ to: r.land, verb, tox: r.tox, move, margin: r.margin, frames: r.frames }); }
+  };
   for (let i = 0; i < solids.length; i++) {
-    for (const tox of takeoffs(solids[i])) {
-      for (const p of prims) {
-        const r = simMove(room, cfg, i, tox, p);
-        if (r.land != null && r.land >= 0 && r.land !== i) {
-          // keep the BEST (loosest-margin) edge per (i→land, verb-class)
-          const verb = p.id.split(':')[0];
-          const ex = edges[i].find((e) => e.to === r.land && e.verb === verb);
-          if (!ex || r.margin > ex.margin) { if (ex) Object.assign(ex, { tox, move: p.id, margin: r.margin, frames: r.frames }); else edges[i].push({ to: r.land, verb, tox, move: p.id, margin: r.margin, frames: r.frames }); }
-        }
-      }
+    for (const tox of takeoffs(solids[i])) for (const p of prims) addEdge(i, { ...simMove(room, cfg, i, tox, p), tox }, p.id);
+    // SPRING edges: a spring resting on this solid is a launch option (drift each way to land elsewhere).
+    for (const sp of room.springs || []) {
+      if (sp[0] < left(solids[i]) - 4 || sp[0] > right(solids[i]) + 4 || Math.abs(sp[1] - top(solids[i])) > 24) continue;
+      for (const drift of [-1, 0, 1]) addEdge(i, { ...simMove(room, cfg, i, sp[0], { id: 'spring', drift }), tox: sp[0] }, 'spring');
     }
   }
   return edges;

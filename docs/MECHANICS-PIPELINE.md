@@ -53,9 +53,21 @@ real game.
 
 ## What's done vs. follow-up
 - **Done:** the spec + genre templates; the deconstruct stage (wired into the pipeline); the movement
-  core; the verb-aware solver (run/jump/dash/wall-jump + spikes) with required-verb detection,
-  difficulty, and path emission; the room model + chaining; `mechanics.json` for Vesper Peak.
-- **Follow-up (the contraption registry):** the solver covers spikes; springs and richer gadgets
-  (dream-block, bumper, mover) each need a *solver model* alongside their runtime behavior + builder.
-  Add models as gadgets are added. Long-term, the game's player should drive from `platforming.mjs`
-  too (a `Studio.Platforming`) so "what the solver proves" == "what the player feels" by construction.
+  core; the verb-aware solver (run/jump/dash/wall-jump/**spring** + spikes) with required-verb
+  detection, difficulty, and path emission; the room model + chaining; the **retrofit tool**
+  (`tools/upgrade-mechanics.mjs` + the `/upgrade-mechanics` skill) with level-format adapters;
+  `mechanics.json` + `MECHANICS-AUDIT.md` for Vesper Peak (all 5 faces verified, each requires dash).
+- **Follow-up (the contraption registry):** richer gadgets (dream-block, bumper, mover) each need a
+  *solver model* alongside their runtime behavior + builder. Add models as gadgets are added.
+  Long-term, the game's player should drive from `platforming.mjs` too (a `Studio.Platforming`) so
+  "what the solver proves" == "what the player feels" by construction.
+
+## Retrofit existing games (a standing engine feature)
+The same capability the `deconstruct` stage gives *new* games is available for *old* ones, after the
+fact: `node tools/upgrade-mechanics.mjs <dir> [--write]` (or the **`/upgrade-mechanics`** skill).
+It ensures the spec, adapts the game's levels (`tools/lib/leveladapt.mjs` — the precision "solids"
+format + the stock `Studio.Level` DSL), runs the verb-aware solver on each, and writes
+`MECHANICS-AUDIT.md`: per level — solvable? · verbs USED · verbs **REQUIRED** · tightness · difficulty,
+with a verdict (real depth vs. garnish). Proven on Vesper Peak: all 5 faces verified, each
+`requires:[dash]`. Read-only by default; `--write` saves the spec + audit; deepen thin levels by
+authoring solver-verified rooms.

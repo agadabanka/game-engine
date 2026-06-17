@@ -12,7 +12,7 @@ const DT = 1 / 60, BW = 22, BH = 30;   // fixed timestep + body half-extents com
 /** A fresh hero state at (x,y). */
 export function spawn(x, y) {
   return { x, y, vx: 0, vy: 0, onGround: false, onWallL: false, onWallR: false, facing: 1,
-    dashReady: true, dashTimer: 0, dvx: 0, dvy: 0, dashCool: 0, coyote: 0, jumpBuf: 0, jumpLatch: false,
+    dashReady: true, dashTimer: 0, dvx: 0, dvy: 0, dashCool: 0, coyote: 0, jumpBuf: 0, jumpLatch: false, jumping: false,
     dead: false, won: false, frame: 0 };
 }
 
@@ -50,7 +50,7 @@ export function step(s, input, room, cfg) {
   const inp = input || {}, solids = room.solids || [], C = cfg;
   s.frame++;
   // timers
-  if (s.onGround) { s.coyote = C.COYOTE; if (!C.DASH || (C.DASH.refillOn || []).includes('land')) s.dashReady = true; }
+  if (s.onGround) { s.coyote = C.COYOTE; s.jumping = false; if (!C.DASH || (C.DASH.refillOn || []).includes('land')) s.dashReady = true; }
   else if (s.coyote > 0) s.coyote--;
   if (inp.jump) s.jumpBuf = C.BUFFER; else if (s.jumpBuf > 0) s.jumpBuf--;
   if (s.dashCool > 0) s.dashCool--;
@@ -62,7 +62,7 @@ export function step(s, input, room, cfg) {
       let dy = inp.dashY != null ? inp.dashY : (inp.up ? -1 : inp.down ? 1 : 0);
       if (dx === 0 && dy === 0) dx = s.facing;
       const m = Math.hypot(dx, dy) || 1; s.dvx = (dx / m) * C.DASH.speed; s.dvy = (dy / m) * C.DASH.speed;
-      s.dashTimer = C.DASH.frames; s.dashReady = false; s.dashCool = 8; if (dx !== 0) s.facing = dx > 0 ? 1 : -1;
+      s.dashTimer = C.DASH.frames; s.dashReady = false; s.dashCool = 8; s.jumping = false; if (dx !== 0) s.facing = dx > 0 ? 1 : -1;
     }
     if (s.dashTimer > 0) {
       s.vx = s.dvx; s.vy = s.dvy; s.dashTimer--;
@@ -87,12 +87,12 @@ export function step(s, input, room, cfg) {
 
   // ── jump / wall-jump (coyote + buffer) ──
   if (s.jumpBuf > 0 && !s.jumpLatch) {
-    if (s.onGround || s.coyote > 0) { s.vy = -C.JUMP_V; s.jumpLatch = true; s.jumpBuf = 0; s.coyote = 0; }
-    else if (C.WALL && (s.onWallL || sliding === -1)) { s.vy = -C.WALL.jumpVY; s.vx = C.WALL.jumpVX; s.facing = 1; s.jumpLatch = true; s.jumpBuf = 0; }
-    else if (C.WALL && (s.onWallR || sliding === 1)) { s.vy = -C.WALL.jumpVY; s.vx = -C.WALL.jumpVX; s.facing = -1; s.jumpLatch = true; s.jumpBuf = 0; }
+    if (s.onGround || s.coyote > 0) { s.vy = -C.JUMP_V; s.jumpLatch = true; s.jumping = true; s.jumpBuf = 0; s.coyote = 0; }
+    else if (C.WALL && (s.onWallL || sliding === -1)) { s.vy = -C.WALL.jumpVY; s.vx = C.WALL.jumpVX; s.facing = 1; s.jumpLatch = true; s.jumping = true; s.jumpBuf = 0; }
+    else if (C.WALL && (s.onWallR || sliding === 1)) { s.vy = -C.WALL.jumpVY; s.vx = -C.WALL.jumpVX; s.facing = -1; s.jumpLatch = true; s.jumping = true; s.jumpBuf = 0; }
   }
   if (!inp.jump) s.jumpLatch = false;
-  if (C.VAR_CUT && !inp.jump && s.vy < -C.VAR_CUT) s.vy = -C.VAR_CUT;        // variable-jump cut
+  if (C.VAR_CUT && s.jumping && !inp.jump && s.vy < -C.VAR_CUT) s.vy = -C.VAR_CUT;   // variable-jump cut — ONLY clips a jump, never a spring/dash launch
   if (inp.down && !s.onGround && s.vy > 0 && s.vy < C.FAST_FALL) s.vy = Math.min(C.FAST_FALL, s.vy + 60);
 
   moveAxis(s, s.vx * DT, s.vy * DT, solids);
@@ -102,7 +102,7 @@ export function step(s, input, room, cfg) {
 function postMove(s, room, C) {
   // springs (bounce when falling onto one)
   for (const sp of room.springs || []) {
-    if (rectsOverlap(s.x - BW / 2, s.y - BH / 2, BW, BH, sp[0] - 17, sp[1] - 8, 34, 16) && s.vy > -30) { s.vy = -760; s.dashReady = true; }
+    if (rectsOverlap(s.x - BW / 2, s.y - BH / 2, BW, BH, sp[0] - 17, sp[1] - 8, 34, 16) && s.vy > -30) { s.vy = -760; s.dashReady = true; s.jumping = false; }
   }
   // crystals (refill dash)
   if (C.DASH) for (const c of room.crystals || []) { if (rectsOverlap(s.x - BW / 2, s.y - BH / 2, BW, BH, c[0] - 14, c[1] - 14, 28, 28)) s.dashReady = true; }
