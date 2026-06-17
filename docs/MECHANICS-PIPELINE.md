@@ -71,3 +71,8 @@ format + the stock `Studio.Level` DSL), runs the verb-aware solver on each, and 
 with a verdict (real depth vs. garnish). Proven on Vesper Peak: all 5 faces verified, each
 `requires:[dash]`. Read-only by default; `--write` saves the spec + audit; deepen thin levels by
 authoring solver-verified rooms.
+
+## Where this is going
+The spec + solver + rooms here are the **foundation** for a recursive, self-improving level
+designer — the same evaluate/improve loop applied at every scale (move→room→level→campaign). See
+**`docs/FRACTAL-DESIGN.md`** for that architecture and the phased plan to close the loop.
