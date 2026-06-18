@@ -20,6 +20,16 @@ session and end with links.
   big procedural bob double-bounces into a hop. `Studio.Toon` is the rig FALLBACK when
   no generated sheet is present. Be THOROUGH + specific in the Gemini prompt (exact
   grid, per-frame leg choreography, flat chroma-green background, no text).
+- **Bring-your-own-art (optional — the image flow).** If the owner provides a character
+  IMAGE (a drawing, sketch, or photo — kids' drawings are a great fit), seed the SAME
+  sprite-sheet pipeline with it so the animation IS that art, not a redesign:
+  `node tools/art-sprites.mjs <gameDir> --ref <image> --force` — the `--ref` flag makes
+  the upload the hero IDENTITY reference (it replaces the generated model sheet). It is
+  validated · sliced · packed exactly like generated art. This is the **`art-from-image`**
+  skill; reach for it at the **character** stage whenever the owner hands you art (one
+  image per character; for an enemy, generate it as the hero in a throwaway dir and copy
+  the packed sheet into the enemy slot). It is also first-class in the Studio IDE (Art
+  tool → "Make sprite sheet from my art"). Default stays text-described art — opt-in only.
 - **Lots of juice**: particles on every event (hits, pickups, KOs, landings),
   rings/sparks/confetti/popups (`Studio.Juice`), procedural SFX (`Studio.Audio`).
 - **Variety as a theme**: levels/arenas should each be a distinct biome/world
@@ -49,6 +59,13 @@ skipping the hard creative stages (character art, rich levels, feel, music, vide
 ```
 node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir>
 ```
+> **Auth + where game tracking lives.** These scripts use **`GH_TOKEN`** (a PAT in the env) to hit
+> `api.github.com` directly — so they create and write to the **GAME'S OWN repo** (any repo, NOT
+> limited to one, and NOT dependent on any restricted MCP scope). **ALL game tracking — the stage
+> issues, the pinned Build tracker, and notes→issues — lives on the GAME repo.** **Never write
+> game-related issues or content to `agadabanka/game-engine`** — that repo is for ENGINE / SDK /
+> tooling / skills only (engine-change traceability uses `engine-change-issues.mjs`, above).
+
 This opens one GitHub issue per stage, each with a sharp ACCEPTANCE CRITERION (the bar), plus a
 single **pinned "Build tracker" meta-issue** that always names the NEXT step; it closes the stages
 GAME_META marks `done`. Then:
