@@ -1877,6 +1877,80 @@
     }
   };
 
+
+  // ── Studio.Weather ── a living weather system that CHANGES as you run ─────────
+  // Engine feature: attach to a Play scene; it advances through a sequence of
+  // weather states by DISTANCE travelled (camera scrollX), washing the sky,
+  // raising rain/snow/confetti/sparkles, and arcing a rainbow. Purely visual
+  // (scrollFactor-0 overlays) — never touches physics, so the 0-death gate is safe.
+  Studio.Weather = (function () {
+    var W = {
+      sun:     { label: 'Sunny',   wash: 0xfff3b0, alpha: 0.12, kind: 'sparkle',  n: 24, accent: 0xffe27a },
+      cloud:   { label: 'Cloudy',  wash: 0xcfd9e8, alpha: 0.16, kind: 'mist',     n: 16, accent: 0xeef3fa },
+      rain:    { label: 'Rainy',   wash: 0x7f93c0, alpha: 0.20, kind: 'rain',     n: 70, accent: 0xbcd0ff },
+      rainbow: { label: 'Rainbow', wash: 0xffd6f2, alpha: 0.10, kind: 'confetti', n: 44, accent: 0xffffff, arc: true },
+      snow:    { label: 'Snowy',   wash: 0xdfecfb, alpha: 0.18, kind: 'snow',     n: 60, accent: 0xffffff },
+      storm:   { label: 'Stormy',  wash: 0x4a4f70, alpha: 0.26, kind: 'rain',     n: 92, accent: 0x9fa8d0, flash: true }
+    };
+    var CONF = [0xff4d4d, 0xffd84d, 0x5fd66e, 0x4db6ff, 0x9a6cff, 0xff7ad1];
+    function lerpC(a, b, t) {
+      var ar=(a>>16)&255, ag=(a>>8)&255, ab=a&255, br=(b>>16)&255, bg=(b>>8)&255, bb=b&255;
+      return ((ar+(br-ar)*t|0)<<16) | ((ag+(bg-ag)*t|0)<<8) | (ab+(bb-ab)*t|0);
+    }
+    return {
+      TYPES: Object.keys(W),
+      // opt: { sequence:[names], cycleEvery:px(=1400), onChange:fn, label:true }
+      attach: function (scene, opt) {
+        try {
+          opt = opt || {};
+          var seq = (opt.sequence && opt.sequence.length ? opt.sequence : ['sun','cloud','rain','rainbow','snow']).filter(function (k) { return W[k]; });
+          if (!seq.length) seq = ['sun'];
+          var cycleEvery = opt.cycleEvery || 1400;
+          var SW = scene.scale.width, SH = scene.scale.height, MAX = 100;
+          var wash = scene.add.rectangle(0, 0, SW, Math.round(SH * 0.74), 0xffffff, 1).setOrigin(0, 0).setScrollFactor(0).setDepth(-8);
+          var arc = scene.add.graphics().setScrollFactor(0).setDepth(-7).setVisible(false);
+          (function () { var cx=SW*0.5, cy=SH*0.98, R=SW*0.58, bands=[0xff4d4d,0xff9f40,0xffd84d,0x5fd66e,0x4db6ff,0x9a6cff];
+            for (var i=0;i<bands.length;i++){ arc.lineStyle(11, bands[i], 0.55); arc.beginPath(); arc.arc(cx, cy, R-i*12, Math.PI, 0, false); arc.strokePath(); } })();
+          var pool = [];
+          for (var i=0;i<MAX;i++){ pool.push({ o: scene.add.rectangle(0,0,3,3,0xffffff,0).setScrollFactor(0).setDepth(60), vx:0, vy:0, on:false, kind:'' }); }
+          var label = opt.label === false ? null : scene.add.text(SW-12, 12, '', { fontFamily:'system-ui,sans-serif', fontSize:'13px', color:'#ffffff' }).setOrigin(1,0).setScrollFactor(0).setDepth(900).setAlpha(0.9);
+          var idx = 0, cur = W[seq[0]], curWash = cur.wash, flashT = 2000;
+          function style(p, w) { var o = p.o;
+            if (w.kind === 'rain') { o.setSize(2,14); o.setFillStyle(w.accent, 0.6); p.vx=-1.4; p.vy=13+Math.random()*6; }
+            else if (w.kind === 'snow') { o.setSize(5,5); o.setFillStyle(0xffffff,0.95); p.vx=(Math.random()-0.5)*1.2; p.vy=1.6+Math.random()*1.4; }
+            else if (w.kind === 'confetti') { o.setSize(5,5); o.setFillStyle(CONF[(Math.random()*CONF.length)|0],0.9); p.vx=(Math.random()-0.5)*2; p.vy=1.2+Math.random()*1.9; }
+            else if (w.kind === 'sparkle') { o.setSize(4,4); o.setFillStyle(w.accent,0.9); p.vx=(Math.random()-0.5)*0.5; p.vy=-(0.3+Math.random()*0.6); }
+            else { o.setSize(9,9); o.setFillStyle(w.accent,0.5); p.vx=0.5; p.vy=(Math.random()-0.5)*0.4; }
+            o.x=Math.random()*SW; o.y=Math.random()*SH; o.setAlpha(1); p.on=true; p.kind=w.kind;
+          }
+          function apply(w, hard) { arc.setVisible(!!w.arc); var want=Math.min(MAX, w.n);
+            for (var i=0;i<MAX;i++){ var p=pool[i]; if (i<want){ if (!p.on || hard) style(p, w); } else { p.on=false; p.o.setAlpha(0); } }
+            if (label) label.setText('⛅ ' + w.label);
+          }
+          apply(cur, true); wash.setFillStyle(curWash, cur.alpha);
+          return {
+            current: function () { return seq[idx]; },
+            label: function () { return W[seq[idx]].label; },
+            set: function (name) { if (W[name]) { cur = W[name]; apply(cur, true); } },
+            update: function (scrollX, dt) {
+              try {
+                var ni = Math.floor((scrollX||0)/cycleEvery) % seq.length; ni=(ni+seq.length)%seq.length;
+                if (ni !== idx) { idx=ni; cur=W[seq[idx]]; apply(cur,false); if (opt.onChange) opt.onChange(seq[idx], cur.label); }
+                curWash = lerpC(curWash, cur.wash, 0.05); wash.setFillStyle(curWash, cur.alpha);
+                for (var i=0;i<MAX;i++){ var p=pool[i]; if (!p.on) continue; var o=p.o; o.x+=p.vx; o.y+=p.vy;
+                  if (p.kind==='sparkle') o.setAlpha(0.4+0.5*Math.abs(Math.sin((o.x+o.y)*0.05)));
+                  if (o.y>SH+10){ o.y=-10; o.x=Math.random()*SW; } else if (o.y<-14){ o.y=SH+6; }
+                  if (o.x<-14) o.x=SW+10; else if (o.x>SW+14) o.x=-10;
+                }
+                if (cur.flash) { flashT-=(dt||16); if (flashT<=0){ flashT=1800+Math.random()*2800; wash.setFillStyle(0xffffff,0.55); } }
+              } catch (e) {}
+            }
+          };
+        } catch (e) { return { update: function(){}, set: function(){}, current: function(){return 'sun';}, label: function(){return 'Sunny';} }; }
+      }
+    };
+  })();
+
   root.Studio = Studio;
   if (typeof module !== 'undefined' && module.exports) module.exports = Studio;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -63,6 +63,8 @@
       var spec = window.LEVELS[Math.max(0, Math.min(window.LEVELS.length - 1, _lv - 1))];
       this.cameras.main.setBackgroundColor(spec.sky || 0x1d2b53);
       Studio.Backdrop(this, { top: 0x2a3a64, bottom: 0x0b1021, worldWidth: spec.width, layers: [{ color: 0x16203a, scroll: 0.25, amp: 90, y: spec.groundY - 30 }, { color: 0x222f4e, scroll: 0.5, amp: 55, y: spec.groundY }] });
+      // OPTIONAL weather: a level opts in with `weather:[...]` — it changes as you run (Studio.Weather). Visual-only; gate-safe.
+      if (spec.weather && Studio.Weather) this._weather = Studio.Weather.attach(this, { sequence: spec.weather, cycleEvery: spec.weatherEvery || 1100 });
       Studio.Textures.kit(this, { tile: T });
       world = Studio.Level.build(this, spec);
       spawn = world.spawn; levelGoalX = world.goalX;
@@ -137,6 +139,7 @@
 
       Studio.Enemies.step(this, world, frame);   // walker patrol + flyer sweep (#31)
       Studio.Boss.step(this, world);             // boss reel/phase/patrol (#44)
+      if (this._weather) this._weather.update(this.cameras.main.scrollX, 16.667);   // weather advances by distance run (opt-in)
 
       if (!won && player.x >= levelGoalX - 8 && Studio.Boss.defeated(world)) {   // win gated on the boss
         won = true; Studio.Audio.sfx('win'); Studio.Juice.flash(scene, 200, 6, 214, 160);
