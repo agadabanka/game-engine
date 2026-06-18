@@ -11,6 +11,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
+import os from 'node:os';
+import { spawn } from 'node:child_process';
 import * as store from './lib/store.js';
 import { snapshotAll } from './lib/aggregate.js';
 import { generateImage, geminiConfigured } from '../scripts/gemini.js';
@@ -263,19 +265,66 @@ app.get('/api/ide/surface/:id', async (req, res) => {
 // Render an art candidate. Every art edit is a Gemini call; without a Gemini SA
 // the Art tool is unavailable (clear 503), never a silent fallback. When the game
 // exposes the chosen asset we pass it as a reference (image-to-image → on-model edit).
+// parse a data: URL → { base64, mimeType } (null if not an image data URL)
+function dataUrlToRef(u) {
+  const m = typeof u === 'string' && u.match(/^data:(image\/[\w+.-]+);base64,(.+)$/s);
+  return m ? { mimeType: m[1], base64: m[2] } : null;
+}
+
 app.post('/api/ide/art/preview', async (req, res) => {
   if (!geminiConfigured()) return res.status(503).json({ error: 'needs-gemini', message: 'Art editing needs Gemini — set GEMINI_SA_JSON' });
-  const { gameId, prompt, aspect = '1:1', useRef = true, scope = null } = req.body || {};
+  const { gameId, prompt, aspect = '1:1', useRef = true, scope = null, refImage = null } = req.body || {};
   if (!prompt || String(prompt).trim().length < 4) return res.status(400).json({ error: 'prompt required' });
-  let refs = [], refUsed = false;
-  if (useRef && gameId) {
+  let refs = [], refUsed = false, refFrom = null;
+  const up = dataUrlToRef(refImage);
+  if (up) { refs = [up]; refUsed = true; refFrom = 'upload'; }        // a user upload wins (bring-your-own-art)
+  else if (useRef && gameId) {
     const game = (await getGames()).find((g) => g.id === gameId);
-    if (game && game.url) { const r = await assetRef(game.url, scope); if (r) { refs = [r]; refUsed = true; } }
+    if (game && game.url) { const r = await assetRef(game.url, scope); if (r) { refs = [r]; refUsed = true; refFrom = 'asset'; } }
   }
   try {
     const { mimeType, base64 } = await generateImage(String(prompt), { aspectRatio: aspect, refs });
-    res.json({ image: `data:${mimeType};base64,${base64}`, refUsed });
+    res.json({ image: `data:${mimeType};base64,${base64}`, refUsed, refFrom });
   } catch (e) { console.error('ide art preview', e); res.status(502).json({ error: 'gemini-failed', message: String(e && e.message || e).slice(0, 300) }); }
+});
+
+// run a node script as a child process, capturing output, with a hard timeout.
+function runNode(args, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const ch = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    ch.stdout.on('data', (d) => { out += d; });
+    ch.stderr.on('data', (d) => { out += d; });
+    const t = setTimeout(() => { ch.kill('SIGKILL'); reject(new Error('timed out')); }, timeoutMs);
+    ch.on('exit', (code) => { clearTimeout(t); code === 0 ? resolve(out) : reject(new Error('exit ' + code + ': ' + out.slice(-300))); });
+    ch.on('error', (e) => { clearTimeout(t); reject(e); });
+  });
+}
+const TOOLS = path.join(__dirname, '..', 'tools');
+
+// BRING-YOUR-OWN-ART → SPRITE SHEET. Upload an image; we seed the proven sprite pipeline
+// (art-sprites.mjs --ref) with it to generate a coherent, leg-alternating, VALIDATED packed
+// sheet of THAT character (run cycle + action poses), and return it for preview.
+app.post('/api/ide/art/sheet', async (req, res) => {
+  if (!geminiConfigured()) return res.status(503).json({ error: 'needs-gemini', message: 'Sprite-sheet generation needs Gemini — set GEMINI_SA_JSON' });
+  const { hero, style, upload } = req.body || {};
+  const up = dataUrlToRef(upload);
+  if (!up) return res.status(400).json({ error: 'upload-required', message: 'an uploaded image (data URL) is required' });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ide-sheet-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'src', 'game'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'GAME_META.json'), JSON.stringify({ name: 'upload', hero: hero || 'the uploaded character', art: { style: style || 'claymation, bold outline, glossy' } }, null, 2));
+    const ext = (up.mimeType.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const refPath = path.join(dir, 'upload.' + ext);
+    fs.writeFileSync(refPath, Buffer.from(up.base64, 'base64'));
+    await runNode([path.join(TOOLS, 'art-sprites.mjs'), dir, '--ref', refPath, '--force'], 330_000);
+    const sheetPath = path.join(dir, 'src/assets/sprites/hero.png');
+    if (!fs.existsSync(sheetPath)) throw new Error('no sheet produced');
+    const png = fs.readFileSync(sheetPath).toString('base64');
+    const man = JSON.parse(fs.readFileSync(path.join(dir, 'src/assets/sprites/manifest.json'), 'utf8'));
+    res.json({ sheet: 'data:image/png;base64,' + png, manifest: man.hero || man });
+  } catch (e) { console.error('ide art sheet', e); res.status(502).json({ error: 'sheet-failed', message: String(e && e.message || e).slice(0, 300) }); }
+  finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }
 });
 
 // Submit a suggestion as a note to the target game (server-to-server, no CORS).

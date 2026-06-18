@@ -114,8 +114,13 @@
     <label style="display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;margin-top:10px;cursor:pointer">
       <input type="checkbox" id="useref" checked style="width:auto" /> 🖼 use the current asset as reference (image-to-image)
     </label>
+    <label>Bring your own art (upload → sprite sheet)</label>
+    <input type="file" id="upload" accept="image/png,image/jpeg,image/webp" style="width:auto;border:0;padding:6px 0;font-size:12px" />
+    <div id="uplthumb"></div>
     <button class="btn gen" id="gen">✨ Generate candidate (Gemini)</button>
     <div class="cand" id="cand"></div>
+    <button class="btn suggest" id="mksheet" disabled>🎞 Make sprite sheet from my art</button>
+    <div class="cand" id="sheet"></div>
   </div>
 
   <!-- BOTTOM: agent + suggest -->
@@ -130,7 +135,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
-let GAME = null, STAGES = [], PHASES = [], CAND = null, SURFACE = null, SCOPE = null;
+let GAME = null, STAGES = [], PHASES = [], CAND = null, SURFACE = null, SCOPE = null, UPLOAD = null, SHEET = null;
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
@@ -257,23 +262,52 @@ function buildNote(){
     source: 'studio-ide', created_at: new Date().toISOString(), ts: Date.now(),
   };
   if (CAND && CAND.length < 480000) note.shot = CAND;   // attach the previewed candidate if small enough
+  if (UPLOAD) { note.proposal.seededFromUpload = true; if (UPLOAD.length < 1_400_000) note.upload = UPLOAD; }   // bring-your-own-art seed for the handler
   return note;
 }
 function renderNote(){
-  const n = buildNote(); const view = { ...n }; if (view.shot) view.shot = '<candidate ' + Math.round(view.shot.length/1024) + 'kb>';
+  const n = buildNote(); const view = { ...n };
+  if (view.shot) view.shot = '<candidate ' + Math.round(view.shot.length/1024) + 'kb>';
+  if (view.upload) view.upload = '<upload ' + Math.round(view.upload.length/1024) + 'kb>';
   $('noteview').textContent = JSON.stringify(view, null, 2);
 }
+
+// 🖼 bring your own art → becomes the reference for the candidate + the sprite-sheet seed
+$('upload').onchange = (e) => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { UPLOAD = rd.result; $('uplthumb').innerHTML = `<img src="${UPLOAD}" style="max-width:120px;border-radius:8px;border:1px solid var(--line);margin-top:6px;display:block" />`; $('mksheet').disabled = false; renderNote(); };
+  rd.readAsDataURL(f);
+};
+
+// 🎞 build a real, validated sprite sheet FROM the uploaded art (art-sprites --ref)
+$('mksheet').onclick = async () => {
+  if (!UPLOAD) return;
+  const b = $('mksheet'); b.disabled = true; const old = b.textContent; b.textContent = '🎞 building sheet… (~1–2 min)';
+  $('sheet').innerHTML = '<div class="cap" style="color:var(--dim)">generating a run cycle + action poses from your art, keying + packing into one atlas…</div>';
+  try{
+    const r = await fetch('/api/ide/art/sheet', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ hero: $('subject').value.trim(), style: $('style').value.trim(), upload: UPLOAD }) });
+    const j = await r.json();
+    if (!r.ok){ $('sheet').innerHTML = `<div class="warn">${esc(j.message || j.error || 'sheet failed')}</div>`; }
+    else {
+      SHEET = j.sheet; const m = j.manifest || {};
+      const frames = m.anims ? Object.entries(m.anims).map(([k,v]) => k + ':' + (Array.isArray(v) ? v.length : 1)).join(' · ') : '';
+      $('sheet').innerHTML = `<img src="${j.sheet}" alt="sprite sheet" /><div class="cap">✓ packed sprite sheet from your art${m.frameWidth ? ` · ${m.frameWidth}×${m.frameHeight}` : ''}${frames ? ` · ${esc(frames)}` : ''}</div>`;
+    }
+  }catch(e){ $('sheet').innerHTML = `<div class="warn">${esc(String(e))}</div>`; }
+  b.disabled = false; b.textContent = old;
+};
 
 // ✨ render a Gemini candidate (nano-banana-pro)
 $('gen').onclick = async () => {
   const b = $('gen'); b.disabled = true; b.textContent = '✨ generating…'; $('cand').innerHTML = '';
   try{
-    const aspect = (SCOPE && (SCOPE.kind === 'tile')) ? '1:1' : '1:1';
     const r = await fetch('/api/ide/art/preview', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ gameId: GAME.id, prompt: composePrompt(), aspect, useRef: $('useref').checked, scope: SCOPE ? { kind: SCOPE.kind, key: SCOPE.key } : null }) });
+      body: JSON.stringify({ gameId: GAME.id, prompt: composePrompt(), aspect: '1:1', useRef: $('useref').checked, scope: SCOPE ? { kind: SCOPE.kind, key: SCOPE.key } : null, refImage: UPLOAD || null }) });
     const j = await r.json();
     if (!r.ok){ $('cand').innerHTML = `<div class="warn">${esc(j.message || j.error || 'generation failed')}</div>`; }
-    else { CAND = j.image; const how = j.refUsed ? 'on-model · edited the current hero art (image-to-image)' : 'text→image · no reference art found for this game'; $('cand').innerHTML = `<img src="${j.image}" alt="candidate" /><div class="cap">Gemini candidate · ${how}</div>`; renderNote(); }
+    else { CAND = j.image; const how = j.refFrom === 'upload' ? 'from your uploaded art (image-to-image)' : j.refUsed ? 'on-model · edited the current asset (image-to-image)' : 'text→image · no reference art found'; $('cand').innerHTML = `<img src="${j.image}" alt="candidate" /><div class="cap">Gemini candidate · ${how}</div>`; renderNote(); }
   }catch(e){ $('cand').innerHTML = `<div class="warn">${esc(String(e))}</div>`; }
   b.disabled = false; b.textContent = '✨ Generate candidate (Gemini)';
 };

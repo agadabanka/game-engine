@@ -20,6 +20,10 @@ import { validateGame } from './validate-sprites.mjs';
 const gameDir = process.argv[2];
 if (!gameDir) { console.error('usage: node tools/art-sprites.mjs <gameDir> [--force]'); process.exit(2); }
 const force = process.argv.includes('--force');
+// --ref <imagePath>: seed the HERO identity from a USER-UPLOADED image (bring-your-own-art →
+// sprite sheet). The upload replaces the generated model sheet, so the run cycle + action poses
+// are drawn as animation frames of THAT exact art.
+const refArg = process.argv.includes('--ref') ? process.argv[process.argv.indexOf('--ref') + 1] : null;
 if (!geminiConfigured()) { console.error('No Gemini SA — skipping sprite art (the game keeps its Studio.Toon rig).'); process.exit(0); }
 
 const meta = JSON.parse(fs.readFileSync(path.join(gameDir, 'GAME_META.json'), 'utf8'));
@@ -192,12 +196,12 @@ async function cycleScore(frames) {
 
 // Generate a 6-frame locomotion CYCLE, validating ALTERNATION inline and RETRYING (cache-busted,
 // with a stronger nudge) up to 3× so the legs reliably scissor — the repeatable guarantee.
-async function genCycle(keyBase, charDesc, motion, refs, label) {
+async function genCycle(keyBase, charDesc, motion, refs, label, extra = '') {
   let best = null, bestScore = -1, bestSheet = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     const k = attempt ? keyBase + '_v' + attempt : keyBase;
     const nudge = attempt ? `\n\nCRITICAL — VARIATION ${attempt}: make the leg ALTERNATION unmistakable. Between the two CONTACT frames the FORWARD leg MUST swap to the OPPOSITE side (right foot far ahead in one contact frame, LEFT foot far ahead in the other), legs SPREAD WIDE. Do NOT draw the same stride twice.` : '';
-    const sheet = await genSheet(k, cyclePrompt(charDesc, motion) + nudge, refs, '3:2');
+    const sheet = await genSheet(k, cyclePrompt(charDesc, motion) + nudge + extra, refs, '3:2');
     const frames = await sliceSheet(sheet.path, 6);
     const score = await cycleScore(frames);
     process.stdout.write(` ${label}${sheet.hit ? '·' : '✱'}[alt${(score * 100) | 0}%${frames.length !== 6 ? '/' + frames.length + 'f' : ''}]`);
@@ -217,15 +221,25 @@ if (meta.art && meta.art.skipHero) {
   console.log('  hero: SKIPPED (art.skipHero — procedural/no-cycle hero)');
 } else {
   // identity model sheet (shared reference → keeps the run sheet & the action sheet on-model)
-  const modelPrompt = `Character model/reference sheet for "${hero}". ${STYLE_NOTE} Show the SAME character in a large clear SIDE view facing right and a three-quarter front view, full body, consistent colours and proportions, all of its features clearly visible. Plain neutral light-grey studio background. No text, no labels.`;
-  const model = await genSheet('hero_model', modelPrompt, undefined, '3:2');
-  console.log(`  hero model sheet${model.hit ? ' (cached)' : '✱'}`);
-  const heroRef = [{ base64: fs.readFileSync(model.path).toString('base64'), mimeType: 'image/png' }];
+  // identity model: a USER UPLOAD (bring-your-own-art) when --ref is given, else a generated model sheet
+  let heroRef, REFNOTE = '';
+  if (refArg && fs.existsSync(refArg)) {
+    const ext = (refArg.split('.').pop() || 'png').toLowerCase();
+    const mt = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'webp' ? 'image/webp' : 'image/png';
+    heroRef = [{ base64: fs.readFileSync(refArg).toString('base64'), mimeType: mt }];
+    REFNOTE = '\n\nThe LAST reference image IS the character — these are animation frames of THAT exact uploaded art. Match its design, colours, shapes, and proportions EXACTLY; do not redesign it.';
+    console.log('  hero model: USER UPLOAD (' + path.basename(refArg) + ')');
+  } else {
+    const modelPrompt = `Character model/reference sheet for "${hero}". ${STYLE_NOTE} Show the SAME character in a large clear SIDE view facing right and a three-quarter front view, full body, consistent colours and proportions, all of its features clearly visible. Plain neutral light-grey studio background. No text, no labels.`;
+    const model = await genSheet('hero_model', modelPrompt, undefined, '3:2');
+    console.log(`  hero model sheet${model.hit ? ' (cached)' : '✱'}`);
+    heroRef = [{ base64: fs.readFileSync(model.path).toString('base64'), mimeType: 'image/png' }];
+  }
   process.stdout.write('  hero:');
-  const heroRun = await genCycle('hero_run', hero, 'run', heroRef, 'run');
+  const heroRun = await genCycle('hero_run', hero, 'run', heroRef, 'run', REFNOTE);
   const runFrames = heroRun.frames;
   const heroCohereRef = heroRun.sheet ? heroRef.concat([{ base64: fs.readFileSync(heroRun.sheet).toString('base64'), mimeType: 'image/png' }]) : heroRef;
-  const heroAct = await genSheet('hero_actions', gridPrompt(hero, HERO_POSES) + COHERE, heroCohereRef, '3:2');
+  const heroAct = await genSheet('hero_actions', gridPrompt(hero, HERO_POSES) + COHERE + REFNOTE, heroCohereRef, '3:2');
   const actFrames = await sliceSheet(heroAct.path, HERO_POSES.length);
   console.log(` actions${heroAct.hit ? '·' : '✱'}`);
   const heroAll = actFrames.concat(runFrames);

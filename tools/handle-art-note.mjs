@@ -101,9 +101,21 @@ if (flag('--dry-run')) {
 }
 
 // ── regenerate via the proven pipeline (sprites validate internally) ──
-console.log(`\n   regenerating (tools/${generator} --force)…`);
+const genArgs = [path.join(here, generator), gameDir, '--force'];
+// bring-your-own-art: seed the HERO identity from the note's uploaded image
+if (kind === 'hero' && note.upload) {
+  const m = String(note.upload).match(/^data:(image\/[\w+.-]+);base64,(.+)$/s);
+  if (m) {
+    const ext = (m[1].split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const upPath = path.join(gameDir, '.ide-upload.' + ext);
+    fs.writeFileSync(upPath, Buffer.from(m[2], 'base64'));
+    genArgs.push('--ref', upPath);
+    console.log('   seeding hero from uploaded art (' + path.basename(upPath) + ')');
+  }
+}
+console.log(`\n   regenerating (tools/${generator}${genArgs.includes('--ref') ? ' --ref <upload>' : ''} --force)…`);
 try {
-  execFileSync('node', [path.join(here, generator), gameDir, '--force'], { stdio: 'inherit' });
+  execFileSync('node', genArgs, { stdio: 'inherit' });
 } catch (e) {
   console.error('   ✗ generation/validation failed — NOT committing.');
   process.exit(1);
