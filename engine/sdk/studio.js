@@ -541,13 +541,27 @@
         preload: function () {
           var S = window.SHELL || {}, sc = this;
           if (S.titleArt) sc.load.image('shell_title', S.titleArt);
-          (S.thumbs || []).forEach(function (t, i) { if (t) sc.load.image('shell_thumb' + i, t); });
+          // Per-world menu THUMBNAILS. Explicit S.thumbs[i] wins; otherwise fall back to the
+          // screenshot CONVENTION `assets/shots/level<N>.jpg` (captured by tools/shots.mjs) so
+          // every game shows real level stills on its menu for free. A missing file trips
+          // loaderror below and the card draws its flat world color instead — never blank.
+          var wn = (S.worlds || window.LEVELS || []).length || (S.thumbs || []).length;
+          for (var ti = 0; ti < wn; ti++) {
+            var src = (S.thumbs && S.thumbs[ti]) || ('assets/shots/level' + (ti + 1) + '.jpg');
+            if (src) sc.load.image('shell_thumb' + ti, src);
+          }
           sc.load.on('loaderror', function () {});
         },
         create: function () {
           var scene = this, W = scene.scale.width, H = scene.scale.height, S = window.SHELL || {};
           var p = new URLSearchParams(location.search);
           if (p.get('level')) { scene.scene.start('Play'); return; }   // deep-link / eval → straight to Play
+          // RESET the re-entry guard. Phaser REUSES the scene instance across shutdown/restart, so a
+          // property set on `scene` (here `_starting`, set when a card launches Play) survives back into
+          // the menu — without this reset it stays true forever and every card click after you exit a
+          // level is silently swallowed by `if (scene._starting) return`. (owner note: "menu click does
+          // not work once we exit from a level".)
+          scene._starting = false;
           if (Studio.uistate) Studio.uistate.set(scene.game, 'menu');
           var accent = S.accent != null ? S.accent : 0xffd34d;
           var accCss = '#' + ('000000' + accent.toString(16)).slice(-6);
@@ -592,7 +606,18 @@
           sel(0);
           var prompt = scene.add.text(W / 2, H - 42, '▶  PICK A WORLD  ·  OR PRESS SPACE', { fontFamily: 'Arial Black, Arial', fontSize: '15px', color: '#ffffff', stroke: '#1c1320', strokeThickness: 6 }).setOrigin(0.5);
           scene.tweens.add({ targets: prompt, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
-          var Lk = S.links || {}, lx = W - 22, ly = 22;
+          // 📝 NOTE — a BASE menu option (themed, top-right circle). One tap opens the note box
+          // straight from the title/level-select so a player can leave feedback before even playing;
+          // the server auto-promotes each note to a GitHub issue. Mirrors the in-game pause button.
+          (function () {
+            var bx = W - 34, by = 30, rr = 21;
+            var cc = scene.add.circle(bx, by, rr, accent, 0.95).setStrokeStyle(3, 0xffffff, 0.8).setDepth(60);
+            scene.add.text(bx, by, '📝', { fontFamily: 'Arial', fontSize: '19px' }).setOrigin(0.5).setDepth(61);
+            var zz = scene.add.zone(bx, by, 52, 52).setDepth(62).setInteractive({ useHandCursor: true });   // generous tap target
+            var openNote = function () { cc.setScale(0.88); scene.time.delayedCall(90, function () { try { cc.setScale(1); } catch (e) {} }); if (Studio.Shell.note) Studio.Shell.note(scene, { accentCss: accCss, meta: { level: scene._sel + 1 } }); };
+            zz.on('pointerdown', openNote); scene.input.keyboard.on('keydown-N', openNote);
+          })();
+          var Lk = S.links || {}, lx = W - 22, ly = 60;
           function link(label, href, color) { if (!href) return; var t = scene.add.text(lx, ly, label, { fontFamily: 'Arial', fontSize: '14px', color: color }).setOrigin(1, 0).setInteractive({ useHandCursor: true }); t.on('pointerdown', function () { window.location.href = href; }); ly += 25; }
           link('📖 diary', Lk.diary, '#ffd98a'); link('🧱 builder', Lk.build, '#9fd6ff'); link('✏️ design', Lk.design, '#c9a7ff');
           scene.input.keyboard.on('keydown-RIGHT', function () { sel((scene._sel + 1) % n); });
@@ -671,11 +696,15 @@
     var accent = opt.accent != null ? opt.accent : 0xffd34d;
     function topBtn(cx, glyph, onTap) {
       var r = 21, cy = 16 + r;
-      var c = scene.add.circle(cx, cy, r, accent, 0.92).setScrollFactor(0).setDepth(105).setStrokeStyle(3, 0xffffff, 0.75).setInteractive({ useHandCursor: true });
+      var c = scene.add.circle(cx, cy, r, accent, 0.92).setScrollFactor(0).setDepth(105).setStrokeStyle(3, 0xffffff, 0.75);
       var t = scene.add.text(cx, cy, glyph, { fontFamily: 'Arial', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(106);
+      // A generous INVISIBLE hit zone (50px, bigger than the 42px circle) so the button is easy to
+      // TAP on a phone — small corner circles were fiddly to hit. Zones hit-test more reliably than
+      // setInteractive() on a Shape, which is why notes felt unclickable. Topmost zone wins overlaps.
+      var z = scene.add.zone(cx, cy, 50, 50).setScrollFactor(0).setDepth(107).setInteractive({ useHandCursor: true });
       var hit = function () { c.setScale(0.9); scene.time.delayedCall(90, function () { try { c.setScale(1); } catch (e) {} }); onTap(); };
-      c.on('pointerdown', hit); t.setInteractive({ useHandCursor: true }); t.on('pointerdown', hit);
-      return { c: c, t: t };
+      z.on('pointerdown', hit);
+      return { c: c, t: t, z: z };
     }
     function openNote() {
       if (ov || window.__won) return;
@@ -839,6 +868,11 @@
     create: function (scene, opt) {
       opt = opt || {};
       var accent = opt.accent != null ? opt.accent : 0xffd34d, wantFire = !!opt.fire, wantDown = !!opt.down;
+      // side: which half the analog stick lives in ('left' default, or 'right'). jumpBtn: show the
+      // standalone ⤒ button (default true; pass false when the stick already gives all directions —
+      // e.g. a grid snake driven entirely by the joystick, owner note: "joystick on the right side").
+      var side = opt.side === 'right' ? 'right' : 'left';
+      var wantJumpBtn = opt.jumpBtn != null ? !!opt.jumpBtn : true;
       var state = { left: false, right: false, jump: false, down: false, fire: false };
       var isTouch = (scene.sys && scene.sys.game && scene.sys.game.device.input.touch) || (typeof window !== 'undefined' && 'ontouchstart' in window);
       var show = opt.show != null ? opt.show : (isTouch || (typeof location !== 'undefined' && /[?&]touch=1/.test(location.search)));
@@ -856,21 +890,21 @@
       function build() {
         if (!show) return;
         var W = scene.scale.width, H = scene.scale.height, y = H - 84;
-        viz.jump = btn(W - 96, y, 56, '⤒', '#fff'); hold(viz.jump, 'jump');
+        if (wantJumpBtn) { viz.jump = btn(side === 'right' ? 96 : W - 96, y, 56, '⤒', '#fff'); hold(viz.jump, 'jump'); }   // opposite the stick
         if (wantFire) { viz.fire = btn(W - 96, y - 132, 48, '●', '#ff8088'); hold(viz.fire, 'fire'); }
         if (dpad) {
           viz.left = btn(96, y, 50, '◀'); hold(viz.left, 'left');
           viz.right = btn(214, y, 50, '▶'); hold(viz.right, 'right');
           if (wantDown) { viz.down = btn(W - 214, y, 44, '▼'); hold(viz.down, 'down'); }
         } else {
-          var bx = 132, by = H - 96, R = 76;
+          var bx = side === 'right' ? W - 132 : 132, by = H - 96, R = 76;
           var base = scene.add.circle(bx, by, R, 0x0f1528, 0.42).setScrollFactor(0).setDepth(DEPTH).setStrokeStyle(3, 0xffffff, 0.28);
           var thumb = scene.add.circle(bx, by, 34, 0x2a3556, 0.95).setScrollFactor(0).setDepth(DEPTH + 2).setStrokeStyle(3, accent, 0.85);
           objs.push(base, thumb);
           joy = { bx: bx, by: by, R: R, thumb: thumb, pid: null };
           var setFrom = function (px, py) { var dx = px - bx, dy = py - by, m = Math.hypot(dx, dy) || 1; if (m > R) { dx = dx / m * R; dy = dy / m * R; } thumb.setPosition(bx + dx, by + dy); var nx = dx / R, ny = dy / R; state.left = nx < -0.35; state.right = nx > 0.35; state.jump = ny < -0.55; if (wantDown) state.down = ny > 0.55; };
           var rel = function () { joy.pid = null; thumb.setPosition(bx, by); state.left = state.right = state.down = false; state.jump = false; };
-          joy._down = function (p) { if (joy.pid != null) return; if (p.x > W * 0.5) return; joy.pid = p.id; resume(); setFrom(p.x, p.y); };
+          joy._down = function (p) { if (joy.pid != null) return; var onSide = side === 'right' ? p.x > W * 0.5 : p.x < W * 0.5; if (!onSide) return; joy.pid = p.id; resume(); setFrom(p.x, p.y); };
           joy._move = function (p) { if (p.id === joy.pid) setFrom(p.x, p.y); };
           joy._up = function (p) { if (p.id === joy.pid) rel(); };
           scene.input.on('pointerdown', joy._down); scene.input.on('pointermove', joy._move); scene.input.on('pointerup', joy._up);

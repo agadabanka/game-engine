@@ -21,7 +21,7 @@ test('treeMarkdown renders a fenced tree with phases, numbered stages, sub-steps
   const md = treeMarkdown({ scaffold: 'done' });
   assert.ok(md.startsWith('```') && md.trimEnd().endsWith('```'));
   assert.ok(md.includes('SET UP') && md.includes('SHIP IT'));
-  assert.ok(md.includes('✓ 1. Scaffold the game') && md.includes('○ 19. Loop closed'));
+  assert.ok(md.includes('✓ 1. Scaffold the game') && md.includes(`○ ${PIPELINE.length}. Loop closed`));
   for (const sub of PIPELINE[0].sub) assert.ok(md.includes(sub), `sub-step "${sub}"`);
   assert.ok(!treeText().includes('```'));   // text form drops the fence
 });

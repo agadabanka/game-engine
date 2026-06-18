@@ -31,6 +31,12 @@ session and end with links.
   `engine/sdk/studio.js` (game-engine repo, the session's work branch), kept
   byte-identical with `engine/game-template/src/vendor/studio.js` and the game's
   `src/vendor/studio.js`. Note every engine investment in the diary.
+- **Log engine changes for traceability + rollback.** After shipping engine
+  changes, run `node scripts/engine-change-issues.mjs --since <ref>` — it logs each
+  engine-code commit as a labeled GitHub issue on `agadabanka/game-engine` with the
+  files, the commit, and the EXACT deterministic rollback (incl. re-propagating
+  `studio.js` to consumer game repos), plus a pinned ledger. Print any one plan with
+  `--rollback <sha>`. So "undo whatever was changed in the engine" is programmatic.
 - **The diary is the deliverable the owner reads.** Write DIARY.md as you go:
   what was built, engine investments, gotchas + fixes, the scorecard, links.
 
@@ -88,7 +94,8 @@ The tools are engine-level (operate on a game id/dir); a new game does NOT carry
 | gate | game `eval.mjs` + `tools/lib/mirth.mjs` | FUN (`Studio.Brawl.fun`) + optional funny gate (`Studio.Mirth`) |
 | art | `tools/full-art.mjs` (orchestrator) → `art.mjs`+`art-sprites.mjs`+`art-tiles.mjs`+`art-props.mjs` | backdrops/keyart · generated hero+enemy **sprite sheets** (model-sheet→keyed→packed) · clay **tile** materials · **props** — all from `GAME_META.art.{style,enemies,tiles,props}`, chroma-keyed, merged into one `sprites.js` manifest, cached via `gencache`. `Studio.Hero` renders the sprite or falls back to the `Studio.Toon` rig |
 | music | `tools/music.mjs` → `lib/lyria.js` | Lyria loop per world (or procedural `Studio.Audio` fallback) |
-| shorts | `tools/trailer/make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed, auto-wired (see ENGINE.md) |
+| shots | `tools/shots.mjs <dir>` | per-level menu THUMBNAILS — boots the game's own server, drives the autopilot a couple seconds in, writes `src/assets/shots/level<N>.jpg`. `Studio.Shell.title` auto-loads them (convention `assets/shots/level<N>.jpg`) so the level-select shows real screenshots, not flat color. Commit + redeploy. |
+| shorts | `tools/trailer/ship-shorts.mjs <id>` (record→host→wire→commit→push→verify, ONE program) — wraps `make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed. Use ship-shorts so the registry edit can never be left staged/uncommitted (the bug that left a game with no visible shorts). It pushes branch+main (auto-deploys the hub) and POLLS the live hub until the shorts appear. |
 | videos | `tools/record.mjs` + `tools/trailer/yt-upload.mjs` | per-level landscape MP4 (music muxed) + montage → YouTube (YT_* secrets; write the refresh token to /tmp/yt-creds.json). Playlist needs the broader `youtube` scope — an upload-scoped token 403s, so fall back to the montage link. |
 | safety net | `tools/eval-all.mjs` | run the golden set + this game before merge |
 Anything still scattered in a game repo is a migration target — lift it here and update this table.
@@ -112,6 +119,14 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
 - **The landing-settle guard (proven fix for "autopilot overshoots a pit and dies").** After an enemy-hop / pad-launch / wall-hop, the autopilot can fire a *spurious jump on the very frame it lands* (the foot-probe reads stale before the body settles) → an oversized arc that sails over the next edge into the void. Fix in the game's `update()`: on touchdown (`onGround && wasAir`) set a 2–3 frame `landCool`; suppress the autopilot jump while `landCool > 0`. Also: keep **one kinetic feature (enemy/pad/wall) per ground segment** with a safe runway before the next pit, and note that **physical step-walls** are the most fragile primitive for this AI (a wall-hop landing on an adjacent enemy chains badly) — prefer bridging stepping-stones over wide gaps. Always **per-frame-trace** a 0-death failure (`window.__trace` / snapshot `x,y,vy,onGround` + the probe) before guessing — it shows the exact takeoff/landing.
 - **Character/visual decoupling:** the physics body is invisible; a separate visual sprite follows it; squash-and-stretch scales the VISUAL only — never the body — so collision/sensing stay rock-stable.
 - **Determinism:** never `Math.random`; gate gags/variation on counters (`coins%2`) or `Studio.RNG`. Lint every level with `lintLevel` before gating (gaps ≤200, walls ≤2 tiles & ≥200px from gaps, spawn/goal/enemy on ground).
+
+## Mechanics SPEC + build levels in STEPS (for skill-demanding genres — Celeste-likes)
+The stock autopilot (`Studio.Autopilot.platformer`) is a *dumb* solver — "move right, jump when blocked/gap/enemy" — and every `Studio.Mechanics` contraption is engineered "**autopilot-transparent**" so that dumb bot still wins. That's a great shipping guarantee for runner-platformers, but it **caps mechanical depth at what a move-right bot can do** — the opposite of a precision game whose levels *require* chaining tech (dash→wall→jump). When the concept needs real depth, use this pipeline instead of the stock one:
+- **The mechanics SPEC is the missing input.** "Clone Celeste" underspecifies the game; `node tools/deconstruct.mjs <dir>` writes **`mechanics.json`** — the six load-bearing parts: **verbs+tuning · tech/chains (the depth) · contraptions · room-grammar · curve · failure-model** (`tools/lib/mechspec.mjs`, genre templates). A human edits the numbers / adds game-specific tech. Every later step reads it.
+- **Build levels in STEPS, not as one monolith.** A level = an ordered list of single-screen **rooms** (`tools/lib/rooms.mjs`); author one room, verify it, then the next. Each room declares an `idea` (the verb it teaches/demands).
+- **The verb-aware SOLVER is the new gate.** `tools/lib/solver.mjs` forward-simulates the hero (`tools/lib/platforming.mjs` — the shared movement core, configured from the spec) between footholds to (a) prove a room solvable **with the declared verbs incl. dash/wall-jump chains**, (b) report which verbs are **load-bearing** (remove one → unsolvable, i.e. the room genuinely *requires* the dash — the depth a dumb gate can't certify), (c) score tightness/difficulty, and (d) **emit the autopilot path** the game replays — so verification and the gate are the same act, and the painful hand-tuning of waypoints is automated. `chainRooms(rooms, spec)` stitches verified rooms into a renderable+gateable level.
+- **What's still scoped:** the solver covers run/jump/dash/wall-jump/**spring** + spikes; richer contraptions (dream-block/bumper/mover) are the **contraption-registry** follow-up — each contraption needs (a) runtime behavior, (b) a solver model, (c) an authoring builder. Add models as you add gadgets.
+- **Retrofit an EXISTING game** (not just new ones): `node tools/upgrade-mechanics.mjs <dir> [--write]` (or the **`/upgrade-mechanics`** skill) ensures the spec, adapts the game's levels (`tools/lib/leveladapt.mjs` reads the solids format + the stock DSL), solver-audits each, and writes `MECHANICS-AUDIT.md` — telling you which levels have *required* depth vs. garnish. Audit read-only first; `--write` to save + deepen thin levels with new rooms.
 
 ## The pipeline (all stages must land; update GAME_META.json stages as you go)
 1. **Scaffold** — `node scripts/new-game.mjs "<Name>" --local --tagline … --hero … --verb …`
@@ -229,13 +244,16 @@ The level is DATA fed to `Studio.Level.build(scene, spec)`; it returns `{platfor
   selectable count to `LEVELS.length`), not gate behind progression — players and
   deep-links can jump anywhere. Keep the default cursor on the highest reached.
 - Shorts subsystem (engine ability — see `docs/ENGINE.md` "The shorts subsystem").
-  A new game gets the whole vertical-shorts feed for FREE; you just run two commands:
+  A new game gets the whole vertical-shorts feed for FREE. Prefer the ONE-command
+  shipper so the flow can never be left half-done (the bug that left a game with no
+  visible shorts: the registry edit sat staged-but-uncommitted):
   ```
-  node tools/trailer/make-shorts.mjs <id>     # records levels 1/3/5 off the LIVE
-                                              # deploy, mobile-encoded (~2MB each)
-  node tools/trailer/host-shorts.mjs <id>     # uploads to a GitHub Release AND wires
-                                              # hub/games.json → then deploy the hub
+  node tools/trailer/ship-shorts.mjs <id>     # record → host (GitHub Release) → wire
+                                              # hub/games.json → commit → push branch+main
+                                              # (auto-deploys hub) → POLL hub till shorts live
   ```
+  (The underlying steps `make-shorts.mjs <id>` + `host-shorts.mjs <id>` still exist if
+  you need to run them piecemeal; ship-shorts just guarantees the loop closes.)
   - **Auto-plan**: no per-game config needed (defaults to levels 1/3/5). To customize,
     add a `meta.shorts` block to the game's `hub/games.json` entry:
     `{ mode, levels, music:"assets/music/level-{l}.mp3", menuStart, platformer, skip }`.
