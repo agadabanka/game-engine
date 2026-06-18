@@ -344,6 +344,75 @@ app.post('/api/ide/suggest', async (req, res) => {
   } catch (e) { console.error('ide suggest', e); res.status(502).json({ error: 'submit-failed', message: String(e && e.message || e).slice(0, 300) }); }
 });
 
+// ── Asset Manager ────────────────────────────────────────────────────────────
+// Inventory every asset a game actually ships (sprites · tiles · props · backdrops)
+// and keep a per-game LIBRARY of variants (generated candidates / uploads / built
+// sheets) in the store, so you can browse and SWAP them in/out from the IDE.
+async function backdropManifest(gameUrl) {
+  try {
+    const base = String(gameUrl).replace(/\/$/, '');
+    return await fetch(base + '/assets/backdrops/manifest.json', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : null));
+  } catch { return null; }
+}
+async function assetInventory(game) {
+  const base = String(game.url).replace(/\/$/, '');
+  let meta = {};
+  try { meta = await fetch(base + '/api/meta', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : {})); } catch {}
+  const man = (await gameManifest(game.url)) || {};
+  const bd = await backdropManifest(game.url);
+  const art = meta.art || {};
+  const descOf = (arr, key) => { const e = (Array.isArray(arr) ? arr : []).find((x) => x.key === key); return e ? e.desc : ''; };
+  const abs = (rel) => base + '/assets/' + rel;
+  const out = [];
+  if (man.hero && man.hero.sheet) out.push({ kind: 'hero', key: 'hero', label: 'hero', desc: meta.hero || '', current: abs(man.hero.sheet) });
+  for (const k of Object.keys(man.enemies || {})) out.push({ kind: 'enemy', key: k, label: k, desc: descOf(art.enemies, k), current: abs(man.enemies[k].sheet || ('sprites/' + k + '.png')) });
+  for (const k of Object.keys(man.tiles || {})) out.push({ kind: 'tile', key: k, label: k, desc: descOf(art.tiles, k), current: abs(typeof man.tiles[k] === 'string' ? man.tiles[k] : man.tiles[k].sheet || ('tiles/' + k)) });
+  for (const k of Object.keys(man.props || {})) out.push({ kind: 'prop', key: k, label: k, desc: descOf(art.props, k), current: abs(typeof man.props[k] === 'string' ? man.props[k] : man.props[k].sheet || ('props/' + k)) });
+  if (bd && bd.title) out.push({ kind: 'backdrop', key: '__title', label: 'title keyart', desc: '', current: base + '/assets/backdrops/' + bd.title });
+  if (bd && bd.backdrops) for (const [world, file] of Object.entries(bd.backdrops)) out.push({ kind: 'backdrop', key: world, label: world, desc: '', current: base + '/assets/backdrops/' + file });
+  return out;
+}
+const assetStoreKey = (id) => 'assets:' + id;
+async function getVariants(id) { return (await store.get(assetStoreKey(id), { variants: [] })).variants || []; }
+async function setVariants(id, variants) { await store.set(assetStoreKey(id), { variants }); }
+
+app.get('/api/ide/assets/:id', async (req, res) => {
+  const game = (await getGames()).find((g) => g.id === req.params.id);
+  if (!game || !game.url) return res.status(404).json({ error: 'game-not-live' });
+  const assets = await assetInventory(game);
+  const variants = await getVariants(game.id);
+  const byAsset = {};
+  for (const v of variants) (byAsset[v.kind + ':' + v.key] = byAsset[v.kind + ':' + v.key] || []).push({ vid: v.vid, source: v.source, label: v.label, ts: v.ts, image: v.image });
+  for (const a of assets) { a.variants = (byAsset[a.kind + ':' + a.key] || []).sort((x, y) => y.ts - x.ts); }
+  res.json({ id: game.id, name: game.name, url: String(game.url).replace(/\/$/, ''), assets });
+});
+
+// Save a variant (a generated candidate / upload / built sheet) into the library.
+app.post('/api/ide/assets/:id/variant', async (req, res) => {
+  const { kind, key, source = 'generated', image, label = '', prompt = '' } = req.body || {};
+  if (!kind || !key || !dataUrlToRef(image)) return res.status(400).json({ error: 'kind, key, image required' });
+  if (image.length > 1_500_000) return res.status(413).json({ error: 'image-too-large' });
+  let variants = await getVariants(req.params.id);
+  const v = { vid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kind, key, source, label, prompt, image, ts: Date.now() };
+  variants.push(v);
+  // cap: keep the 10 newest per asset, 120 total, so the store stays lean
+  const groups = {};
+  for (const x of variants) (groups[x.kind + ':' + x.key] = groups[x.kind + ':' + x.key] || []).push(x);
+  let kept = [];
+  for (const g of Object.values(groups)) { g.sort((a, b) => b.ts - a.ts); kept = kept.concat(g.slice(0, 10)); }
+  kept.sort((a, b) => b.ts - a.ts); kept = kept.slice(0, 120);
+  await setVariants(req.params.id, kept);
+  res.json({ ok: true, variant: { vid: v.vid, kind, key, source, label, ts: v.ts, image } });
+});
+
+app.delete('/api/ide/assets/:id/variant/:vid', async (req, res) => {
+  let variants = await getVariants(req.params.id);
+  const before = variants.length;
+  variants = variants.filter((v) => v.vid !== req.params.vid);
+  await setVariants(req.params.id, variants);
+  res.json({ ok: true, removed: before - variants.length });
+});
+
 app.listen(PORT, () => {
   console.log(`game-engine hub on :${PORT}`);
   dashboard(true).catch(() => {});   // warm the cache on boot

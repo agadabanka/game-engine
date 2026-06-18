@@ -73,6 +73,27 @@
   pre.note{ background:#0a1124; border:1px solid var(--line); border-radius:8px; padding:10px; font-size:11px; color:#cfe0ff; overflow:auto; max-height:96px; margin:0; white-space:pre-wrap; word-break:break-word; }
   .result{ font-size:12px; margin-top:9px; } .result.ok{ color:var(--green); } .result.err{ color:var(--red); }
   .warn{ background:rgba(255,177,77,.12); border:1px solid rgba(255,177,77,.4); color:#ffd9a3; border-radius:8px; padding:8px 11px; font-size:12px; margin-top:8px; }
+  /* asset manager */
+  .amodal{ position:fixed; inset:0; background:rgba(4,8,18,.72); z-index:30; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .abox{ background:var(--panel); border:1px solid var(--line); border-radius:14px; width:min(1080px,96vw); max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+  .ahead{ display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .ahead .atitle{ font-size:15px; font-weight:800; }
+  .agrid{ padding:14px 18px 22px; overflow:auto; }
+  .agrp{ font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--dim); margin:16px 0 8px; }
+  .acards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(146px,1fr)); gap:12px; }
+  .acard{ background:var(--panel2); border:1px solid var(--line); border-radius:11px; overflow:hidden; cursor:pointer; transition:border-color .12s; }
+  .acard:hover{ border-color:#3a7dff; }
+  .acard .th{ width:100%; aspect-ratio:1/1; object-fit:contain; background:#0a1124; display:block; }
+  .acard.bd .th{ aspect-ratio:16/9; object-fit:cover; }
+  .acard .meta{ padding:7px 9px; } .acard .meta .k{ font-size:12px; font-weight:700; } .acard .meta .v{ font-size:10px; color:var(--orange); margin-top:1px; }
+  .adetail{ grid-column:1/-1; background:#0a1124; border:1px solid #3a7dff; border-radius:11px; padding:12px; }
+  .avars{ display:flex; gap:10px; flex-wrap:wrap; }
+  .avar{ width:122px; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--panel2); }
+  .avar img{ width:100%; aspect-ratio:1/1; object-fit:contain; background:#0a1124; display:block; }
+  .avar.cur{ border-color:var(--green); }
+  .avar .lab{ font-size:9.5px; padding:5px 6px; color:var(--dim); display:flex; justify-content:space-between; align-items:center; gap:4px; }
+  .avar .use{ font-size:9.5px; background:#2a6df0; border:0; color:#fff; border-radius:5px; padding:2px 8px; cursor:pointer; }
+  .avar .del{ background:none; border:0; color:var(--red); cursor:pointer; font-size:11px; padding:0 2px; }
 </style>
 </head>
 <body>
@@ -83,9 +104,17 @@
   <span class="sub" id="gtag"></span>
   <span class="sp"></span>
   <span class="bp" id="bp"></span>
+  <button class="pill" id="assetsbtn">🗂 Assets</button>
   <a class="pill" id="playlink" target="_blank" rel="noopener" style="display:none">▶ Play</a>
   <button class="pill" id="reload">↻</button>
 </header>
+
+<div id="assetmodal" class="amodal" style="display:none">
+  <div class="abox">
+    <div class="ahead"><span class="atitle">🗂 Asset Manager</span><span id="acount" class="sub"></span><span class="sp" style="flex:1"></span><button class="pill" id="aclose">✕</button></div>
+    <div id="agrid" class="agrid"><p class="hint">loading…</p></div>
+  </div>
+</div>
 
 <div class="grid">
   <!-- LEFT: blueprint -->
@@ -276,7 +305,7 @@ function renderNote(){
 $('upload').onchange = (e) => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const rd = new FileReader();
-  rd.onload = () => { UPLOAD = rd.result; $('uplthumb').innerHTML = `<img src="${UPLOAD}" style="max-width:120px;border-radius:8px;border:1px solid var(--line);margin-top:6px;display:block" />`; $('mksheet').disabled = false; renderNote(); };
+  rd.onload = () => { UPLOAD = rd.result; $('uplthumb').innerHTML = `<img src="${UPLOAD}" style="max-width:120px;border-radius:8px;border:1px solid var(--line);margin-top:6px;display:block" />`; $('mksheet').disabled = false; renderNote(); saveVariant('upload', UPLOAD); };
   rd.readAsDataURL(f);
 };
 
@@ -294,6 +323,7 @@ $('mksheet').onclick = async () => {
       SHEET = j.sheet; const m = j.manifest || {};
       const frames = m.anims ? Object.entries(m.anims).map(([k,v]) => k + ':' + (Array.isArray(v) ? v.length : 1)).join(' · ') : '';
       $('sheet').innerHTML = `<img src="${j.sheet}" alt="sprite sheet" /><div class="cap">✓ packed sprite sheet from your art${m.frameWidth ? ` · ${m.frameWidth}×${m.frameHeight}` : ''}${frames ? ` · ${esc(frames)}` : ''}</div>`;
+      saveVariant('sheet', j.sheet);
     }
   }catch(e){ $('sheet').innerHTML = `<div class="warn">${esc(String(e))}</div>`; }
   b.disabled = false; b.textContent = old;
@@ -307,7 +337,7 @@ $('gen').onclick = async () => {
       body: JSON.stringify({ gameId: GAME.id, prompt: composePrompt(), aspect: '1:1', useRef: $('useref').checked, scope: SCOPE ? { kind: SCOPE.kind, key: SCOPE.key } : null, refImage: UPLOAD || null }) });
     const j = await r.json();
     if (!r.ok){ $('cand').innerHTML = `<div class="warn">${esc(j.message || j.error || 'generation failed')}</div>`; }
-    else { CAND = j.image; const how = j.refFrom === 'upload' ? 'from your uploaded art (image-to-image)' : j.refUsed ? 'on-model · edited the current asset (image-to-image)' : 'text→image · no reference art found'; $('cand').innerHTML = `<img src="${j.image}" alt="candidate" /><div class="cap">Gemini candidate · ${how}</div>`; renderNote(); }
+    else { CAND = j.image; const how = j.refFrom === 'upload' ? 'from your uploaded art (image-to-image)' : j.refUsed ? 'on-model · edited the current asset (image-to-image)' : 'text→image · no reference art found'; $('cand').innerHTML = `<img src="${j.image}" alt="candidate" /><div class="cap">Gemini candidate · ${how}</div>`; renderNote(); saveVariant('generated', j.image); }
   }catch(e){ $('cand').innerHTML = `<div class="warn">${esc(String(e))}</div>`; }
   b.disabled = false; b.textContent = '✨ Generate candidate (Gemini)';
 };
@@ -324,6 +354,59 @@ $('suggest').onclick = async () => {
   }catch(e){ $('result').className = 'result err'; $('result').textContent = '✗ ' + String(e); }
   b.disabled = false; b.textContent = '📝 Suggest edit — submit as a note';
 };
+
+// ── 🗂 Asset Manager: inventory every asset + its saved variants, swap them in/out ──
+let ASSETS = null, AOPEN = null;
+// auto-save a generated candidate / upload / built sheet as a variant of the active asset
+async function saveVariant(source, image){
+  if (!SCOPE || !image || image.length > 1_450_000) return;   // store stays lean; big sheets skip auto-save
+  try { await fetch('/api/ide/assets/' + encodeURIComponent(GAME.id) + '/variant', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ kind: SCOPE.kind, key: SCOPE.key, source, image, prompt: composePrompt() }) }); } catch {}
+}
+async function openAssets(){
+  $('assetmodal').style.display = 'flex'; $('agrid').innerHTML = '<p class="hint">loading…</p>';
+  ASSETS = await fetch('/api/ide/assets/' + encodeURIComponent(GAME.id)).then((r) => r.ok ? r.json() : null).catch(() => null);
+  renderAssets();
+}
+const A_GROUPS = { hero:'Hero', enemy:'Enemies', tile:'Tiles', prop:'Props', backdrop:'Backdrops' };
+function renderAssets(){
+  if (!ASSETS){ $('agrid').innerHTML = '<p class="hint">could not load assets.</p>'; return; }
+  const vars = ASSETS.assets.reduce((a,x) => a + (x.variants||[]).length, 0);
+  $('acount').textContent = ASSETS.assets.length + ' assets · ' + vars + ' saved variants';
+  let html = '';
+  for (const kind of ['hero','enemy','tile','prop','backdrop']){
+    const items = ASSETS.assets.filter((a) => a.kind === kind); if (!items.length) continue;
+    html += `<div class="agrp">${A_GROUPS[kind]} · ${items.length}</div><div class="acards">`;
+    for (const a of items){
+      const n = (a.variants||[]).length;
+      html += `<div class="acard ${kind==='backdrop'?'bd':''}" onclick="toggleAsset('${esc(a.kind)}','${esc(a.key).replace(/'/g,"\\'")}')">
+        <img class="th" src="${esc(a.current)}" loading="lazy" onerror="this.style.opacity=.15" />
+        <div class="meta"><div class="k">${esc(a.label)}</div><div class="v">${n ? n + ' variants' : 'current only'}</div></div></div>`;
+      if (AOPEN === a.kind + ':' + a.key) html += assetDetail(a);
+    }
+    html += '</div>';
+  }
+  $('agrid').innerHTML = html;
+}
+function assetDetail(a){
+  const editable = !!allScopes().find((s) => s.kind === a.kind && s.key === a.key);
+  const editBtn = editable ? `<button class="use" onclick="event.stopPropagation();editAsset('${esc(a.kind)}','${esc(a.key).replace(/'/g,"\\'")}')">edit ▸</button>` : '<span>live</span>';
+  const cur = `<div class="avar cur"><img src="${esc(a.current)}" onerror="this.style.opacity=.15"/><div class="lab"><span>live</span>${editBtn}</div></div>`;
+  const vs = (a.variants||[]).map((v) => `<div class="avar"><img src="${esc(v.image)}"/><div class="lab"><span>${esc(v.source)}</span><span>${editable?`<button class="use" onclick="event.stopPropagation();useVariant('${esc(a.kind)}','${esc(a.key).replace(/'/g,"\\'")}','${esc(v.vid)}')">use</button> `:''}<button class="del" onclick="event.stopPropagation();delVariant('${esc(v.vid)}')">🗑</button></span></div></div>`).join('');
+  return `<div class="adetail"><div class="avars">${cur}${vs || '<span class="hint">No saved variants yet — generate, upload, or make a sheet for this asset and it shows up here.</span>'}</div></div>`;
+}
+window.toggleAsset = (k, key) => { AOPEN = AOPEN === k + ':' + key ? null : k + ':' + key; renderAssets(); };
+window.editAsset = (k, key) => { const s = allScopes().find((x) => x.kind === k && x.key === key); if (s) selectScope(s); $('assetmodal').style.display = 'none'; };
+window.useVariant = (k, key, vid) => {
+  const a = ASSETS.assets.find((x) => x.kind === k && x.key === key); const v = a && (a.variants||[]).find((x) => x.vid === vid); if (!v) return;
+  const s = allScopes().find((x) => x.kind === k && x.key === key); if (s) selectScope(s);
+  CAND = v.image; $('cand').innerHTML = `<img src="${v.image}" alt="variant" /><div class="cap">from Asset Manager · ${esc(v.source)} variant — review, then Suggest to swap it in</div>`; renderNote();
+  $('assetmodal').style.display = 'none';
+};
+window.delVariant = async (vid) => { await fetch('/api/ide/assets/' + encodeURIComponent(GAME.id) + '/variant/' + vid, { method:'DELETE' }).catch(() => {}); openAssets(); };
+$('assetsbtn').onclick = openAssets;
+$('aclose').onclick = () => { $('assetmodal').style.display = 'none'; };
+$('assetmodal').addEventListener('click', (e) => { if (e.target.id === 'assetmodal') e.target.style.display = 'none'; });
 
 $('reload').onclick = boot;
 boot();
