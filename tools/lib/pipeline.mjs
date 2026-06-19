@@ -75,8 +75,8 @@ export const PIPELINE = [
     sub: ['concept + engine investments', 'gotchas + fixes', 'the scorecard + links', 'the pipeline tree'],
     accept: 'DIARY.md is rich (concept, engine investments, gotchas+fixes, the scorecard, the pipeline tree, links) and surfaces at /api/diary + on the hub.' },
   { key: 'loop', phase: 'ship', title: 'Loop closed',
-    sub: ['register in hub/games.json', 'push game repo (main) + engine branch', 'final reply: repo · URL · playlist · diary'],
-    accept: 'Registered in hub/games.json with meta/videos/shorts; game repo (main) AND engine branch pushed; final reply lists repo · URL · playlist · diary · shorts.' },
+    sub: ['register in hub/games.json', 'generate the hub thumbnail (square, named) — node tools/hub-thumbs.mjs <id>', 'push game repo (main) + engine branch', 'final reply: repo · URL · playlist · diary'],
+    accept: 'Registered in hub/games.json with meta/videos/shorts; a square HUB thumbnail generated (`node tools/hub-thumbs.mjs <id>`) so the game appears in the hub all-games grid; game repo (main) AND engine branch pushed; final reply lists repo · URL · playlist · diary · shorts.' },
 ];
 
 /** Stages grouped by phase, in order → [{ phase, title, color, stages:[…] }]. */

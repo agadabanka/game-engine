@@ -150,6 +150,24 @@
   .statchips{ display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 2px; }
   .statchip{ background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:7px 13px; min-width:76px; }
   .statchip .sn{ font-size:18px; font-weight:800; } .statchip .sl{ font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  /* tappable "games" stat → opens the all-games thumbnail grid (issue #86) */
+  .stat.tap{ cursor:pointer; transition:border-color .15s, transform .12s; }
+  .stat.tap:hover{ border-color:var(--blue); transform:translateY(-1px); }
+  .stat.tap .l::after{ content:' ▦'; opacity:.6; }
+  /* the all-games grid modal */
+  #grid{ width:min(960px,94vw); max-height:88vh; border:1px solid var(--line); border-radius:16px; background:var(--panel); color:var(--fg); padding:0; overflow:hidden; }
+  #grid::backdrop{ background:rgba(4,7,15,.72); backdrop-filter:blur(3px); }
+  .ghead{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--panel); z-index:2; }
+  .ghead h3{ margin:0; font-size:18px; } .ghead .gcount{ color:var(--dim); font-weight:600; font-size:13px; }
+  .ghead .x{ background:var(--panel2); border:1px solid var(--line); color:var(--fg); border-radius:9px; width:32px; height:32px; cursor:pointer; font-size:15px; }
+  .thumbgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; padding:18px 20px; overflow-y:auto; max-height:calc(88vh - 64px); }
+  .thumb{ position:relative; aspect-ratio:1/1; border-radius:13px; overflow:hidden; cursor:pointer; background:linear-gradient(135deg,#16213f,#0a1124); border:1px solid var(--line); transition:transform .14s, border-color .14s; }
+  .thumb:hover{ transform:translateY(-2px) scale(1.02); border-color:var(--blue); }
+  .thumb>img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb .tgrad{ position:absolute; inset:0; background:linear-gradient(to top, rgba(6,9,18,.96) 6%, rgba(6,9,18,.35) 42%, transparent 66%); }
+  .thumb .tnm{ position:absolute; left:9px; right:9px; bottom:8px; font-size:13px; font-weight:800; color:#fff; text-shadow:0 1px 8px rgba(0,0,0,.9); line-height:1.12; }
+  .thumb .tdot{ position:absolute; top:8px; left:8px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 2px rgba(0,0,0,.35); }
+  .thumb .tdot.live{ background:var(--green);} .thumb .tdot.idle{ background:var(--orange);} .thumb .tdot.off{ background:#5b6b86; }
 </style>
 </head>
 <body>
@@ -185,13 +203,21 @@
 
 <dialog id="detail"><div id="detailBody"></div></dialog>
 
+<dialog id="grid">
+  <div class="ghead">
+    <h3>All games <span class="gcount" id="gridCount"></span></h3>
+    <button class="x" title="close" onclick="document.getElementById('grid').close()">✕</button>
+  </div>
+  <div class="thumbgrid" id="thumbGrid"></div>
+</dialog>
+
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const ago = (t) => { if (!t) return ''; const s = (Date.now() - new Date(t)) / 1000; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s/60)+'m ago'; if (s < 86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; };
 
 function statRow(t){ return `
-  <div class="stat"><div class="n">${t.games}</div><div class="l">games</div></div>
+  <div class="stat tap" onclick="openGrid()" title="See every game as a thumbnail"><div class="n">${t.games}</div><div class="l">games</div></div>
   <div class="stat"><div class="n" style="color:var(--green)">${t.live}</div><div class="l">live</div></div>
   <div class="stat"><div class="n" style="color:var(--blue)">${t.avgProgress||0}%</div><div class="l">avg progress</div></div>
   <div class="stat"><div class="n">${t.levels||'—'}</div><div class="l">levels</div></div>
@@ -402,6 +428,31 @@ function openGame(id){
   const d = $('detail'); d.showModal(); d.scrollTop = 0;
 }
 window.openGame = openGame;
+
+// ── ALL-GAMES GRID: tap the "games" stat → scrollable square thumbnails (issue #86) ──
+// Thumb source chain: self-hosted square Gemini thumb → the 16:9 cover (center-cropped by
+// object-fit) → the card's screenshot/youtube fallback → a gradient. The name is overlaid
+// in CSS so it's always legible. Scales with the game count (auto-fill grid + scroll).
+function thumbCell(g){
+  const status = g.live ? 'live' : (g.diary && g.diary.count ? 'idle' : 'off');
+  const fb2 = cardImage(g);                                    // screenshot / youtube thumb
+  const srcs = [`/thumbs/${esc(g.id)}.jpg`, `/covers/${esc(g.id)}.jpg`, fb2].filter(Boolean);
+  const onerr = `(function(im){var q=JSON.parse(im.dataset.q||'[]');if(q.length){im.src=q.shift();im.dataset.q=JSON.stringify(q);}else{im.style.display='none';}})(this)`;
+  const img = `<img loading="lazy" src="${srcs[0]}" data-q='${esc(JSON.stringify(srcs.slice(1)))}' alt="${esc(g.name)}" onerror="${onerr}" />`;
+  return `<div class="thumb" onclick="document.getElementById('grid').close(); openGame('${esc(g.id)}')" title="${esc(g.name)}">
+    ${img}<div class="tgrad"></div>
+    <span class="tdot ${status}" title="${status}"></span>
+    <div class="tnm">${esc(g.name)}</div>
+  </div>`;
+}
+function openGrid(){
+  const games = (LAST && LAST.games) || [];
+  $('gridCount').textContent = `· ${games.length}`;
+  $('thumbGrid').innerHTML = games.length ? games.map(thumbCell).join('') : '<p class="muted">no games yet.</p>';
+  $('grid').showModal();
+}
+window.openGrid = openGrid;
+$('grid').addEventListener('click', (e) => { if (e.target.id === 'grid') e.target.close(); });
 
 async function load(force){
   $('cards').innerHTML = '<p class="muted">loading…</p>';
