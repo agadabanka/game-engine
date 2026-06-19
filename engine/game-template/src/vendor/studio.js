@@ -2007,23 +2007,25 @@
       var bpm = opt.bpm || 120, beatMs = 60000 / bpm, win = opt.windows || {};
       var perfect = win.perfect != null ? win.perfect : 0.16, good = win.good != null ? win.good : 0.28;
       var onBeat = opt.onBeat || function () {};
+      var clock = typeof opt.clock === 'function' ? opt.clock : null, offset = opt.offset || 0;
       var started = false, t0 = 0, beatN = -1;
+      // elapsed ms since the first beat — driven by the AUDIO clock when given (true music sync), else the scene clock. offset = ms before the track's first beat.
+      function elapsedAt(now) { return clock ? (clock() - offset) : ((now != null ? now : scene.time.now) - t0 - offset); }
+      function phaseOf(e) { return (((e % beatMs) + beatMs) % beatMs) / beatMs; }
       var ctl = {
         bpm: bpm, beatMs: beatMs, score: 0, combo: 0, bestCombo: 0, beat: -1, phase: 0, started: false,
         start: function (now) { if (started) return; started = true; ctl.started = true; t0 = (now != null ? now : scene.time.now); },
         reset: function () { ctl.score = 0; ctl.combo = 0; ctl.bestCombo = 0; beatN = -1; ctl.beat = -1; },
         update: function (now) {
           if (!started) return ctl;
-          now = (now != null ? now : scene.time.now);
-          var elapsed = now - t0, beat = Math.floor(elapsed / beatMs);
-          ctl.phase = (elapsed % beatMs) / beatMs;
-          if (beat !== beatN) { beatN = beat; ctl.beat = beat; onBeat(beat); }
+          var elapsed = elapsedAt(now), beat = Math.floor(elapsed / beatMs);
+          ctl.phase = phaseOf(elapsed);
+          if (beat !== beatN) { beatN = beat; ctl.beat = beat; if (beat >= 0) onBeat(beat); }
           return ctl;
         },
         judge: function (now) {
           if (!started) return { grade: 'miss', off: 0.5 };
-          now = (now != null ? now : scene.time.now);
-          var phase = ((now - t0) % beatMs) / beatMs, off = Math.min(phase, 1 - phase);
+          var phase = phaseOf(elapsedAt(now)), off = Math.min(phase, 1 - phase);
           return { grade: off < perfect ? 'perfect' : off < good ? 'good' : 'miss', off: off };
         },
         tap: function (now, pts) {
