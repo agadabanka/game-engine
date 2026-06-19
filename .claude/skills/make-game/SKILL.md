@@ -110,7 +110,7 @@ The tools are engine-level (operate on a game id/dir); a new game does NOT carry
 | scaffold | `scripts/new-game.mjs` | clone base · GitHub repo · hub register |
 | gate | game `eval.mjs` + `tools/lib/mirth.mjs` | FUN (`Studio.Brawl.fun`) + optional funny gate (`Studio.Mirth`) |
 | art | `tools/full-art.mjs` (orchestrator) → `art.mjs`+`art-sprites.mjs`+`art-tiles.mjs`+`art-props.mjs` | backdrops/keyart · generated hero+enemy **sprite sheets** (model-sheet→keyed→packed) · clay **tile** materials · **props** — all from `GAME_META.art.{style,enemies,tiles,props}`, chroma-keyed, merged into one `sprites.js` manifest, cached via `gencache`. `Studio.Hero` renders the sprite or falls back to the `Studio.Toon` rig |
-| music | `tools/music.mjs` → `lib/lyria.js` | Lyria loop per world (or procedural `Studio.Audio` fallback) |
+| music | `tools/music.mjs` (**Lyria 3 via the Gemini API**) | a Lyria track per world + title — `models/lyria-3-clip-preview:generateContent` with `responseModalities:[AUDIO]` (returns MP3) on the SAME `GEMINI_SA_JSON` that powers nano-banana-pro. **NOT** Vertex `lyria-002` (that path soft-denies — "Music generation failed, try modifying your prompt" — unless the GCP project is allow-listed). Procedural `Studio.Audio.bgm` chiptune is the in-engine fallback (no external file). |
 | shots | `tools/shots.mjs <dir>` | per-level menu THUMBNAILS — boots the game's own server, drives the autopilot a couple seconds in, writes `src/assets/shots/level<N>.jpg`. `Studio.Shell.title` auto-loads them (convention `assets/shots/level<N>.jpg`) so the level-select shows real screenshots, not flat color. Commit + redeploy. |
 | shorts | `tools/trailer/ship-shorts.mjs <id>` (record→host→wire→commit→push→verify, ONE program) — wraps `make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed. Use ship-shorts so the registry edit can never be left staged/uncommitted (the bug that left a game with no visible shorts). It pushes branch+main (auto-deploys the hub) and POLLS the live hub until the shorts appear. |
 | videos | `tools/record.mjs` + `tools/trailer/yt-upload.mjs` | per-level landscape MP4 (music muxed) + montage → YouTube (YT_* secrets; write the refresh token to /tmp/yt-creds.json). Playlist needs the broader `youtube` scope — an upload-scoped token 403s, so fall back to the montage link. |
@@ -200,8 +200,10 @@ The stock autopilot (`Studio.Autopilot.platformer`) is a *dumb* solver — "move
    title keyart + hero/enemy sprite sheets + clay tiles + props from `GAME_META.art`,
    chroma-keyed + packed into `sprites.js`, `gencache`d). GEMINI_SA_JSON. Bottom third
    stays gameplay-clean; NO text in images. `Studio.Hero` auto-prefers the generated sheet.
-7. **Music** — one Lyria loop per world + title via `tools/music.mjs`
-   (Vertex lyria-002, GEMINI_SA_JSON project), mp3 loops in src/assets/music.
+7. **Music** — a Lyria track per world + title via `tools/music.mjs`
+   (**Lyria 3 via the Gemini API** — `lyria-3-clip-preview:generateContent`, returns MP3;
+   NOT Vertex `lyria-002`, which soft-denies). mp3 loops in src/assets/music; the game prefers
+   the world's mp3 and falls back to the procedural `Studio.Audio.bgm` chiptune.
 8. **Deploy** — Railway, one project per game:
    `env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_TOKEN" railway init|up|domain`
    (the env token is an ACCOUNT token; the CLI misreads it as a project token
