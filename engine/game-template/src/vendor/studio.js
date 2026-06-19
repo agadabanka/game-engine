@@ -1985,6 +1985,70 @@
     };
   })();
 
+
+  // ── Studio.Rhythm ── a beat clock + tap-judge + scoring for RHYTHM / DANCE games ──
+  // Engine feature (the rhythm-genre core): attach a per-song BPM clock; it fires onBeat,
+  // tracks the beat phase, JUDGES taps (perfect/good/miss by distance to the nearest beat),
+  // and keeps score + combo. Real-time (uses scene.time.now unless you pass a clock).
+  //   var r = Studio.Rhythm.attach(scene, { bpm: 140, onBeat: function(n){…} });
+  //   r.start();  r.update();  // each frame → fires onBeat, updates r.beat / r.phase
+  //   var g = r.tap();         // → {grade:'perfect'|'good'|'miss', off}; updates r.score / r.combo
+  Studio.Rhythm = {
+    attach: function (scene, opt) {
+      opt = opt || {};
+      var bpm = opt.bpm || 120, beatMs = 60000 / bpm, win = opt.windows || {};
+      var perfect = win.perfect != null ? win.perfect : 0.16, good = win.good != null ? win.good : 0.28;
+      var onBeat = opt.onBeat || function () {};
+      var started = false, t0 = 0, beatN = -1;
+      var ctl = {
+        bpm: bpm, beatMs: beatMs, score: 0, combo: 0, bestCombo: 0, beat: -1, phase: 0, started: false,
+        start: function (now) { if (started) return; started = true; ctl.started = true; t0 = (now != null ? now : scene.time.now); },
+        reset: function () { ctl.score = 0; ctl.combo = 0; ctl.bestCombo = 0; beatN = -1; ctl.beat = -1; },
+        update: function (now) {
+          if (!started) return ctl;
+          now = (now != null ? now : scene.time.now);
+          var elapsed = now - t0, beat = Math.floor(elapsed / beatMs);
+          ctl.phase = (elapsed % beatMs) / beatMs;
+          if (beat !== beatN) { beatN = beat; ctl.beat = beat; onBeat(beat); }
+          return ctl;
+        },
+        judge: function (now) {
+          if (!started) return { grade: 'miss', off: 0.5 };
+          now = (now != null ? now : scene.time.now);
+          var phase = ((now - t0) % beatMs) / beatMs, off = Math.min(phase, 1 - phase);
+          return { grade: off < perfect ? 'perfect' : off < good ? 'good' : 'miss', off: off };
+        },
+        tap: function (now, pts) {
+          pts = pts || {}; var j = ctl.judge(now);
+          if (j.grade === 'miss') ctl.combo = 0;
+          else { ctl.combo++; ctl.bestCombo = Math.max(ctl.bestCombo, ctl.combo);
+            ctl.score += (j.grade === 'perfect' ? (pts.perfect || 100) : (pts.good || 50)) * (1 + Math.floor(ctl.combo / 5)); }
+          return j;
+        }
+      };
+      return ctl;
+    }
+  };
+
+  // ── Studio.Juice.confetti ── a festive confetti pool (rain + bursts) for celebratory genres ──
+  Studio.Juice.confetti = function (scene, opt) {
+    opt = opt || {}; var max = opt.n || 80, depth = opt.depth != null ? opt.depth : 15;
+    var COL = opt.colors || [0xff4d4d, 0xffd84d, 0x5fd66e, 0x4db6ff, 0x9a6cff, 0xff7ad1, 0xffa500];
+    var pool = []; for (var i = 0; i < max; i++) pool.push(scene.add.rectangle(0, 0, 6, 11, 0xffffff, 0).setDepth(depth));
+    pool.forEach(function (c) { c._on = false; });
+    return {
+      burst: function (n, x, y, spread) {
+        for (var i = 0; i < n; i++) { var c = null; for (var k = 0; k < pool.length; k++) { if (!pool[k]._on) { c = pool[k]; break; } } if (!c) break;
+          c._on = true; c.setFillStyle(COL[(Math.random() * COL.length) | 0], 1).setAlpha(1);
+          c.x = x != null ? x + (Math.random() - 0.5) * (spread || 60) : Math.random() * scene.scale.width;
+          c.y = y != null ? y : -10; c._vx = (Math.random() - 0.5) * 3;
+          c._vy = (y != null ? -(2 + Math.random() * 4) : (1 + Math.random() * 2)); c._spin = (Math.random() - 0.5) * 0.3; }
+      },
+      rain: function (n) { this.burst(n || 4); },
+      update: function () { var H = scene.scale.height; for (var i = 0; i < pool.length; i++) { var c = pool[i]; if (!c._on) continue; c.x += c._vx; c.y += c._vy; c._vy += 0.12; c.rotation += c._spin; if (c.y > H + 14) { c._on = false; c.setAlpha(0); } } }
+    };
+  };
+
   root.Studio = Studio;
   if (typeof module !== 'undefined' && module.exports) module.exports = Studio;
 })(typeof window !== 'undefined' ? window : globalThis);

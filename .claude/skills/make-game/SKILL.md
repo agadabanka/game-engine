@@ -145,6 +145,24 @@ The stock autopilot (`Studio.Autopilot.platformer`) is a *dumb* solver — "move
 - **What's still scoped:** the solver covers run/jump/dash/wall-jump/**spring** + spikes; richer contraptions (dream-block/bumper/mover) are the **contraption-registry** follow-up — each contraption needs (a) runtime behavior, (b) a solver model, (c) an authoring builder. Add models as you add gadgets.
 - **Retrofit an EXISTING game** (not just new ones): `node tools/upgrade-mechanics.mjs <dir> [--write]` (or the **`/upgrade-mechanics`** skill) ensures the spec, adapts the game's levels (`tools/lib/leveladapt.mjs` reads the solids format + the stock DSL), solver-audits each, and writes `MECHANICS-AUDIT.md` — telling you which levels have *required* depth vs. garnish. Audit read-only first; `--write` to save + deepen thin levels with new rooms.
 
+## Beyond platformers — the RHYTHM / DANCE genre (engine support)
+Not every concept is a runner. A **dance/rhythm game** keeps the engine's shell · mobile/Scale.FIT ·
+menu/song-select · deploy · notes loop · art-sprites · **Lyria music** · backdrops · shorts/videos —
+but **replaces the platformer Play scene with a custom scene**, because the 0-death autopilot doesn't apply.
+- **`Studio.Rhythm`** is the genre core: `Studio.Rhythm.attach(scene, { bpm, onBeat })` → a beat clock that
+  fires `onBeat(n)`, tracks `.phase`/`.beat`, **judges taps** (`.tap()` → `perfect|good|miss` by distance to
+  the nearest beat), and keeps `.score`/`.combo`/`.bestCombo`. **`Studio.Juice.confetti(scene)`** is a festive
+  pool (`.burst(n,x,y)` + `.rain()` + `.update()`). Dancers are normal sprite-sheets — cycle expressive
+  action-pose frames (cheer/jump/idle) on each beat + a phase-driven bob.
+- **"Levels" = songs**: each a Lyria track (per-world prompt) + a backdrop + a BPM. `?level=N` picks the song.
+- **The gate is a RHYTHM SMOKE** (not 0-death): all songs boot (`__ready`), the beat clock advances, taps
+  score, the menu/song-select works, **0 page errors**. Parity's ≥mechanics/≥enemy-kinds are platformer-specific —
+  N/A; document the adaptation in the diary and close the gate stage on the smoke evidence.
+- **Videos**: the deterministic `record.mjs` stepper doesn't fit a real-time scene — capture with Playwright
+  `recordVideo` for ~12s/song and mux the song mp3 (the canonical bollywood-beats recorder). Shorts: convert to
+  blurred-fill 1080×1920, host on the Release, register via the hub `/api/games` shorts field.
+_(Precedent: **Bollywood Beats** — two dancers, 3 Lyria songs, festive backdrops, built on `Studio.Rhythm`.)_
+
 ## The pipeline (all stages must land; update GAME_META.json stages as you go)
 1. **Scaffold** — `node scripts/new-game.mjs "<Name>" --local --tagline … --hero … --verb …`
    from the game-engine repo root (needs GH_TOKEN; creates + pushes the GitHub repo).
