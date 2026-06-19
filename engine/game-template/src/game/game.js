@@ -51,6 +51,9 @@
       if (S && S.enemies) Object.keys(S.enemies).forEach(function (k) { var en = S.enemies[k]; sc.load.spritesheet('enemy_' + k, 'assets/' + en.sheet, { frameWidth: en.frameWidth, frameHeight: en.frameHeight }); });
       if (S && S.tiles) Object.keys(S.tiles).forEach(function (k) { sc.load.image('tile_' + k, 'assets/' + S.tiles[k]); });
       if (S && S.props) Object.keys(S.props).forEach(function (k) { sc.load.image('prop_' + k, 'assets/' + S.props[k]); });
+      // generated per-world BACKDROPS (tools/art.mjs) → keyed bg0..bgN by level index; coverBackdrop draws them when present.
+      var _bgslug = function (s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+      (window.LEVELS || []).forEach(function (l, i) { sc.load.image('bg' + i, 'assets/backdrops/' + _bgslug(l.name || ('level' + (i + 1))) + '.jpg'); });
       sc.load.on('loaderror', function () {});   // missing art → silent fallback to baked/rig
     },
     create: function () {
@@ -62,7 +65,12 @@
       if (_lv > 100) _lv -= 100;
       var spec = window.LEVELS[Math.max(0, Math.min(window.LEVELS.length - 1, _lv - 1))];
       this.cameras.main.setBackgroundColor(spec.sky || 0x1d2b53);
-      Studio.Backdrop(this, { top: 0x2a3a64, bottom: 0x0b1021, worldWidth: spec.width, layers: [{ color: 0x16203a, scroll: 0.25, amp: 90, y: spec.groundY - 30 }, { color: 0x222f4e, scroll: 0.5, amp: 55, y: spec.groundY }] });
+      // a GENERATED photo backdrop for this world if present (coverBackdrop fills the canvas), else procedural parallax
+      if (this.textures.exists('bg' + (_lv - 1))) {
+        Studio.coverBackdrop(this, this.add.image(0, 0, 'bg' + (_lv - 1)), { scroll: 0, depth: -100 });
+      } else {
+        Studio.Backdrop(this, { top: 0x2a3a64, bottom: 0x0b1021, worldWidth: spec.width, layers: [{ color: 0x16203a, scroll: 0.25, amp: 90, y: spec.groundY - 30 }, { color: 0x222f4e, scroll: 0.5, amp: 55, y: spec.groundY }] });
+      }
       // OPTIONAL weather: a level opts in with `weather:[...]` — it changes as you run (Studio.Weather). Visual-only; gate-safe.
       if (spec.weather && Studio.Weather) this._weather = Studio.Weather.attach(this, { sequence: spec.weather, cycleEvery: spec.weatherEvery || 1100 });
       Studio.Textures.kit(this, { tile: T });
