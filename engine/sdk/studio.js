@@ -1823,7 +1823,41 @@
       boom: function () { tone(60, 0.3, 'sawtooth', 0.16); tone(110, 0.2, 'square', 0.1); },
       count: function () { tone(440, 0.1, 'square', 0.09); }, go: function () { tone(880, 0.22, 'square', 0.11); }
     };
-    return { sfx: function (n) { try { (SFX[n] || function () {})(); } catch (e) {} }, music: function (url, vol) { try { var au = new Audio(url); au.loop = true; au.volume = vol || 0.4; au.play(); return au; } catch (e) {} } };
+    return { sfx: function (n) { try { (SFX[n] || function () {})(); } catch (e) {} }, // bgm: generative chiptune LOOP (no external file, no Lyria) — a per-world arpeggio +
+    // bass over WebAudio. opt: { scale:'major|minor|lydian|penta', root:Hz, bpm, wave, vol }.
+    // Returns { stop }. Audio side-effect only (the deterministic gate is unaffected; in a
+    // headless context with no AudioContext it is a clean no-op).
+    bgm: function (opt) {
+      opt = opt || {}; var a = ac(); if (!a) return { stop: function () {} };
+      try { if (a.state === 'suspended') a.resume(); } catch (e) {}
+      var SCALES = { major: [0,2,4,7,9], minor: [0,3,5,7,10], lydian: [0,2,4,6,9], penta: [0,2,5,7,9] };
+      var sc = SCALES[opt.scale] || SCALES.major;
+      var root = opt.root || 196, bpm = opt.bpm || 104, eighth = 30 / bpm;
+      var wave = opt.wave || 'triangle', vol = opt.vol != null ? opt.vol : 0.05;
+      var master = a.createGain(); master.gain.value = vol; master.connect(a.destination);
+      var step = 0, stopped = false, timer = null;
+      function f(semi) { return root * Math.pow(2, semi / 12); }
+      function note(freq, dur, type, peak, t) {
+        try { var o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t);
+          o.connect(g); g.connect(master); g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(peak, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.start(t); o.stop(t + dur + 0.03); } catch (e) {}
+      }
+      function tick() {
+        if (stopped) return; var t = a.currentTime + 0.03;
+        var deg = sc[step % sc.length], oct = 12 * (Math.floor(step / sc.length) % 2);
+        note(f(deg + oct), eighth * 1.6, wave, 0.5, t);
+        if (step % 4 === 0) note(f(deg - 12), eighth * 3.4, 'sine', 0.85, t);
+        if (step % 8 === 4) note(f(sc[(step + 2) % sc.length] + 12), eighth * 1.1, 'square', 0.22, t);
+        step++; timer = setTimeout(tick, eighth * 1000);
+      }
+      tick();
+      return { stop: function () { stopped = true; if (timer) clearTimeout(timer);
+        try { var n = a.currentTime; master.gain.setValueAtTime(master.gain.value, n); master.gain.exponentialRampToValueAtTime(0.0001, n + 0.25); } catch (e) {}
+        setTimeout(function () { try { master.disconnect(); } catch (e) {} }, 350); } };
+    },
+
+    music: function (url, vol) { try { var au = new Audio(url); au.loop = true; au.volume = vol || 0.4; au.play(); return au; } catch (e) {} } };
   })();
 
   // ---------------------------------------------------------------------- Cam
