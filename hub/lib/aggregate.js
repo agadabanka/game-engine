@@ -173,6 +173,14 @@ export async function snapshotGame(game, { ghToken } = {}) {
   }
 
   out.videos = normalizeVideos(out.meta);   // the uploaded AI-playthrough gallery
+  // gameplay screenshots: the curated registry entry wins, else the game's own
+  // GAME_META.screenshots (relative paths like /diary-shots/level1.jpg are resolved
+  // against the live deploy so the hub can render the gallery directly).
+  if (!out.screenshots.length && out.meta && Array.isArray(out.meta.screenshots)) {
+    out.screenshots = out.meta.screenshots
+      .filter((s) => typeof s === 'string')
+      .map((s) => (/^https?:\/\//.test(s) ? s : (base ? base + (s.startsWith('/') ? '' : '/') + s : s)));
+  }
   // a single "watch" link: the game's own meta.playlist if it has a real YouTube
   // playlist, else the montage video (the watch-it-all-in-one), else the first
   // clip. NOTE: never synthesize youtube.com/watch_videos — that endpoint was
