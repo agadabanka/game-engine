@@ -60,6 +60,15 @@ async function chromaKey(browser, srcPng, dstPng) {
       if (g > 90 && g > r * 1.25 && g > b * 1.25) { d[i + 3] = 0; }
       else if (g > r && g > b) { const spill = Math.min(g - Math.max(r, b), 60); d[i + 1] = g - spill; d[i + 3] = Math.max(0, d[i + 3] - spill * 2); }
     }
+    // feather the TOP edge of the content to alpha (per column): the silhouette top melts into the
+    // sky instead of a hard chroma-key cutoff → an atmospheric blend, no visible edge line.
+    const FE = 70;
+    for (let cx = 0; cx < c.width; cx++) {
+      let top = -1;
+      for (let cy = 0; cy < c.height; cy++) { if (d[(cy * c.width + cx) * 4 + 3] > 24) { top = cy; break; } }
+      if (top < 0) continue;
+      for (let cy = top; cy < Math.min(c.height, top + FE); cy++) { const t = (cy - top) / FE, j = (cy * c.width + cx) * 4 + 3; d[j] = Math.round(d[j] * t * t); }
+    }
     x.putImageData(im, 0, 0);
     return c.toDataURL('image/png');
   }, b64);

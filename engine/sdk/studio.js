@@ -471,7 +471,10 @@
         var sx = scene.cameras.main.scrollX, sy = scene.cameras.main.scrollY;
         layers.forEach(function (ts) {
           ts.tilePositionX = (sx * ts._rate) / ts.tileScaleX;
-          ts.tilePositionY = (sy * ts._rate * 0.35 + ts._yoff) / ts.tileScaleY;
+          // NO vertical tiling — the texture is cover-fit to the screen height, so scrolling it
+          // vertically would wrap its top/bottom edge into view as a hard horizontal SEAM. Keep it
+          // pinned vertically (a fixed offset only); the world scrolls horizontally anyway.
+          ts.tilePositionY = ts._yoff / ts.tileScaleY;
         });
       }
       update();
