@@ -541,6 +541,7 @@
         preload: function () {
           var S = window.SHELL || {}, sc = this;
           if (S.titleArt) sc.load.image('shell_title', S.titleArt);
+          if (S.menuMusic) sc.load.audio('shell_music', S.menuMusic);
           // Per-world menu THUMBNAILS. Explicit S.thumbs[i] wins; otherwise fall back to the
           // screenshot CONVENTION `assets/shots/level<N>.jpg` (captured by tools/shots.mjs) so
           // every game shows real level stills on its menu for free. A missing file trips
@@ -562,6 +563,13 @@
           // level is silently swallowed by `if (scene._starting) return`. (owner note: "menu click does
           // not work once we exit from a level".)
           scene._starting = false;
+          // menu music (S.menuMusic) — plays on first interaction (autoplay gesture), stops on leaving the menu
+          if (S.menuMusic && scene.cache.audio.exists('shell_music')) {
+            var _mm = null;
+            var _pm = function () { if (_mm) return; try { _mm = scene.sound.add('shell_music', { loop: true, volume: 0.5 }); _mm.play(); } catch (e) {} };
+            scene.input.on('pointerdown', _pm); if (scene.input.keyboard) scene.input.keyboard.once('keydown', _pm);
+            scene.events.once('shutdown', function () { try { if (_mm) _mm.stop(); } catch (e) {} });
+          }
           if (Studio.uistate) Studio.uistate.set(scene.game, 'menu');
           var accent = S.accent != null ? S.accent : 0xffd34d;
           var accCss = '#' + ('000000' + accent.toString(16)).slice(-6);
