@@ -155,6 +155,14 @@ but **replaces the platformer Play scene with a custom scene**, because the 0-de
   pool (`.burst(n,x,y)` + `.rain()` + `.update()`). Dancers are normal sprite-sheets — cycle expressive
   action-pose frames (cheer/jump/idle) on each beat + a phase-driven bob.
 - **"Levels" = songs**: each a Lyria track (per-world prompt) + a backdrop + a BPM. `?level=N` picks the song.
+- **SYNC taps to the actual audio, not wall-time.** A naive beat clock keyed off `scene.time.now` drifts from
+  the music (play-latency) and a *guessed* BPM makes it worse — taps feel "off." So: (1) **measure** each mp3's
+  real tempo **and** the offset to its first downbeat (decode PCM → energy-onset envelope → autocorrelation,
+  fold to 90–150 BPM); Lyria clips are rarely the BPM you asked for (one tagged 96 was really 129). (2) Pass
+  `Studio.Rhythm.attach(scene, { bpm, offset, onBeat, clock })` where `clock()` returns the live audio position
+  in ms (`music.seek*1000`) with a **scene-time fallback** (`scene.time.now - t0play`) so headless recording
+  still animates. Then PERFECT = on the beat you *hear*. Make a PERFECT feel special (shockwave rings + spark
+  burst + flash), per playtest notes.
 - **The gate is a RHYTHM SMOKE** (not 0-death): all songs boot (`__ready`), the beat clock advances, taps
   score, the menu/song-select works, **0 page errors**. Parity's ≥mechanics/≥enemy-kinds are platformer-specific —
   N/A; document the adaptation in the diary and close the gate stage on the smoke evidence.
@@ -247,9 +255,12 @@ _(Precedent: **Bollywood Beats** — two dancers, 3 Lyria songs, festive backdro
    (`tools/yt-upload.mjs`, YT_CLIENT_ID/SECRET/REFRESH_TOKEN in env) and create
    the playlist (`tools/yt-playlist.mjs`). Links go into GAME_META.json
    (`videos` + `playlist`), the diary, and the hub registry. Also capture a few
-   gameplay stills into `src/diary-shots/` and add a `screenshots` array (deployed
-   URLs) to the hub registry entry — the hub detail shows a screenshot gallery and
-   the diary embeds them. If a real playlist can't be created (the saved token may
+   gameplay stills into `src/diary-shots/` (use `tools/diary-shots.mjs <game-dir>`:
+   it boots the game, runs autopilot, taps **on-beat** via a `__beatPhase` hook so the
+   frame catches the celebratory flourish, and writes full 960×540 frames via the
+   **compositor** screenshot — WebGL canvases read back black through `toDataURL`) and
+   add a `screenshots` array (deployed URLs) to the hub registry entry — the hub detail
+   shows a screenshot gallery and the diary embeds them via `![](src/diary-shots/…)`. If a real playlist can't be created (the saved token may
    be upload-scoped only), that's fine — the hub falls back to the montage link
    (never the retired `watch_videos` endpoint).
 10. **Loop closed** — register the game in `hub/games.json` (game-engine repo)
