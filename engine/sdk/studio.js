@@ -457,11 +457,21 @@
       (opt.layers || []).forEach(function (L, i) {
         if (!L || !L.key || !scene.textures.exists(L.key)) return;
         var img = scene.textures.get(L.key).getSourceImage();
-        var ih = (img && img.height) || H;
-        var ts = scene.add.tileSprite(W / 2, H / 2, W, H, L.key)
+        var iw = (img && img.width) || W, ih = (img && img.height) || H;
+        // SEAMLESS horizontal tiling via a MIRROR pair: bake [image | horizontally-flipped image]
+        // into one texture. Tiling that repeats …A A' A A'… so every edge meets its own mirror →
+        // no vertical seam, even though the generated art isn't perfectly tileable left-to-right.
+        var mkey = L.key + '__mir';
+        if (!scene.textures.exists(mkey)) {
+          var cv = scene.textures.createCanvas(mkey, iw * 2, ih), cx = cv.getContext();
+          cx.drawImage(img, 0, 0);
+          cx.save(); cx.translate(iw * 2, 0); cx.scale(-1, 1); cx.drawImage(img, 0, 0); cx.restore();
+          cv.refresh();
+        }
+        var ts = scene.add.tileSprite(W / 2, H / 2, W, H, mkey)
           .setScrollFactor(0).setDepth(L.depth != null ? L.depth : (-100 + i * 6));
-        var s = H / ih;                                   // cover-fit the texture to the screen height
-        ts.setTileScale(s, s);
+        var s = (H / ih) * 1.05;                          // cover-fit + slight vertical OVERSCAN so the
+        ts.setTileScale(s, s);                            // texture's top/bottom edge never wraps into view
         ts._rate = L.scroll != null ? L.scroll : (0.08 + i * 0.2);
         ts._yoff = L.y || 0;
         if (L.alpha != null) ts.setAlpha(L.alpha);
