@@ -70,6 +70,7 @@
   .card .cta a:hover{ filter:brightness(1.12); }
   /* unified button system: blue = primary action (Play), dark pill = secondary */
   .card .cta .play{ background:#2a6df0; color:#fff; border-color:#3a7dff; }
+  .card .cta .rec{ background:rgba(255,77,143,.18); color:#ffd6e6; border-color:#ff4d8f; }
   .card .cta .det{ background:#16213f; color:#cfe0ff; }
   .card .peek{ display:none; }
   .dot{ width:9px; height:9px; border-radius:50%; flex:none; } .dot.live{ background:var(--green); box-shadow:0 0 8px var(--green); }
@@ -169,6 +170,8 @@
   .thumb img{ display:block; width:100%; aspect-ratio:1/1; object-fit:cover; background:#0f1830; }
   .thumb .tcap{ display:flex; align-items:center; gap:7px; padding:7px 9px; background:var(--panel2); }
   .thumb .tcap .tnm{ font-size:12.5px; font-weight:800; color:#fff; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .thumb .tcap .trec{ margin-left:auto; flex:0 0 auto; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; text-decoration:none; background:rgba(255,77,143,.2); border:1px solid #ff4d8f; color:#ffd6e6; }
+  .thumb .tcap .trec:hover{ filter:brightness(1.25); }
   .thumb .tdot{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
   .thumb .tdot.live{ background:var(--green);} .thumb .tdot.idle{ background:var(--orange);} .thumb .tdot.off{ background:#5b6b86; }
 </style>
@@ -237,6 +240,12 @@ function cardImage(g){
   const vs = g.videos || []; const v = vs.find((x) => x.montage) || vs[0];
   return v ? v.thumb : null;
 }
+// a game's LATEST RECORDING — prefer the montage clip, else the watch link, else the first clip.
+function recUrl(g){
+  const vs = g.videos || [];
+  const m = vs.find((v) => v.montage);
+  return (m && m.url) || g.playlist || (vs[0] && vs[0].url) || null;
+}
 function card(g){
   const m = g.meta || {};
   const status = g.live ? 'live' : (g.diary.count ? 'idle' : 'off');
@@ -266,6 +275,7 @@ function card(g){
       <div class="facts">${facts || 'in development'}</div>
       <div class="cta">
         ${base ? `<a class="play" href="${esc(base)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶ Play</a>` : ''}
+        ${recUrl(g) ? `<a class="rec" href="${esc(recUrl(g))}" target="_blank" rel="noopener" title="Latest recording" onclick="event.stopPropagation()">▶ Recording</a>` : ''}
         <a class="det" href="/ide?game=${esc(g.id)}" onclick="event.stopPropagation()">🎛 Open IDE</a>
       </div>
     </div>
@@ -442,9 +452,11 @@ function thumbCell(g){
   // in-flow square <img> + a caption bar BELOW it (no overlay → WebKit can't paint over the name).
   const onerr = `(function(im){var q=JSON.parse(im.dataset.q||'[]');if(q.length){im.src=q.shift();im.dataset.q=JSON.stringify(q);}else{im.style.visibility='hidden';}})(this)`;
   const img = `<img loading="lazy" src="${srcs[0]}" data-q='${esc(JSON.stringify(srcs.slice(1)))}' alt="${esc(g.name)}" onerror="${onerr}" />`;
+  const rec = recUrl(g);
+  const recLink = rec ? `<a class="trec" href="${esc(rec)}" target="_blank" rel="noopener" title="Latest recording" onclick="event.stopPropagation()">▶</a>` : '';
   return `<div class="thumb" onclick="document.getElementById('grid').close(); openGame('${esc(g.id)}')" title="${esc(g.name)}">
     ${img}
-    <div class="tcap"><span class="tdot ${status}" title="${status}"></span><span class="tnm">${esc(g.name)}</span></div>
+    <div class="tcap"><span class="tdot ${status}" title="${status}"></span><span class="tnm">${esc(g.name)}</span>${recLink}</div>
   </div>`;
 }
 function openGrid(){
