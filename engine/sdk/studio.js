@@ -439,6 +439,62 @@
     return image;
   };
 
+  // ------------------------------------------------------------------ Parallax
+  // Multi-layer scrolling parallax from a stack of textures (far → near). Each layer is a
+  // tileSprite pinned to the camera (scrollFactor 0) whose tilePosition is driven by the camera
+  // scroll × the layer's own rate — so far layers drift slowly, near layers whip by, and any
+  // world width works (the texture repeats). Cover-fits each texture to the viewport height.
+  //   var px = Studio.Parallax.build(scene, { layers: [
+  //     { key:'pl_meadow_0', scroll:0.08 },   // far  (opaque sky)
+  //     { key:'pl_meadow_1', scroll:0.25 },   // mid  (transparent mountains)
+  //     { key:'pl_meadow_2', scroll:0.5  } ]});// near (transparent hills)
+  //   …self-drives off the scene 'update' event (pass selfDrive:false to call px.update() yourself).
+  // PURELY visual + deterministic (camera-driven, no RNG) → gate-safe.
+  Studio.Parallax = {
+    build: function (scene, opt) {
+      opt = opt || {};
+      var W = scene.scale.width, H = scene.scale.height, layers = [];
+      (opt.layers || []).forEach(function (L, i) {
+        if (!L || !L.key || !scene.textures.exists(L.key)) return;
+        var img = scene.textures.get(L.key).getSourceImage();
+        var iw = (img && img.width) || W, ih = (img && img.height) || H;
+        // SEAMLESS horizontal tiling via a MIRROR pair: bake [image | horizontally-flipped image]
+        // into one texture. Tiling that repeats …A A' A A'… so every edge meets its own mirror →
+        // no vertical seam, even though the generated art isn't perfectly tileable left-to-right.
+        var mkey = L.key + '__mir';
+        if (!scene.textures.exists(mkey)) {
+          var cv = scene.textures.createCanvas(mkey, iw * 2, ih), cx = cv.getContext();
+          cx.drawImage(img, 0, 0);
+          cx.save(); cx.translate(iw * 2, 0); cx.scale(-1, 1); cx.drawImage(img, 0, 0); cx.restore();
+          cv.refresh();
+        }
+        var ts = scene.add.tileSprite(W / 2, H / 2, W, H, mkey)
+          .setScrollFactor(0).setDepth(L.depth != null ? L.depth : (-100 + i * 6));
+        var s = (H / ih) * 1.05;                          // cover-fit + slight vertical OVERSCAN so the
+        ts.setTileScale(s, s);                            // texture's top/bottom edge never wraps into view
+        ts._rate = L.scroll != null ? L.scroll : (0.08 + i * 0.2);
+        ts._yoff = L.y || 0;
+        if (L.alpha != null) ts.setAlpha(L.alpha);
+        layers.push(ts);
+      });
+      function update() {
+        var sx = scene.cameras.main.scrollX, sy = scene.cameras.main.scrollY;
+        layers.forEach(function (ts) {
+          ts.tilePositionX = (sx * ts._rate) / ts.tileScaleX;
+          // NO vertical tiling — the texture is cover-fit to the screen height, so scrolling it
+          // vertically would wrap its top/bottom edge into view as a hard horizontal SEAM. Keep it
+          // pinned vertically (a fixed offset only); the world scrolls horizontally anyway.
+          ts.tilePositionY = ts._yoff / ts.tileScaleY;
+        });
+      }
+      update();
+      var onUpd = function () { update(); };
+      if (opt.selfDrive !== false) scene.events.on('update', onUpd);
+      scene.events.once('shutdown', function () { scene.events.off('update', onUpd); });
+      return { layers: layers, update: update };
+    }
+  };
+
   // ----------------------------------------------------------------- Atmosphere
   // The "living world" finesse: SELF-DRIFTING parallax cloud bands + floating motes that move on their
   // OWN (independent of the camera), so the world breathes even when you stand still. Fully procedural —
