@@ -25,6 +25,11 @@ repo that's already wired to the whole stack and showing on the hub.
      `--base <owner/repo>` to scaffold from a different base.
    - Add `--dry-run` first if you want to preview the scaffold without touching
      GitHub — it writes the files locally and stops.
+   - `--engine <phaser|claystone>` picks the engine (**default `phaser`**). Pass
+     `--engine claystone` for the determinism-first, zero-dependency option — it scaffolds
+     a self-contained, playable Claystone game (vendored engine + Canvas2D page + headless
+     0-death `eval.mjs`) via `agadabanka/claystone-engine`, then runs the same GitHub/hub
+     steps. See the **make-game-claystone** skill. Phaser stays the default.
    - Requires `GH_TOKEN`. The command prints the GitHub URL and the Railway deploy
      steps when done.
 
