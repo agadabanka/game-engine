@@ -616,7 +616,9 @@
           // assets/backdrops/title.jpg (tools/art.mjs --title) so the menu shows real key art for
           // free. A missing file trips loaderror below → create() draws the flat sky instead.
           sc.load.image('shell_title', S.titleArt || 'assets/backdrops/title.jpg');
-          if (S.menuMusic) sc.load.audio('shell_music', S.menuMusic);
+          // NB: menu music is NOT loaded through the Phaser loader — decoding audio before a user
+          // gesture stalls iOS Safari's loader (blank title). It's played from an HTML5 <audio>
+          // element in create() instead (unlocks on first tap/key). See below.
           // Per-world menu THUMBNAILS. Explicit S.thumbs[i] wins; otherwise fall back to the
           // screenshot CONVENTION `assets/shots/level<N>.jpg` (captured by tools/shots.mjs) so
           // every game shows real level stills on its menu for free. A missing file trips
@@ -638,12 +640,18 @@
           // level is silently swallowed by `if (scene._starting) return`. (owner note: "menu click does
           // not work once we exit from a level".)
           scene._starting = false;
-          // menu music (S.menuMusic) — plays on first interaction (autoplay gesture), stops on leaving the menu
-          if (S.menuMusic && scene.cache.audio.exists('shell_music')) {
-            var _mm = null;
-            var _pm = function () { if (_mm) return; try { _mm = scene.sound.add('shell_music', { loop: true, volume: 0.5 }); _mm.play(); } catch (e) {} };
-            scene.input.on('pointerdown', _pm); if (scene.input.keyboard) scene.input.keyboard.once('keydown', _pm);
-            scene.events.once('shutdown', function () { try { if (_mm) _mm.stop(); } catch (e) {} });
+          // menu music (S.menuMusic) — via a plain HTML5 <audio> (NOT the Phaser loader, which would
+          // stall iOS before a gesture). Starts muted-until-allowed; unlocks + plays on the first
+          // tap/key, stops on leaving the menu.
+          if (S.menuMusic) {
+            var _mm = null, _stopped = false;
+            var _pm = function () {
+              if (_mm || _stopped) return;
+              try { _mm = new Audio(S.menuMusic); _mm.loop = true; _mm.volume = 0.5; var p = _mm.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+              window.removeEventListener('pointerdown', _pm); window.removeEventListener('keydown', _pm);
+            };
+            window.addEventListener('pointerdown', _pm); window.addEventListener('keydown', _pm);
+            scene.events.once('shutdown', function () { _stopped = true; try { if (_mm) { _mm.pause(); _mm.src = ''; } } catch (e) {} window.removeEventListener('pointerdown', _pm); window.removeEventListener('keydown', _pm); });
           }
           if (Studio.uistate) Studio.uistate.set(scene.game, 'menu');
           var accent = S.accent != null ? S.accent : 0xffd34d;
