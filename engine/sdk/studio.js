@@ -139,10 +139,18 @@
         var srcKey = scene.textures.exists('tile_' + mat) ? 'tile_' + mat : null, img = srcKey && scene.textures.get(srcKey).getSourceImage();
         if (img && img.width) { var s = Math.max(cw / img.width, ch / img.height), dw = img.width * s, dh = img.height * s; ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh); }
         else { ctx.fillStyle = hex(M.color); ctx.fillRect(0, 0, cw, ch); var bd = ctx.createLinearGradient(0, 0, 0, ch); bd.addColorStop(0, hex(M.top)); bd.addColorStop(1, hex(Studio._darken(M.color, 0.4))); ctx.fillStyle = bd; ctx.globalAlpha = 0.5; ctx.fillRect(0, 0, cw, ch); ctx.globalAlpha = 1; }
-        var lipH = Math.min(ch * 0.5, 16), lip = ctx.createLinearGradient(0, 0, 0, lipH); lip.addColorStop(0, 'rgba(255,255,255,0.6)'); lip.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = lip; ctx.fillRect(0, 0, cw, lipH);
-        var shH = Math.min(ch * 0.55, 20), sh = ctx.createLinearGradient(0, ch - shH, 0, ch); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(20,16,28,0.34)'); ctx.fillStyle = sh; ctx.fillRect(0, ch - shH, cw, shH);
+        // 'sketch' slab style (Studio.Textures.slabStyle='sketch') drops the glossy clay lip + 3D
+        // shadow for a flat, hand-drawn look that matches pencil/ink art; default 'clay' keeps the
+        // molded plasticine highlight. Both keep the rounded alpha edges.
+        var sketch = Studio.Textures.slabStyle === 'sketch';
+        if (!sketch) {
+          var lipH = Math.min(ch * 0.5, 16), lip = ctx.createLinearGradient(0, 0, 0, lipH); lip.addColorStop(0, 'rgba(255,255,255,0.6)'); lip.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = lip; ctx.fillRect(0, 0, cw, lipH);
+          var shH = Math.min(ch * 0.55, 20), sh = ctx.createLinearGradient(0, ch - shH, 0, ch); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(20,16,28,0.34)'); ctx.fillStyle = sh; ctx.fillRect(0, ch - shH, cw, shH);
+        } else {
+          var top = ctx.createLinearGradient(0, 0, 0, Math.min(ch * 0.4, 12)); top.addColorStop(0, 'rgba(255,255,255,0.18)'); top.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = top; ctx.fillRect(0, 0, cw, Math.min(ch * 0.4, 12));
+        }
         ctx.restore();
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(28,28,40,0.8)'; rr(1.5, 1.5, cw - 3, ch - 3, r); ctx.stroke();
+        ctx.lineWidth = sketch ? 2 : 3; ctx.strokeStyle = sketch ? 'rgba(54,38,24,0.85)' : 'rgba(28,28,40,0.8)'; rr(1.5, 1.5, cw - 3, ch - 3, r); ctx.stroke();
         ct.refresh(); return key;
       } catch (e) { return fallback; }
     },
@@ -604,7 +612,10 @@
         key: 'Title',
         preload: function () {
           var S = window.SHELL || {}, sc = this;
-          if (S.titleArt) sc.load.image('shell_title', S.titleArt);
+          // TITLE keyart: explicit S.titleArt wins; else fall back to the generated convention
+          // assets/backdrops/title.jpg (tools/art.mjs --title) so the menu shows real key art for
+          // free. A missing file trips loaderror below → create() draws the flat sky instead.
+          sc.load.image('shell_title', S.titleArt || 'assets/backdrops/title.jpg');
           if (S.menuMusic) sc.load.audio('shell_music', S.menuMusic);
           // Per-world menu THUMBNAILS. Explicit S.thumbs[i] wins; otherwise fall back to the
           // screenshot CONVENTION `assets/shots/level<N>.jpg` (captured by tools/shots.mjs) so

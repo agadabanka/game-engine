@@ -1349,25 +1349,27 @@
       "videos": [
         {
           "name": "Baobab Bluff",
-          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-1-baobab-bluff.mp4"
+          "youtube": "https://youtu.be/n9KVB86yJK4"
         },
         {
           "name": "Cataract Climb",
-          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-2-cataract-climb.mp4"
+          "youtube": "https://youtu.be/hmo3WtbmKjs"
         },
         {
           "name": "Ochre Canyon",
-          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-3-ochre-canyon.mp4"
+          "youtube": "https://youtu.be/C120whKZhDQ"
         },
         {
           "name": "Emberreach Highlands",
-          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-4-emberreach-highlands.mp4"
+          "youtube": "https://youtu.be/AzC23q63u3g"
         },
         {
           "name": "Cloudspire Summit",
-          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-5-cloudspire-summit.mp4"
+          "youtube": "https://youtu.be/nSOCZZA2Qhk"
         }
-      ]
+      ],
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEt6jcx5AZncUKrhwcGX7ZkA",
+      "youtube": "https://youtu.be/IYW_0liThZw"
     },
     "shorts": [
       {
