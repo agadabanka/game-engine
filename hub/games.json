@@ -1236,5 +1236,115 @@
       "level-4-embercore-caldera": "https://youtu.be/DFXmtds7vas",
       "level-5-starlit-summit": "https://youtu.be/-lov_Xa8lwU"
     }
+  },
+  {
+    "id": "sokwe-summit",
+    "name": "Sokwe Summit",
+    "repo": "agadabanka/sokwe-summit",
+    "url": "https://sokwe-summit-production.up.railway.app",
+    "tagline": "Scale the sketched African heights and outwit the great ape Sokwe.",
+    "meta": {
+      "hero": "Asha, a nimble young African girl climber with short coiled hair, a red headwrap and ochre tunic, barefoot, big determined eyes",
+      "verb": "climb · leap",
+      "worlds": [
+        {
+          "name": "Baobab Bluff",
+          "tag": "Golden savanna · climb the baobab branches",
+          "color": 14721619,
+          "theme": "savanna"
+        },
+        {
+          "name": "Cataract Climb",
+          "tag": "Jungle gorge · crumbling stones over the chasm",
+          "color": 2056010,
+          "theme": "jungle"
+        },
+        {
+          "name": "Ochre Canyon",
+          "tag": "Red-rock desert · ride the canyon gust",
+          "color": 12608564,
+          "theme": "canyon"
+        },
+        {
+          "name": "Emberreach Highlands",
+          "tag": "Volcanic terraces · updrafts over the lava",
+          "color": 4857636,
+          "theme": "volcanic"
+        },
+        {
+          "name": "Cloudspire Summit",
+          "tag": "Misty peak · windswept ledges to Sokwe's lair",
+          "color": 7307168,
+          "theme": "summit"
+        }
+      ],
+      "levelCount": 5,
+      "genre": "platformer",
+      "engine": "game-engine",
+      "art": {
+        "style": "hand-drawn PENCIL SKETCH look: graphite crosshatch shading on warm cream sketchbook paper, loose confident ink outlines, light ochre and burnt-sienna watercolor washes, visible pencil strokes and smudges, African folk-art motifs, earthy and warm, monochrome-leaning with golden accents — like a naturalist's field sketchbook of Africa",
+        "motion": "walk",
+        "enemies": [
+          {
+            "key": "coconut",
+            "name": "Koko",
+            "personality": "hot-headed and rolls in head-first",
+            "desc": "an angry cracked spiky coconut with a sketched scowling face, a rolling hazard"
+          },
+          {
+            "key": "badger",
+            "name": "Ratel",
+            "personality": "fearless, stubborn, never backs down",
+            "desc": "a scrappy African honey badger with bold black-and-white sketched fur, low and feisty"
+          },
+          {
+            "key": "scarab",
+            "name": "Kheper",
+            "personality": "single-minded, always pushing forward",
+            "desc": "a round shiny sketched scarab beetle with stubby legs"
+          }
+        ],
+        "tiles": [
+          {
+            "key": "savanna",
+            "desc": "dry golden savanna earth with tufts of grass"
+          },
+          {
+            "key": "ochre",
+            "desc": "layered red-ochre canyon sandstone"
+          },
+          {
+            "key": "granite",
+            "desc": "pale misty mountain granite"
+          },
+          {
+            "key": "vine",
+            "desc": "mossy green jungle stone wrapped in vines"
+          },
+          {
+            "key": "basalt",
+            "desc": "charred black volcanic basalt with faint glowing cracks"
+          }
+        ],
+        "props": [
+          {
+            "key": "baobab",
+            "desc": "a gnarled wide African baobab tree"
+          },
+          {
+            "key": "drum",
+            "desc": "an ornate golden African djembe sun-drum, glowing warmly"
+          },
+          {
+            "key": "banana",
+            "desc": "a ripe bunch of bananas"
+          },
+          {
+            "key": "mask",
+            "desc": "a carved tribal African ceremonial mask"
+          }
+        ]
+      }
+    }
   }
 ]
