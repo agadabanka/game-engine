@@ -1236,5 +1236,53 @@
       "level-4-embercore-caldera": "https://youtu.be/DFXmtds7vas",
       "level-5-starlit-summit": "https://youtu.be/-lov_Xa8lwU"
     }
+  },
+  {
+    "id": "dumpling-dash",
+    "name": "Dumpling Dash",
+    "repo": "agadabanka/dumpling-dash",
+    "url": "https://web-production-93589.up.railway.app",
+    "tagline": "Hop the neon night-market, dodge spitting woks, reach the giant lantern.",
+    "meta": {
+      "hero": "Bao, a roly-poly dumpling chef",
+      "verb": "hop · bounce",
+      "worlds": [
+        {
+          "name": "Lantern Lane",
+          "tag": "Warm intro · plank stalls over broth puddles",
+          "color": 1313320,
+          "theme": "neon night-market lantern street",
+          "accent": 16758311
+        },
+        {
+          "name": "Skewer Alley",
+          "tag": "Sizzling-oil gaps · a sushi-belt sprint",
+          "color": 1707822,
+          "theme": "grilled-skewer market alley",
+          "accent": 16743121
+        },
+        {
+          "name": "Wok Hei Heights",
+          "tag": "Island-hop the lanterns · ride the steam",
+          "color": 1054766,
+          "theme": "floating paper-lantern rooftops",
+          "accent": 10217471
+        },
+        {
+          "name": "Dim Sum Drop",
+          "tag": "Crumbling steamers · a flung-wok dash",
+          "color": 1839152,
+          "theme": "steamer-basket descent over broth",
+          "accent": 12608287
+        },
+        {
+          "name": "Grand Lantern Finale",
+          "tag": "Oil + broth gauntlet to the giant lantern",
+          "color": 722976,
+          "theme": "grand lantern plaza finale",
+          "accent": 16765517
+        }
+      ]
+    }
   }
 ]

@@ -58,7 +58,12 @@
       // hazards (deadly — routed to the hazards group):
       lagoon: { color: 0x1f7fc4, top: 0x86d0ff, friction: 1, deadly: true, ground: false }, // pink-lemonade water
       thorn: { color: 0x7b2a8a, top: 0xc81d9e, friction: 1, deadly: true, ground: false }, // bramble patch
-      fudge: { color: 0x3f2207, top: 0xc0631f, friction: 1, deadly: true, ground: false }  // molten chocolate
+      fudge: { color: 0x3f2207, top: 0xc0631f, friction: 1, deadly: true, ground: false }, // molten chocolate
+      // night-market set (funded by Dumpling Dash) — warm stall footings + sizzling hazards
+      plank: { color: 0x7a4a24, top: 0xc08443, friction: 1, deadly: false, ground: true },  // lacquered wood stall
+      tatami: { color: 0x6f7d3a, top: 0xc7c06a, friction: 1, deadly: false, ground: true }, // woven straw mat
+      oil: { color: 0x2a1d0a, top: 0xffb627, friction: 1, deadly: true, ground: false },    // sizzling wok oil
+      broth: { color: 0x7a3b12, top: 0xe8852b, friction: 1, deadly: true, ground: false }   // bubbling broth vat
     },
     get: function (name) { return this.table[name] || this.table.solid; }
   };
