@@ -13,7 +13,7 @@ const CREDS = '/tmp/yt-creds.json';
 const CODEOUT = '/tmp/yt-code.json';
 if (!CID || !CSEC) { console.error('set YT_CLIENT_ID + YT_CLIENT_SECRET'); process.exit(2); }
 if (!FILE || !fs.existsSync(FILE)) { console.error('video file not found:', FILE); process.exit(2); }
-const SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
+const SCOPE = 'https://www.googleapis.com/auth/youtube';   // upload + playlist (broad, so one token does both)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function accessToken() {
