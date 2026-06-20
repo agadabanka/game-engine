@@ -1344,7 +1344,50 @@
             "desc": "a carved tribal African ceremonial mask"
           }
         ]
+      },
+      "montage": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/montage.mp4",
+      "videos": [
+        {
+          "name": "Baobab Bluff",
+          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-1-baobab-bluff.mp4"
+        },
+        {
+          "name": "Cataract Climb",
+          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-2-cataract-climb.mp4"
+        },
+        {
+          "name": "Ochre Canyon",
+          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-3-ochre-canyon.mp4"
+        },
+        {
+          "name": "Emberreach Highlands",
+          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-4-emberreach-highlands.mp4"
+        },
+        {
+          "name": "Cloudspire Summit",
+          "url": "https://github.com/agadabanka/sokwe-summit/releases/download/videos/level-5-cloudspire-summit.mp4"
+        }
+      ]
+    },
+    "shorts": [
+      {
+        "title": "Baobab Bluff",
+        "biome": "Baobab Bluff",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453115095"
+      },
+      {
+        "title": "Ochre Canyon",
+        "biome": "Ochre Canyon",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453115098"
+      },
+      {
+        "title": "Cloudspire Summit",
+        "biome": "Cloudspire Summit",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453115099"
       }
-    }
+    ]
   }
 ]
