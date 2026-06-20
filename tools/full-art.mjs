@@ -22,9 +22,10 @@ const sel = flags.filter((f) => f !== 'force');
 const all = !sel.length || sel.includes('all');
 const want = (k) => all || sel.includes(k);
 
-// order matters: backdrops first, then sprites (writes the manifest), then tiles + props (merge in)
+// order matters: backdrops first (parallax anchors on them), then sprites (writes the manifest), then tiles + props (merge in)
 const STEPS = [
   ['backdrops', 'art.mjs'],
+  ['parallax', 'parallax-art.mjs'],   // multi-layer parallax layers — every game gets depth by default
   ['sprites', 'art-sprites.mjs'],
   ['tiles', 'art-tiles.mjs'],
   ['props', 'art-props.mjs'],
