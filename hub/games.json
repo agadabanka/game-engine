@@ -1283,6 +1283,26 @@
           "accent": 16765517
         }
       ]
-    }
+    },
+    "shorts": [
+      {
+        "title": "Lantern Lane",
+        "biome": "Lantern Lane",
+        "level": 1,
+        "mp4": "https://api.github.com/repos/agadabanka/dumpling-dash/releases/assets/452595844"
+      },
+      {
+        "title": "Wok Hei Heights",
+        "biome": "Wok Hei Heights",
+        "level": 3,
+        "mp4": "https://api.github.com/repos/agadabanka/dumpling-dash/releases/assets/452595849"
+      },
+      {
+        "title": "Grand Lantern Finale",
+        "biome": "Grand Lantern Finale",
+        "level": 5,
+        "mp4": "https://api.github.com/repos/agadabanka/dumpling-dash/releases/assets/452595888"
+      }
+    ]
   }
 ]
