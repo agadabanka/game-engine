@@ -18,7 +18,9 @@ export function beatArc(n) {
 export function storyFrom(meta = {}, opts = {}) {
   const title = meta.name || 'The Game';
   const hero = (meta.hero || `${title}'s hero`).split(',')[0].trim();
-  const worlds = (meta.worlds && meta.worlds.length ? meta.worlds : ['World 1', 'World 2', 'World 3', 'World 4', 'World 5']).slice();
+  // worlds may be plain strings OR rich objects ({name, theme, tag}) — normalize to display names.
+  const wname = (w) => (typeof w === 'string' ? w : (w && (w.name || w.theme)) || 'World');
+  const worlds = (meta.worlds && meta.worlds.length ? meta.worlds : ['World 1', 'World 2', 'World 3', 'World 4', 'World 5']).map(wname);
   const verb = (meta.verb || 'adventure').split('·')[0].split('•')[0].trim();
   const antagonist = opts.antagonist || meta.antagonist || `the ${title.split(' ')[0]} Shadow`;
   const protagonist = { name: hero, arc: opts.arc || `${hero} sets out to ${verb} across ${worlds.length} worlds and face ${antagonist}.` };

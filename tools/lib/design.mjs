@@ -4,7 +4,7 @@
 // interest curve + FUN (#35), and the Schell lenses we judged it through — then VALIDATES that the
 // shipped level actually matches that intent. The build writes it; /design renders it; the eval can
 // gate on validate(). Pure (node + browser); composes the element / difficulty / feel libs.
-import { FUN, signatureFor, interestOf } from './elements.mjs';
+import { FUN, signatureFor, interestOf, ELEMENT_LIBRARY } from './elements.mjs';
 import { arcWeight, climaxIndex, isCalmOpening } from './difficulty.mjs';
 import { predict } from './feelmodel.mjs';
 
@@ -35,7 +35,12 @@ function hasMechanic(L, key) { const f = MECH_FIELD[key]; return f ? f(L) > 0 : 
 /** The recorded design intent for level i of n (the schema). Synthesized from the level + its
  *  position in the campaign; opts can override essence/puzzle/twist with authored copy. */
 export function designIntent(level, i, n, opts = {}) {
-  const sig = signatureFor(i);
+  // Prefer the level's OWN declared signature (level.signature / level.mech) — the level knows the
+  // verb it teaches — falling back to the positional guess for levels that declare none.
+  const declared = level.signature || level.mech;
+  const sig = (declared && ELEMENT_LIBRARY[declared] && ELEMENT_LIBRARY[declared].implemented)
+    ? { key: declared, ...ELEMENT_LIBRARY[declared] }
+    : signatureFor(i);
   const feel = predict(level);
   const t = n > 1 ? i / (n - 1) : 1;
   return {

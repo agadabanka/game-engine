@@ -12,7 +12,9 @@ const titleCase = (s) => String(s || '').replace(/(^|[\s-])(\w)/g, (_, a, b) => 
 export function castFrom(meta = {}, opts = {}) {
   const f = meta.meta || meta;                                  // GAME_META sometimes nests under .meta
   const story = storyFrom(f);
-  const worlds = f.worlds && f.worlds.length ? f.worlds : ['World 1'];
+  // worlds may be plain strings OR rich objects ({name, theme, tag}) — normalize to display names.
+  const wname = (w) => (typeof w === 'string' ? w : (w && (w.name || w.theme)) || 'World');
+  const worlds = (f.worlds && f.worlds.length ? f.worlds : ['World 1']).map(wname);
   const hero = { name: story.protagonist.name, role: 'protagonist', look: (f.hero || '').trim(), personality: opts.heroPersonality || 'plucky and warm-hearted', arc: story.protagonist.arc };
   const critters = (f.art && f.art.enemies) || [];
   const enemies = critters.map((c, i) => ({
@@ -20,7 +22,8 @@ export function castFrom(meta = {}, opts = {}) {
     role: 'adversary', world: worlds[i % worlds.length],
     look: c.desc || c.key, personality: (opts.personalities && opts.personalities[c.key]) || PERSONALITY[i % PERSONALITY.length],
   }));
-  const bossName = titleCase(story.antagonist.replace(/^the\s+/i, ''));
+  // boss name: an explicit short name (opts/meta) wins; else the antagonist's first clause, not the whole sentence.
+  const bossName = opts.bossName || f.bossName || titleCase(story.antagonist.replace(/^the\s+/i, '').split(/[,—]| who | that | a colossal /i)[0].trim());
   const boss = { name: bossName, role: 'final antagonist', world: worlds[worlds.length - 1], look: `a towering, looming ${bossName} — the boss of the final world`, personality: 'menacing and theatrical', hp: opts.bossHp || 3 };
   const npcs = (opts.npcs || []).map((n) => ({ name: n.name, role: 'npc', look: n.look || '', personality: n.personality || 'helpful' }));
   return { hero, enemies, boss, npcs, roster: [hero, ...enemies, ...npcs, boss] };
