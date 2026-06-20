@@ -20,6 +20,16 @@ session and end with links.
   big procedural bob double-bounces into a hop. `Studio.Toon` is the rig FALLBACK when
   no generated sheet is present. Be THOROUGH + specific in the Gemini prompt (exact
   grid, per-frame leg choreography, flat chroma-green background, no text).
+- **Bring-your-own-art (optional — the image flow).** If the owner provides a character
+  IMAGE (a drawing, sketch, or photo — kids' drawings are a great fit), seed the SAME
+  sprite-sheet pipeline with it so the animation IS that art, not a redesign:
+  `node tools/art-sprites.mjs <gameDir> --ref <image> --force` — the `--ref` flag makes
+  the upload the hero IDENTITY reference (it replaces the generated model sheet). It is
+  validated · sliced · packed exactly like generated art. This is the **`art-from-image`**
+  skill; reach for it at the **character** stage whenever the owner hands you art (one
+  image per character; for an enemy, generate it as the hero in a throwaway dir and copy
+  the packed sheet into the enemy slot). It is also first-class in the Studio IDE (Art
+  tool → "Make sprite sheet from my art"). Default stays text-described art — opt-in only.
 - **Lots of juice**: particles on every event (hits, pickups, KOs, landings),
   rings/sparks/confetti/popups (`Studio.Juice`), procedural SFX (`Studio.Audio`).
 - **Variety as a theme**: levels/arenas should each be a distinct biome/world
@@ -49,6 +59,13 @@ skipping the hard creative stages (character art, rich levels, feel, music, vide
 ```
 node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir>
 ```
+> **Auth + where game tracking lives.** These scripts use **`GH_TOKEN`** (a PAT in the env) to hit
+> `api.github.com` directly — so they create and write to the **GAME'S OWN repo** (any repo, NOT
+> limited to one, and NOT dependent on any restricted MCP scope). **ALL game tracking — the stage
+> issues, the pinned Build tracker, and notes→issues — lives on the GAME repo.** **Never write
+> game-related issues or content to `agadabanka/game-engine`** — that repo is for ENGINE / SDK /
+> tooling / skills only (engine-change traceability uses `engine-change-issues.mjs`, above).
+
 This opens one GitHub issue per stage, each with a sharp ACCEPTANCE CRITERION (the bar), plus a
 single **pinned "Build tracker" meta-issue** that always names the NEXT step; it closes the stages
 GAME_META marks `done`. Then:
@@ -93,7 +110,7 @@ The tools are engine-level (operate on a game id/dir); a new game does NOT carry
 | scaffold | `scripts/new-game.mjs` | clone base · GitHub repo · hub register |
 | gate | game `eval.mjs` + `tools/lib/mirth.mjs` | FUN (`Studio.Brawl.fun`) + optional funny gate (`Studio.Mirth`) |
 | art | `tools/full-art.mjs` (orchestrator) → `art.mjs`+`art-sprites.mjs`+`art-tiles.mjs`+`art-props.mjs` | backdrops/keyart · generated hero+enemy **sprite sheets** (model-sheet→keyed→packed) · clay **tile** materials · **props** — all from `GAME_META.art.{style,enemies,tiles,props}`, chroma-keyed, merged into one `sprites.js` manifest, cached via `gencache`. `Studio.Hero` renders the sprite or falls back to the `Studio.Toon` rig |
-| music | `tools/music.mjs` → `lib/lyria.js` | Lyria loop per world (or procedural `Studio.Audio` fallback) |
+| music | `tools/music.mjs` (**Lyria 3 via the Gemini API**) | a Lyria track per world + title — `models/lyria-3-clip-preview:generateContent` with `responseModalities:[AUDIO]` (returns MP3) on the SAME `GEMINI_SA_JSON` that powers nano-banana-pro. **NOT** Vertex `lyria-002` (that path soft-denies — "Music generation failed, try modifying your prompt" — unless the GCP project is allow-listed). Procedural `Studio.Audio.bgm` chiptune is the in-engine fallback (no external file). |
 | shots | `tools/shots.mjs <dir>` | per-level menu THUMBNAILS — boots the game's own server, drives the autopilot a couple seconds in, writes `src/assets/shots/level<N>.jpg`. `Studio.Shell.title` auto-loads them (convention `assets/shots/level<N>.jpg`) so the level-select shows real screenshots, not flat color. Commit + redeploy. |
 | shorts | `tools/trailer/ship-shorts.mjs <id>` (record→host→wire→commit→push→verify, ONE program) — wraps `make-shorts.mjs` + `host-shorts.mjs` | mobile vertical feed. Use ship-shorts so the registry edit can never be left staged/uncommitted (the bug that left a game with no visible shorts). It pushes branch+main (auto-deploys the hub) and POLLS the live hub until the shorts appear. |
 | videos | `tools/record.mjs` + `tools/trailer/yt-upload.mjs` | per-level landscape MP4 (music muxed) + montage → YouTube (YT_* secrets; write the refresh token to /tmp/yt-creds.json). Playlist needs the broader `youtube` scope — an upload-scoped token 403s, so fall back to the montage link. |
@@ -127,6 +144,24 @@ The stock autopilot (`Studio.Autopilot.platformer`) is a *dumb* solver — "move
 - **The verb-aware SOLVER is the new gate.** `tools/lib/solver.mjs` forward-simulates the hero (`tools/lib/platforming.mjs` — the shared movement core, configured from the spec) between footholds to (a) prove a room solvable **with the declared verbs incl. dash/wall-jump chains**, (b) report which verbs are **load-bearing** (remove one → unsolvable, i.e. the room genuinely *requires* the dash — the depth a dumb gate can't certify), (c) score tightness/difficulty, and (d) **emit the autopilot path** the game replays — so verification and the gate are the same act, and the painful hand-tuning of waypoints is automated. `chainRooms(rooms, spec)` stitches verified rooms into a renderable+gateable level.
 - **What's still scoped:** the solver covers run/jump/dash/wall-jump/**spring** + spikes; richer contraptions (dream-block/bumper/mover) are the **contraption-registry** follow-up — each contraption needs (a) runtime behavior, (b) a solver model, (c) an authoring builder. Add models as you add gadgets.
 - **Retrofit an EXISTING game** (not just new ones): `node tools/upgrade-mechanics.mjs <dir> [--write]` (or the **`/upgrade-mechanics`** skill) ensures the spec, adapts the game's levels (`tools/lib/leveladapt.mjs` reads the solids format + the stock DSL), solver-audits each, and writes `MECHANICS-AUDIT.md` — telling you which levels have *required* depth vs. garnish. Audit read-only first; `--write` to save + deepen thin levels with new rooms.
+
+## Beyond platformers — the RHYTHM / DANCE genre (engine support)
+Not every concept is a runner. A **dance/rhythm game** keeps the engine's shell · mobile/Scale.FIT ·
+menu/song-select · deploy · notes loop · art-sprites · **Lyria music** · backdrops · shorts/videos —
+but **replaces the platformer Play scene with a custom scene**, because the 0-death autopilot doesn't apply.
+- **`Studio.Rhythm`** is the genre core: `Studio.Rhythm.attach(scene, { bpm, onBeat })` → a beat clock that
+  fires `onBeat(n)`, tracks `.phase`/`.beat`, **judges taps** (`.tap()` → `perfect|good|miss` by distance to
+  the nearest beat), and keeps `.score`/`.combo`/`.bestCombo`. **`Studio.Juice.confetti(scene)`** is a festive
+  pool (`.burst(n,x,y)` + `.rain()` + `.update()`). Dancers are normal sprite-sheets — cycle expressive
+  action-pose frames (cheer/jump/idle) on each beat + a phase-driven bob.
+- **"Levels" = songs**: each a Lyria track (per-world prompt) + a backdrop + a BPM. `?level=N` picks the song.
+- **The gate is a RHYTHM SMOKE** (not 0-death): all songs boot (`__ready`), the beat clock advances, taps
+  score, the menu/song-select works, **0 page errors**. Parity's ≥mechanics/≥enemy-kinds are platformer-specific —
+  N/A; document the adaptation in the diary and close the gate stage on the smoke evidence.
+- **Videos**: the deterministic `record.mjs` stepper doesn't fit a real-time scene — capture with Playwright
+  `recordVideo` for ~12s/song and mux the song mp3 (the canonical bollywood-beats recorder). Shorts: convert to
+  blurred-fill 1080×1920, host on the Release, register via the hub `/api/games` shorts field.
+_(Precedent: **Bollywood Beats** — two dancers, 3 Lyria songs, festive backdrops, built on `Studio.Rhythm`.)_
 
 ## The pipeline (all stages must land; update GAME_META.json stages as you go)
 1. **Scaffold** — `node scripts/new-game.mjs "<Name>" --local --tagline … --hero … --verb …`
@@ -183,8 +218,10 @@ The stock autopilot (`Studio.Autopilot.platformer`) is a *dumb* solver — "move
    title keyart + hero/enemy sprite sheets + clay tiles + props from `GAME_META.art`,
    chroma-keyed + packed into `sprites.js`, `gencache`d). GEMINI_SA_JSON. Bottom third
    stays gameplay-clean; NO text in images. `Studio.Hero` auto-prefers the generated sheet.
-7. **Music** — one Lyria loop per world + title via `tools/music.mjs`
-   (Vertex lyria-002, GEMINI_SA_JSON project), mp3 loops in src/assets/music.
+7. **Music** — a Lyria track per world + title via `tools/music.mjs`
+   (**Lyria 3 via the Gemini API** — `lyria-3-clip-preview:generateContent`, returns MP3;
+   NOT Vertex `lyria-002`, which soft-denies). mp3 loops in src/assets/music; the game prefers
+   the world's mp3 and falls back to the procedural `Studio.Audio.bgm` chiptune.
 8. **Deploy** — Railway, one project per game:
    `env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_TOKEN" railway init|up|domain`
    (the env token is an ACCOUNT token; the CLI misreads it as a project token

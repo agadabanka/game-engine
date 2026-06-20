@@ -439,6 +439,62 @@
     return image;
   };
 
+  // ------------------------------------------------------------------ Parallax
+  // Multi-layer scrolling parallax from a stack of textures (far → near). Each layer is a
+  // tileSprite pinned to the camera (scrollFactor 0) whose tilePosition is driven by the camera
+  // scroll × the layer's own rate — so far layers drift slowly, near layers whip by, and any
+  // world width works (the texture repeats). Cover-fits each texture to the viewport height.
+  //   var px = Studio.Parallax.build(scene, { layers: [
+  //     { key:'pl_meadow_0', scroll:0.08 },   // far  (opaque sky)
+  //     { key:'pl_meadow_1', scroll:0.25 },   // mid  (transparent mountains)
+  //     { key:'pl_meadow_2', scroll:0.5  } ]});// near (transparent hills)
+  //   …self-drives off the scene 'update' event (pass selfDrive:false to call px.update() yourself).
+  // PURELY visual + deterministic (camera-driven, no RNG) → gate-safe.
+  Studio.Parallax = {
+    build: function (scene, opt) {
+      opt = opt || {};
+      var W = scene.scale.width, H = scene.scale.height, layers = [];
+      (opt.layers || []).forEach(function (L, i) {
+        if (!L || !L.key || !scene.textures.exists(L.key)) return;
+        var img = scene.textures.get(L.key).getSourceImage();
+        var iw = (img && img.width) || W, ih = (img && img.height) || H;
+        // SEAMLESS horizontal tiling via a MIRROR pair: bake [image | horizontally-flipped image]
+        // into one texture. Tiling that repeats …A A' A A'… so every edge meets its own mirror →
+        // no vertical seam, even though the generated art isn't perfectly tileable left-to-right.
+        var mkey = L.key + '__mir';
+        if (!scene.textures.exists(mkey)) {
+          var cv = scene.textures.createCanvas(mkey, iw * 2, ih), cx = cv.getContext();
+          cx.drawImage(img, 0, 0);
+          cx.save(); cx.translate(iw * 2, 0); cx.scale(-1, 1); cx.drawImage(img, 0, 0); cx.restore();
+          cv.refresh();
+        }
+        var ts = scene.add.tileSprite(W / 2, H / 2, W, H, mkey)
+          .setScrollFactor(0).setDepth(L.depth != null ? L.depth : (-100 + i * 6));
+        var s = (H / ih) * 1.05;                          // cover-fit + slight vertical OVERSCAN so the
+        ts.setTileScale(s, s);                            // texture's top/bottom edge never wraps into view
+        ts._rate = L.scroll != null ? L.scroll : (0.08 + i * 0.2);
+        ts._yoff = L.y || 0;
+        if (L.alpha != null) ts.setAlpha(L.alpha);
+        layers.push(ts);
+      });
+      function update() {
+        var sx = scene.cameras.main.scrollX, sy = scene.cameras.main.scrollY;
+        layers.forEach(function (ts) {
+          ts.tilePositionX = (sx * ts._rate) / ts.tileScaleX;
+          // NO vertical tiling — the texture is cover-fit to the screen height, so scrolling it
+          // vertically would wrap its top/bottom edge into view as a hard horizontal SEAM. Keep it
+          // pinned vertically (a fixed offset only); the world scrolls horizontally anyway.
+          ts.tilePositionY = ts._yoff / ts.tileScaleY;
+        });
+      }
+      update();
+      var onUpd = function () { update(); };
+      if (opt.selfDrive !== false) scene.events.on('update', onUpd);
+      scene.events.once('shutdown', function () { scene.events.off('update', onUpd); });
+      return { layers: layers, update: update };
+    }
+  };
+
   // ----------------------------------------------------------------- Atmosphere
   // The "living world" finesse: SELF-DRIFTING parallax cloud bands + floating motes that move on their
   // OWN (independent of the camera), so the world breathes even when you stand still. Fully procedural —
@@ -541,6 +597,7 @@
         preload: function () {
           var S = window.SHELL || {}, sc = this;
           if (S.titleArt) sc.load.image('shell_title', S.titleArt);
+          if (S.menuMusic) sc.load.audio('shell_music', S.menuMusic);
           // Per-world menu THUMBNAILS. Explicit S.thumbs[i] wins; otherwise fall back to the
           // screenshot CONVENTION `assets/shots/level<N>.jpg` (captured by tools/shots.mjs) so
           // every game shows real level stills on its menu for free. A missing file trips
@@ -562,6 +619,13 @@
           // level is silently swallowed by `if (scene._starting) return`. (owner note: "menu click does
           // not work once we exit from a level".)
           scene._starting = false;
+          // menu music (S.menuMusic) — plays on first interaction (autoplay gesture), stops on leaving the menu
+          if (S.menuMusic && scene.cache.audio.exists('shell_music')) {
+            var _mm = null;
+            var _pm = function () { if (_mm) return; try { _mm = scene.sound.add('shell_music', { loop: true, volume: 0.5 }); _mm.play(); } catch (e) {} };
+            scene.input.on('pointerdown', _pm); if (scene.input.keyboard) scene.input.keyboard.once('keydown', _pm);
+            scene.events.once('shutdown', function () { try { if (_mm) _mm.stop(); } catch (e) {} });
+          }
           if (Studio.uistate) Studio.uistate.set(scene.game, 'menu');
           var accent = S.accent != null ? S.accent : 0xffd34d;
           var accCss = '#' + ('000000' + accent.toString(16)).slice(-6);
@@ -1905,7 +1969,41 @@
       boom: function () { tone(60, 0.3, 'sawtooth', 0.16); tone(110, 0.2, 'square', 0.1); },
       count: function () { tone(440, 0.1, 'square', 0.09); }, go: function () { tone(880, 0.22, 'square', 0.11); }
     };
-    return { sfx: function (n) { try { (SFX[n] || function () {})(); } catch (e) {} }, music: function (url, vol) { try { var au = new Audio(url); au.loop = true; au.volume = vol || 0.4; au.play(); return au; } catch (e) {} } };
+    return { sfx: function (n) { try { (SFX[n] || function () {})(); } catch (e) {} }, // bgm: generative chiptune LOOP (no external file, no Lyria) — a per-world arpeggio +
+    // bass over WebAudio. opt: { scale:'major|minor|lydian|penta', root:Hz, bpm, wave, vol }.
+    // Returns { stop }. Audio side-effect only (the deterministic gate is unaffected; in a
+    // headless context with no AudioContext it is a clean no-op).
+    bgm: function (opt) {
+      opt = opt || {}; var a = ac(); if (!a) return { stop: function () {} };
+      try { if (a.state === 'suspended') a.resume(); } catch (e) {}
+      var SCALES = { major: [0,2,4,7,9], minor: [0,3,5,7,10], lydian: [0,2,4,6,9], penta: [0,2,5,7,9] };
+      var sc = SCALES[opt.scale] || SCALES.major;
+      var root = opt.root || 196, bpm = opt.bpm || 104, eighth = 30 / bpm;
+      var wave = opt.wave || 'triangle', vol = opt.vol != null ? opt.vol : 0.05;
+      var master = a.createGain(); master.gain.value = vol; master.connect(a.destination);
+      var step = 0, stopped = false, timer = null;
+      function f(semi) { return root * Math.pow(2, semi / 12); }
+      function note(freq, dur, type, peak, t) {
+        try { var o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t);
+          o.connect(g); g.connect(master); g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(peak, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.start(t); o.stop(t + dur + 0.03); } catch (e) {}
+      }
+      function tick() {
+        if (stopped) return; var t = a.currentTime + 0.03;
+        var deg = sc[step % sc.length], oct = 12 * (Math.floor(step / sc.length) % 2);
+        note(f(deg + oct), eighth * 1.6, wave, 0.5, t);
+        if (step % 4 === 0) note(f(deg - 12), eighth * 3.4, 'sine', 0.85, t);
+        if (step % 8 === 4) note(f(sc[(step + 2) % sc.length] + 12), eighth * 1.1, 'square', 0.22, t);
+        step++; timer = setTimeout(tick, eighth * 1000);
+      }
+      tick();
+      return { stop: function () { stopped = true; if (timer) clearTimeout(timer);
+        try { var n = a.currentTime; master.gain.setValueAtTime(master.gain.value, n); master.gain.exponentialRampToValueAtTime(0.0001, n + 0.25); } catch (e) {}
+        setTimeout(function () { try { master.disconnect(); } catch (e) {} }, 350); } };
+    },
+
+    music: function (url, vol) { try { var au = new Audio(url); au.loop = true; au.volume = vol || 0.4; au.play(); return au; } catch (e) {} } };
   })();
 
   // ---------------------------------------------------------------------- Cam
@@ -1957,6 +2055,144 @@
       root.__ready = true;
       return root.__game;
     }
+  };
+
+
+  // ── Studio.Weather ── a living weather system that CHANGES as you run ─────────
+  // Engine feature: attach to a Play scene; it advances through a sequence of
+  // weather states by DISTANCE travelled (camera scrollX), washing the sky,
+  // raising rain/snow/confetti/sparkles, and arcing a rainbow. Purely visual
+  // (scrollFactor-0 overlays) — never touches physics, so the 0-death gate is safe.
+  Studio.Weather = (function () {
+    var W = {
+      sun:     { label: 'Sunny',   wash: 0xfff3b0, alpha: 0.12, kind: 'sparkle',  n: 24, accent: 0xffe27a },
+      cloud:   { label: 'Cloudy',  wash: 0xcfd9e8, alpha: 0.16, kind: 'mist',     n: 16, accent: 0xeef3fa },
+      rain:    { label: 'Rainy',   wash: 0x7f93c0, alpha: 0.20, kind: 'rain',     n: 70, accent: 0xbcd0ff },
+      rainbow: { label: 'Rainbow', wash: 0xffd6f2, alpha: 0.10, kind: 'confetti', n: 44, accent: 0xffffff, arc: true },
+      snow:    { label: 'Snowy',   wash: 0xdfecfb, alpha: 0.18, kind: 'snow',     n: 60, accent: 0xffffff },
+      storm:   { label: 'Stormy',  wash: 0x4a4f70, alpha: 0.26, kind: 'rain',     n: 92, accent: 0x9fa8d0, flash: true }
+    };
+    var CONF = [0xff4d4d, 0xffd84d, 0x5fd66e, 0x4db6ff, 0x9a6cff, 0xff7ad1];
+    function lerpC(a, b, t) {
+      var ar=(a>>16)&255, ag=(a>>8)&255, ab=a&255, br=(b>>16)&255, bg=(b>>8)&255, bb=b&255;
+      return ((ar+(br-ar)*t|0)<<16) | ((ag+(bg-ag)*t|0)<<8) | (ab+(bb-ab)*t|0);
+    }
+    return {
+      TYPES: Object.keys(W),
+      // opt: { sequence:[names], cycleEvery:px(=1400), onChange:fn, label:true }
+      attach: function (scene, opt) {
+        try {
+          opt = opt || {};
+          var seq = (opt.sequence && opt.sequence.length ? opt.sequence : ['sun','cloud','rain','rainbow','snow']).filter(function (k) { return W[k]; });
+          if (!seq.length) seq = ['sun'];
+          var cycleEvery = opt.cycleEvery || 1400;
+          var SW = scene.scale.width, SH = scene.scale.height, MAX = 100;
+          var wash = scene.add.rectangle(0, 0, SW, Math.round(SH * 0.74), 0xffffff, 1).setOrigin(0, 0).setScrollFactor(0).setDepth(-8);
+          var arc = scene.add.graphics().setScrollFactor(0).setDepth(-7).setVisible(false);
+          (function () { var cx=SW*0.5, cy=SH*0.98, R=SW*0.58, bands=[0xff4d4d,0xff9f40,0xffd84d,0x5fd66e,0x4db6ff,0x9a6cff];
+            for (var i=0;i<bands.length;i++){ arc.lineStyle(11, bands[i], 0.55); arc.beginPath(); arc.arc(cx, cy, R-i*12, Math.PI, 0, false); arc.strokePath(); } })();
+          var pool = [];
+          for (var i=0;i<MAX;i++){ pool.push({ o: scene.add.rectangle(0,0,3,3,0xffffff,0).setScrollFactor(0).setDepth(60), vx:0, vy:0, on:false, kind:'' }); }
+          var label = opt.label === false ? null : scene.add.text(SW-12, 12, '', { fontFamily:'system-ui,sans-serif', fontSize:'13px', color:'#ffffff' }).setOrigin(1,0).setScrollFactor(0).setDepth(900).setAlpha(0.9);
+          var idx = 0, cur = W[seq[0]], curWash = cur.wash, flashT = 2000;
+          function style(p, w) { var o = p.o;
+            if (w.kind === 'rain') { o.setSize(2,14); o.setFillStyle(w.accent, 0.6); p.vx=-1.4; p.vy=13+Math.random()*6; }
+            else if (w.kind === 'snow') { o.setSize(5,5); o.setFillStyle(0xffffff,0.95); p.vx=(Math.random()-0.5)*1.2; p.vy=1.6+Math.random()*1.4; }
+            else if (w.kind === 'confetti') { o.setSize(5,5); o.setFillStyle(CONF[(Math.random()*CONF.length)|0],0.9); p.vx=(Math.random()-0.5)*2; p.vy=1.2+Math.random()*1.9; }
+            else if (w.kind === 'sparkle') { o.setSize(4,4); o.setFillStyle(w.accent,0.9); p.vx=(Math.random()-0.5)*0.5; p.vy=-(0.3+Math.random()*0.6); }
+            else { o.setSize(9,9); o.setFillStyle(w.accent,0.5); p.vx=0.5; p.vy=(Math.random()-0.5)*0.4; }
+            o.x=Math.random()*SW; o.y=Math.random()*SH; o.setAlpha(1); p.on=true; p.kind=w.kind;
+          }
+          function apply(w, hard) { arc.setVisible(!!w.arc); var want=Math.min(MAX, w.n);
+            for (var i=0;i<MAX;i++){ var p=pool[i]; if (i<want){ if (!p.on || hard) style(p, w); } else { p.on=false; p.o.setAlpha(0); } }
+            if (label) label.setText('⛅ ' + w.label);
+          }
+          apply(cur, true); wash.setFillStyle(curWash, cur.alpha);
+          return {
+            current: function () { return seq[idx]; },
+            label: function () { return W[seq[idx]].label; },
+            set: function (name) { if (W[name]) { cur = W[name]; apply(cur, true); } },
+            update: function (scrollX, dt) {
+              try {
+                var ni = Math.floor((scrollX||0)/cycleEvery) % seq.length; ni=(ni+seq.length)%seq.length;
+                if (ni !== idx) { idx=ni; cur=W[seq[idx]]; apply(cur,false); if (opt.onChange) opt.onChange(seq[idx], cur.label); }
+                curWash = lerpC(curWash, cur.wash, 0.05); wash.setFillStyle(curWash, cur.alpha);
+                for (var i=0;i<MAX;i++){ var p=pool[i]; if (!p.on) continue; var o=p.o; o.x+=p.vx; o.y+=p.vy;
+                  if (p.kind==='sparkle') o.setAlpha(0.4+0.5*Math.abs(Math.sin((o.x+o.y)*0.05)));
+                  if (o.y>SH+10){ o.y=-10; o.x=Math.random()*SW; } else if (o.y<-14){ o.y=SH+6; }
+                  if (o.x<-14) o.x=SW+10; else if (o.x>SW+14) o.x=-10;
+                }
+                if (cur.flash) { flashT-=(dt||16); if (flashT<=0){ flashT=1800+Math.random()*2800; wash.setFillStyle(0xffffff,0.55); } }
+              } catch (e) {}
+            }
+          };
+        } catch (e) { return { update: function(){}, set: function(){}, current: function(){return 'sun';}, label: function(){return 'Sunny';} }; }
+      }
+    };
+  })();
+
+
+  // ── Studio.Rhythm ── a beat clock + tap-judge + scoring for RHYTHM / DANCE games ──
+  // Engine feature (the rhythm-genre core): attach a per-song BPM clock; it fires onBeat,
+  // tracks the beat phase, JUDGES taps (perfect/good/miss by distance to the nearest beat),
+  // and keeps score + combo. Real-time (uses scene.time.now unless you pass a clock).
+  //   var r = Studio.Rhythm.attach(scene, { bpm: 140, onBeat: function(n){…} });
+  //   r.start();  r.update();  // each frame → fires onBeat, updates r.beat / r.phase
+  //   var g = r.tap();         // → {grade:'perfect'|'good'|'miss', off}; updates r.score / r.combo
+  Studio.Rhythm = {
+    attach: function (scene, opt) {
+      opt = opt || {};
+      var bpm = opt.bpm || 120, beatMs = 60000 / bpm, win = opt.windows || {};
+      var perfect = win.perfect != null ? win.perfect : 0.16, good = win.good != null ? win.good : 0.28;
+      var onBeat = opt.onBeat || function () {};
+      var started = false, t0 = 0, beatN = -1;
+      var ctl = {
+        bpm: bpm, beatMs: beatMs, score: 0, combo: 0, bestCombo: 0, beat: -1, phase: 0, started: false,
+        start: function (now) { if (started) return; started = true; ctl.started = true; t0 = (now != null ? now : scene.time.now); },
+        reset: function () { ctl.score = 0; ctl.combo = 0; ctl.bestCombo = 0; beatN = -1; ctl.beat = -1; },
+        update: function (now) {
+          if (!started) return ctl;
+          now = (now != null ? now : scene.time.now);
+          var elapsed = now - t0, beat = Math.floor(elapsed / beatMs);
+          ctl.phase = (elapsed % beatMs) / beatMs;
+          if (beat !== beatN) { beatN = beat; ctl.beat = beat; onBeat(beat); }
+          return ctl;
+        },
+        judge: function (now) {
+          if (!started) return { grade: 'miss', off: 0.5 };
+          now = (now != null ? now : scene.time.now);
+          var phase = ((now - t0) % beatMs) / beatMs, off = Math.min(phase, 1 - phase);
+          return { grade: off < perfect ? 'perfect' : off < good ? 'good' : 'miss', off: off };
+        },
+        tap: function (now, pts) {
+          pts = pts || {}; var j = ctl.judge(now);
+          if (j.grade === 'miss') ctl.combo = 0;
+          else { ctl.combo++; ctl.bestCombo = Math.max(ctl.bestCombo, ctl.combo);
+            ctl.score += (j.grade === 'perfect' ? (pts.perfect || 100) : (pts.good || 50)) * (1 + Math.floor(ctl.combo / 5)); }
+          return j;
+        }
+      };
+      return ctl;
+    }
+  };
+
+  // ── Studio.Juice.confetti ── a festive confetti pool (rain + bursts) for celebratory genres ──
+  Studio.Juice.confetti = function (scene, opt) {
+    opt = opt || {}; var max = opt.n || 80, depth = opt.depth != null ? opt.depth : 15;
+    var COL = opt.colors || [0xff4d4d, 0xffd84d, 0x5fd66e, 0x4db6ff, 0x9a6cff, 0xff7ad1, 0xffa500];
+    var pool = []; for (var i = 0; i < max; i++) pool.push(scene.add.rectangle(0, 0, 6, 11, 0xffffff, 0).setDepth(depth));
+    pool.forEach(function (c) { c._on = false; });
+    return {
+      burst: function (n, x, y, spread) {
+        for (var i = 0; i < n; i++) { var c = null; for (var k = 0; k < pool.length; k++) { if (!pool[k]._on) { c = pool[k]; break; } } if (!c) break;
+          c._on = true; c.setFillStyle(COL[(Math.random() * COL.length) | 0], 1).setAlpha(1);
+          c.x = x != null ? x + (Math.random() - 0.5) * (spread || 60) : Math.random() * scene.scale.width;
+          c.y = y != null ? y : -10; c._vx = (Math.random() - 0.5) * 3;
+          c._vy = (y != null ? -(2 + Math.random() * 4) : (1 + Math.random() * 2)); c._spin = (Math.random() - 0.5) * 0.3; }
+      },
+      rain: function (n) { this.burst(n || 4); },
+      update: function () { var H = scene.scale.height; for (var i = 0; i < pool.length; i++) { var c = pool[i]; if (!c._on) continue; c.x += c._vx; c.y += c._vy; c._vy += 0.12; c.rotation += c._spin; if (c.y > H + 14) { c._on = false; c.setAlpha(0); } } }
+    };
   };
 
   root.Studio = Studio;

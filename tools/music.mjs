@@ -22,32 +22,33 @@ const seed0 = process.argv.includes('--seed') ? +process.argv[process.argv.index
 const force = process.argv.includes('--force');
 
 const REGION = process.env.LYRIA_REGION || 'us-central1';
-const MODEL = process.env.LYRIA_MODEL || 'lyria-002';
+// Lyria via the GEMINI API (generativelanguage), NOT Vertex aiplatform — the Vertex
+// lyria-002 path soft-denies unless the GCP project is allow-listed, whereas Lyria 3
+// is served through the same Gemini API + SA that powers nano-banana-pro. Returns MP3.
+const MODEL = process.env.LYRIA_MODEL || 'lyria-3-clip-preview';   // 30s clip; 'lyria-3-pro-preview' for the pro model
 function saJson() {
   if (process.env.GEMINI_SA_JSON) return JSON.parse(process.env.GEMINI_SA_JSON);
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) return JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'));
-  throw new Error('Set GEMINI_SA_JSON or GOOGLE_APPLICATION_CREDENTIALS (a Vertex-capable service account).');
+  throw new Error('Set GEMINI_SA_JSON or GOOGLE_APPLICATION_CREDENTIALS (a Gemini-capable service account).');
 }
 function lyriaConfigured() { try { saJson(); return true; } catch { return false; } }
 let _client = null;
 async function token() {
-  if (!_client) _client = await new GoogleAuth({ credentials: saJson(), scopes: ['https://www.googleapis.com/auth/cloud-platform'] }).getClient();
+  if (!_client) _client = await new GoogleAuth({ credentials: saJson(), scopes: ['https://www.googleapis.com/auth/generative-language'] }).getClient();
   const { token: t } = await _client.getAccessToken();
   return t;
 }
-async function generateMusic(prompt, { negativePrompt, seed } = {}) {
-  const project = saJson().project_id;
-  const url = `https://${REGION}-aiplatform.googleapis.com/v1/projects/${project}/locations/${REGION}/publishers/google/models/${MODEL}:predict`;
-  const inst = { prompt };
-  if (negativePrompt) inst.negative_prompt = negativePrompt;
-  if (seed != null) inst.seed = seed;
-  const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${await token()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ instances: [inst], parameters: { sample_count: 1 } }) });
+async function generateMusic(prompt, { negativePrompt } = {}) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+  const text = prompt + (negativePrompt ? ` Avoid: ${negativePrompt}.` : '');
+  const body = { contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ['AUDIO'] } };
+  const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${await token()}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error(`Lyria ${r.status}: ${(await r.text()).slice(0, 200)}`);
   const j = await r.json();
-  const p = j?.predictions?.[0];
-  const base64 = p?.bytesBase64Encoded || p?.audioContent;
-  if (!base64) throw new Error('No audio in Lyria response: ' + JSON.stringify(j).slice(0, 160));
-  return Buffer.from(base64, 'base64');
+  const parts = j?.candidates?.[0]?.content?.parts || [];
+  const audio = parts.find((p) => p.inlineData && /audio/i.test(p.inlineData.mimeType || ''));
+  if (!audio) throw new Error('No audio in Lyria response: ' + JSON.stringify(j).slice(0, 160));
+  return Buffer.from(audio.inlineData.data, 'base64');   // already MP3 (audio/mpeg)
 }
 
 if (!lyriaConfigured()) { console.error('No Vertex SA (GEMINI_SA_JSON) — skipping music; the game keeps its procedural Studio.Audio.'); process.exit(0); }
@@ -69,12 +70,12 @@ jobs.push({ key: 'title', seed: seed0, prompt: music.titlePrompt || `${style} �
 let ok = 0;
 for (const j of jobs) {
   try {
-    // cache the raw WAV by (prompt, seed, model); encode the mp3 from the cached wav
-    const c = await cached('lyria', { prompt: j.prompt, seed: j.seed, model: MODEL }, '.wav',
-      async () => await generateMusic(j.prompt, { seed: j.seed, negativePrompt: 'vocals, singing, speech' }),
+    // Lyria 3 returns MP3 directly — cache it by (prompt, seed, model), then copy into the game.
+    const c = await cached('lyria', { prompt: j.prompt, seed: j.seed, model: MODEL }, '.mp3',
+      async () => await generateMusic(j.prompt, { negativePrompt: 'vocals, singing, speech' }),
       { dir: path.join(gameDir, '.cache') });
     const mp3 = path.join(outDir, j.key + '.mp3');
-    if (force || !fs.existsSync(mp3)) execFileSync(ffmpegPath, ['-y', '-i', c.path, '-codec:a', 'libmp3lame', '-b:a', '128k', mp3], { stdio: 'pipe' });
+    if (force || !fs.existsSync(mp3)) fs.copyFileSync(c.path, mp3);
     console.log(`✓ ${j.key}${c.hit ? ' (cached)' : ''}`); ok++;
   } catch (e) { console.log(`✗ ${j.key}: ${e.message}`); }
 }

@@ -11,6 +11,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
+import os from 'node:os';
+import { spawn } from 'node:child_process';
 import * as store from './lib/store.js';
 import { snapshotAll } from './lib/aggregate.js';
 import { generateImage, geminiConfigured } from '../scripts/gemini.js';
@@ -180,12 +182,16 @@ app.get('/v', async (req, res) => {
 // register / update a game (used by the new-game scaffolder + the dashboard "add" form)
 app.post('/api/games', async (req, res) => {
   if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
-  const { name, repo = null, url = null, tagline = null, hero = null, verb = null } = req.body || {};
+  const { name, repo = null, url = null, tagline = null, hero = null, verb = null, shorts = null, shortsPlaylist = null } = req.body || {};
   if (!name) return res.status(400).json({ error: 'name required' });
   const games = await getGames();
   const id = req.body?.id || slug(name);
   const existing = games.find((g) => g.id === id);
   const entry = { id, name, repo, url, tagline, hero, verb, created_at: existing?.created_at || new Date().toISOString() };
+  // optional shorts (vertical feed) — lets a game register its hosted shorts via the API/store,
+  // so the mobile feed works WITHOUT a hub/games.json edit. Only overwrite when provided.
+  if (Array.isArray(shorts)) entry.shorts = shorts;
+  if (shortsPlaylist) entry.shortsPlaylist = shortsPlaylist;
   if (existing) Object.assign(existing, entry); else games.push(entry);
   await store.set('games', games);
   refresh().catch(() => {});   // pull the newcomer in the background
@@ -263,19 +269,66 @@ app.get('/api/ide/surface/:id', async (req, res) => {
 // Render an art candidate. Every art edit is a Gemini call; without a Gemini SA
 // the Art tool is unavailable (clear 503), never a silent fallback. When the game
 // exposes the chosen asset we pass it as a reference (image-to-image → on-model edit).
+// parse a data: URL → { base64, mimeType } (null if not an image data URL)
+function dataUrlToRef(u) {
+  const m = typeof u === 'string' && u.match(/^data:(image\/[\w+.-]+);base64,(.+)$/s);
+  return m ? { mimeType: m[1], base64: m[2] } : null;
+}
+
 app.post('/api/ide/art/preview', async (req, res) => {
   if (!geminiConfigured()) return res.status(503).json({ error: 'needs-gemini', message: 'Art editing needs Gemini — set GEMINI_SA_JSON' });
-  const { gameId, prompt, aspect = '1:1', useRef = true, scope = null } = req.body || {};
+  const { gameId, prompt, aspect = '1:1', useRef = true, scope = null, refImage = null } = req.body || {};
   if (!prompt || String(prompt).trim().length < 4) return res.status(400).json({ error: 'prompt required' });
-  let refs = [], refUsed = false;
-  if (useRef && gameId) {
+  let refs = [], refUsed = false, refFrom = null;
+  const up = dataUrlToRef(refImage);
+  if (up) { refs = [up]; refUsed = true; refFrom = 'upload'; }        // a user upload wins (bring-your-own-art)
+  else if (useRef && gameId) {
     const game = (await getGames()).find((g) => g.id === gameId);
-    if (game && game.url) { const r = await assetRef(game.url, scope); if (r) { refs = [r]; refUsed = true; } }
+    if (game && game.url) { const r = await assetRef(game.url, scope); if (r) { refs = [r]; refUsed = true; refFrom = 'asset'; } }
   }
   try {
     const { mimeType, base64 } = await generateImage(String(prompt), { aspectRatio: aspect, refs });
-    res.json({ image: `data:${mimeType};base64,${base64}`, refUsed });
+    res.json({ image: `data:${mimeType};base64,${base64}`, refUsed, refFrom });
   } catch (e) { console.error('ide art preview', e); res.status(502).json({ error: 'gemini-failed', message: String(e && e.message || e).slice(0, 300) }); }
+});
+
+// run a node script as a child process, capturing output, with a hard timeout.
+function runNode(args, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const ch = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    ch.stdout.on('data', (d) => { out += d; });
+    ch.stderr.on('data', (d) => { out += d; });
+    const t = setTimeout(() => { ch.kill('SIGKILL'); reject(new Error('timed out')); }, timeoutMs);
+    ch.on('exit', (code) => { clearTimeout(t); code === 0 ? resolve(out) : reject(new Error('exit ' + code + ': ' + out.slice(-300))); });
+    ch.on('error', (e) => { clearTimeout(t); reject(e); });
+  });
+}
+const TOOLS = path.join(__dirname, '..', 'tools');
+
+// BRING-YOUR-OWN-ART → SPRITE SHEET. Upload an image; we seed the proven sprite pipeline
+// (art-sprites.mjs --ref) with it to generate a coherent, leg-alternating, VALIDATED packed
+// sheet of THAT character (run cycle + action poses), and return it for preview.
+app.post('/api/ide/art/sheet', async (req, res) => {
+  if (!geminiConfigured()) return res.status(503).json({ error: 'needs-gemini', message: 'Sprite-sheet generation needs Gemini — set GEMINI_SA_JSON' });
+  const { hero, style, upload } = req.body || {};
+  const up = dataUrlToRef(upload);
+  if (!up) return res.status(400).json({ error: 'upload-required', message: 'an uploaded image (data URL) is required' });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ide-sheet-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'src', 'game'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'GAME_META.json'), JSON.stringify({ name: 'upload', hero: hero || 'the uploaded character', art: { style: style || 'claymation, bold outline, glossy' } }, null, 2));
+    const ext = (up.mimeType.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const refPath = path.join(dir, 'upload.' + ext);
+    fs.writeFileSync(refPath, Buffer.from(up.base64, 'base64'));
+    await runNode([path.join(TOOLS, 'art-sprites.mjs'), dir, '--ref', refPath, '--force'], 330_000);
+    const sheetPath = path.join(dir, 'src/assets/sprites/hero.png');
+    if (!fs.existsSync(sheetPath)) throw new Error('no sheet produced');
+    const png = fs.readFileSync(sheetPath).toString('base64');
+    const man = JSON.parse(fs.readFileSync(path.join(dir, 'src/assets/sprites/manifest.json'), 'utf8'));
+    res.json({ sheet: 'data:image/png;base64,' + png, manifest: man.hero || man });
+  } catch (e) { console.error('ide art sheet', e); res.status(502).json({ error: 'sheet-failed', message: String(e && e.message || e).slice(0, 300) }); }
+  finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }
 });
 
 // Submit a suggestion as a note to the target game (server-to-server, no CORS).
@@ -293,6 +346,75 @@ app.post('/api/ide/suggest', async (req, res) => {
     refresh().catch(() => {});   // pull the new note into the dashboard
     res.json({ ok: true, game: gameId, result: j });
   } catch (e) { console.error('ide suggest', e); res.status(502).json({ error: 'submit-failed', message: String(e && e.message || e).slice(0, 300) }); }
+});
+
+// ── Asset Manager ────────────────────────────────────────────────────────────
+// Inventory every asset a game actually ships (sprites · tiles · props · backdrops)
+// and keep a per-game LIBRARY of variants (generated candidates / uploads / built
+// sheets) in the store, so you can browse and SWAP them in/out from the IDE.
+async function backdropManifest(gameUrl) {
+  try {
+    const base = String(gameUrl).replace(/\/$/, '');
+    return await fetch(base + '/assets/backdrops/manifest.json', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : null));
+  } catch { return null; }
+}
+async function assetInventory(game) {
+  const base = String(game.url).replace(/\/$/, '');
+  let meta = {};
+  try { meta = await fetch(base + '/api/meta', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : {})); } catch {}
+  const man = (await gameManifest(game.url)) || {};
+  const bd = await backdropManifest(game.url);
+  const art = meta.art || {};
+  const descOf = (arr, key) => { const e = (Array.isArray(arr) ? arr : []).find((x) => x.key === key); return e ? e.desc : ''; };
+  const abs = (rel) => base + '/assets/' + rel;
+  const out = [];
+  if (man.hero && man.hero.sheet) out.push({ kind: 'hero', key: 'hero', label: 'hero', desc: meta.hero || '', current: abs(man.hero.sheet) });
+  for (const k of Object.keys(man.enemies || {})) out.push({ kind: 'enemy', key: k, label: k, desc: descOf(art.enemies, k), current: abs(man.enemies[k].sheet || ('sprites/' + k + '.png')) });
+  for (const k of Object.keys(man.tiles || {})) out.push({ kind: 'tile', key: k, label: k, desc: descOf(art.tiles, k), current: abs(typeof man.tiles[k] === 'string' ? man.tiles[k] : man.tiles[k].sheet || ('tiles/' + k)) });
+  for (const k of Object.keys(man.props || {})) out.push({ kind: 'prop', key: k, label: k, desc: descOf(art.props, k), current: abs(typeof man.props[k] === 'string' ? man.props[k] : man.props[k].sheet || ('props/' + k)) });
+  if (bd && bd.title) out.push({ kind: 'backdrop', key: '__title', label: 'title keyart', desc: '', current: base + '/assets/backdrops/' + bd.title });
+  if (bd && bd.backdrops) for (const [world, file] of Object.entries(bd.backdrops)) out.push({ kind: 'backdrop', key: world, label: world, desc: '', current: base + '/assets/backdrops/' + file });
+  return out;
+}
+const assetStoreKey = (id) => 'assets:' + id;
+async function getVariants(id) { return (await store.get(assetStoreKey(id), { variants: [] })).variants || []; }
+async function setVariants(id, variants) { await store.set(assetStoreKey(id), { variants }); }
+
+app.get('/api/ide/assets/:id', async (req, res) => {
+  const game = (await getGames()).find((g) => g.id === req.params.id);
+  if (!game || !game.url) return res.status(404).json({ error: 'game-not-live' });
+  const assets = await assetInventory(game);
+  const variants = await getVariants(game.id);
+  const byAsset = {};
+  for (const v of variants) (byAsset[v.kind + ':' + v.key] = byAsset[v.kind + ':' + v.key] || []).push({ vid: v.vid, source: v.source, label: v.label, ts: v.ts, image: v.image });
+  for (const a of assets) { a.variants = (byAsset[a.kind + ':' + a.key] || []).sort((x, y) => y.ts - x.ts); }
+  res.json({ id: game.id, name: game.name, url: String(game.url).replace(/\/$/, ''), assets });
+});
+
+// Save a variant (a generated candidate / upload / built sheet) into the library.
+app.post('/api/ide/assets/:id/variant', async (req, res) => {
+  const { kind, key, source = 'generated', image, label = '', prompt = '' } = req.body || {};
+  if (!kind || !key || !dataUrlToRef(image)) return res.status(400).json({ error: 'kind, key, image required' });
+  if (image.length > 1_500_000) return res.status(413).json({ error: 'image-too-large' });
+  let variants = await getVariants(req.params.id);
+  const v = { vid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kind, key, source, label, prompt, image, ts: Date.now() };
+  variants.push(v);
+  // cap: keep the 10 newest per asset, 120 total, so the store stays lean
+  const groups = {};
+  for (const x of variants) (groups[x.kind + ':' + x.key] = groups[x.kind + ':' + x.key] || []).push(x);
+  let kept = [];
+  for (const g of Object.values(groups)) { g.sort((a, b) => b.ts - a.ts); kept = kept.concat(g.slice(0, 10)); }
+  kept.sort((a, b) => b.ts - a.ts); kept = kept.slice(0, 120);
+  await setVariants(req.params.id, kept);
+  res.json({ ok: true, variant: { vid: v.vid, kind, key, source, label, ts: v.ts, image } });
+});
+
+app.delete('/api/ide/assets/:id/variant/:vid', async (req, res) => {
+  let variants = await getVariants(req.params.id);
+  const before = variants.length;
+  variants = variants.filter((v) => v.vid !== req.params.vid);
+  await setVariants(req.params.id, variants);
+  res.json({ ok: true, removed: before - variants.length });
 });
 
 app.listen(PORT, () => {
