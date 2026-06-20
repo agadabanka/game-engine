@@ -13,10 +13,15 @@ export const PLATFORMER_RULES = Object.freeze({
   maxGapPx: 200,           // a gap wider than the hop is unreachable → death
   maxWallTiles: 2,         // a wall taller than the hop can't be cleared
   minWallClearancePx: 200, // a wall-hop sails ~200px, so a wall must sit a runway away from a pit
+  maxHopUpPx: 138,         // the hop's vertical reach (~3 tiles)
+  bridgeTolPx: 10,         // a crumble/platform whose top sits within this of groundY bridges a gap
+  // GROUND-LEVEL crumble + floating platforms act as footholds the autopilot lands on
+  // (sense() includes world.crumble), so a wide hazard/void bridged by ground-level
+  // stepping-stones is passable — fold them into the solid coverage for the gap check.
   // DEADLY materials route their ground segment to the hazards group → the autopilot
   // sees no foothold there and HOPS it like a gap. So a hazard pit is a jumpable gap
   // with deadly visuals: it must obey maxGapPx, and spawn/goal/enemies must not sit on it.
-  deadlyMats: ['lava', 'lagoon', 'thorn', 'fudge', 'spike', 'acid'],
+  deadlyMats: ['lava', 'lagoon', 'thorn', 'fudge', 'spike', 'acid', 'rapids', 'tar'],
 });
 
 /** A ground segment that's actually a footing (not a deadly hazard pit). */
@@ -25,9 +30,21 @@ function solidSegs(level, rules = PLATFORMER_RULES) {
   return (level.ground || []).filter((s) => !deadly.has(s[2]));
 }
 
-/** No-ground spans (gaps) — deadly segments count as gaps, since the autopilot hops them. */
-export function gaps(level, rules = PLATFORMER_RULES) {
-  const segs = solidSegs(level, rules).map((s) => [s[0], s[1]]).sort((a, b) => a[0] - b[0]);
+/** Ground-level crumble + floating platforms that bridge a gap (autopilot lands on them). */
+function bridgeSegs(level, rules = PLATFORMER_RULES) {
+  const out = [];
+  const gy = level.groundY;
+  const near = (y) => gy == null || y == null || Math.abs(gy - y) <= (rules.bridgeTolPx ?? 10);
+  for (const c of (level.crumble || [])) if (near(c.y)) out.push([c.x, c.x + (c.w || 80)]);
+  for (const p of (level.platforms || [])) if (near(p.y)) out.push([p.x, p.x + (p.w || 80)]);
+  return out;
+}
+
+/** No-ground spans (gaps) — deadly segments count as gaps, since the autopilot hops them.
+ *  Pass {bridges:true} to also count ground-level crumble/platform stepping-stones as footing. */
+export function gaps(level, rules = PLATFORMER_RULES, opts = {}) {
+  const base = solidSegs(level, rules).map((s) => [s[0], s[1]]);
+  const segs = (opts.bridges ? base.concat(bridgeSegs(level, rules)) : base).sort((a, b) => a[0] - b[0]);
   // merge touching/abutting solids so a contiguous floor isn't reported as a 0px gap
   const merged = [];
   for (const s of segs) { const last = merged[merged.length - 1]; if (last && s[0] <= last[1] + 1) last[1] = Math.max(last[1], s[1]); else merged.push([...s]); }
@@ -46,8 +63,9 @@ export function onGround(level, x, rules = PLATFORMER_RULES) { return solidSegs(
 export function lintLevel(level, rules = PLATFORMER_RULES) {
   const issues = [];
   const add = (rule, detail) => issues.push({ rule, detail });
-  const G = gaps(level, rules);
-  for (const [a, b, w] of G) if (w > rules.maxGapPx) add('gap-too-wide', `gap ${a}-${b} is ${w}px > ${rules.maxGapPx} (unreachable)`);
+  const G = gaps(level, rules);                          // ground-only (for wall clearance)
+  const GB = gaps(level, rules, { bridges: true });      // bridged (crumble/platform stepping-stones)
+  for (const [a, b, w] of GB) if (w > rules.maxGapPx) add('gap-too-wide', `gap ${a}-${b} is ${w}px > ${rules.maxGapPx} (unreachable)`);
   for (const wll of (level.walls || [])) {
     if ((wll.tiles || 1) > rules.maxWallTiles) add('wall-too-tall', `wall@${wll.x} is ${wll.tiles} tiles > ${rules.maxWallTiles}`);
     for (const [a, b] of G) { const near = Math.min(Math.abs(wll.x - a), Math.abs(wll.x - b)); if (near < rules.minWallClearancePx) add('wall-near-gap', `wall@${wll.x} within ${near}px of gap ${a}-${b} (need ≥${rules.minWallClearancePx})`); }

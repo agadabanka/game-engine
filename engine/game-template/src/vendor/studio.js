@@ -58,7 +58,15 @@
       // hazards (deadly — routed to the hazards group):
       lagoon: { color: 0x1f7fc4, top: 0x86d0ff, friction: 1, deadly: true, ground: false }, // pink-lemonade water
       thorn: { color: 0x7b2a8a, top: 0xc81d9e, friction: 1, deadly: true, ground: false }, // bramble patch
-      fudge: { color: 0x3f2207, top: 0xc0631f, friction: 1, deadly: true, ground: false }  // molten chocolate
+      fudge: { color: 0x3f2207, top: 0xc0631f, friction: 1, deadly: true, ground: false }, // molten chocolate
+      // savanna set (funded by Sokwe Summit) — sketched African heights, one footing per biome + earthy hazards.
+      // footings:
+      savanna: { color: 0xb08a3e, top: 0xe3c16f, friction: 1, deadly: false, ground: true }, // dry golden earth
+      ochre: { color: 0x9c4a23, top: 0xc46b35, friction: 1, deadly: false, ground: true }, // red canyon sandstone
+      granite: { color: 0x7d8794, top: 0xc3ccd6, friction: 1, deadly: false, ground: true }, // pale summit stone
+      // hazards (deadly — routed to the hazards group):
+      rapids: { color: 0x2a6f8e, top: 0x9fe3f0, friction: 1, deadly: true, ground: false }, // white-water river
+      tar: { color: 0x161210, top: 0x3a322c, friction: 1, deadly: true, ground: false }  // black tar pit
     },
     get: function (name) { return this.table[name] || this.table.solid; }
   };
