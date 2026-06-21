@@ -205,6 +205,29 @@
   .acost-split .cs{ display:flex; align-items:center; gap:6px; } .acost-split .cs b{ color:#dde6ff; }
   .anote{ font-size:11px; color:var(--dim); margin-top:18px; line-height:1.5; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:11px 13px; }
   .anote b{ color:#cfe0ff; }
+  /* analytics tabs */
+  .atabs{ display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+  .atab{ background:none; border:none; border-bottom:2px solid transparent; color:var(--dim); font-weight:700; font-size:13px; padding:9px 6px; margin-bottom:-1px; cursor:pointer; border-radius:0; }
+  .atab:hover{ color:var(--ink); background:none; }
+  .atab.active{ color:var(--ink); border-bottom-color:#3a7dff; }
+  /* code-overlap matrix */
+  .ovwrap{ overflow-x:auto; margin-top:14px; padding-bottom:6px; }
+  .ovt{ border-collapse:collapse; }
+  .ovt td{ padding:2px; }
+  .ovt .ovp{ font-family:ui-monospace,Menlo,monospace; font-size:11.5px; color:#dce6ff; white-space:nowrap; padding:3px 10px 3px 2px; text-align:left; }
+  .ovt .ovm{ font-size:10.5px; color:var(--dim); padding-left:8px; white-space:nowrap; text-align:left; }
+  .ovt .ovh{ vertical-align:bottom; height:104px; padding:0 1px; }
+  .ovt .ovhx{ writing-mode:vertical-rl; text-orientation:mixed; font-size:11px; color:#cfe0ff; white-space:nowrap; margin:0 auto; text-transform:capitalize; letter-spacing:.3px; }
+  .ovt .ovc{ width:24px; height:22px; border:1px solid #0c1322; border-radius:4px; }
+  .ovt .ovc0{ background:#0e1730; opacity:.45; }
+  .ovt .ovc1{ background:linear-gradient(180deg,#ffce5a,#f0a93a); }
+  .ovt .ovc2{ background:linear-gradient(180deg,#62b3ff,#3a7dff); }
+  .ovt .ovband{ font-size:10.5px; text-transform:uppercase; letter-spacing:.12em; color:#cfe0ff; font-weight:800; padding:15px 2px 6px; text-align:left; }
+  .ovband .ovbd{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:8px; vertical-align:middle; }
+  .ovt .ovf{ vertical-align:bottom; padding:5px 1px 0; }
+  .ovfbar{ width:18px; height:38px; margin:0 auto; background:#0e1730; border:1px solid var(--line); border-radius:3px; display:flex; align-items:flex-end; overflow:hidden; }
+  .ovffill{ width:100%; background:linear-gradient(180deg,#62b3ff,#3a7dff); }
+  .ovfn{ font-size:10px; color:var(--dim); text-align:center; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -595,11 +618,54 @@ function renderAnalytics(d){
     <b>Code</b> → ${esc((p.claude&&p.claude.model)||'Claude')} tokens estimated from authored code size (~${e.bytesPerToken} bytes/token, ×${e.outputChurn} iteration churn, ×${e.inputRatio} context reads) at ${usd(p.claude&&p.claude.inputPerM)}/M in · ${usd(p.claude&&p.claude.outputPerM)}/M out.
     <b>Art</b> → ${esc((p.art&&p.art.model)||'Nano Banana')} at ${usd(p.art&&p.art.perImage)}/image. <b>Music</b> → ${esc((p.music&&p.music.model)||'Lyria')} at ${usd(p.music&&p.music.perTrack)}/clip.
     Where a repo commits its generation cache the counts are <b>exact billed calls</b> (✓ cache); otherwise they're estimated from each game's unique assets. Token spend is a heuristic — tune rates via env vars. ${d.generated ? 'Updated ' + new Date(d.generated).toLocaleString() + '.' : ''}</div>`;
-  $('analyticsBody').innerHTML = analyticsSummary(d)
+  const costPanel = analyticsSummary(d)
     + `<div class="asec"><h4>Cost by API</h4>${costBars}</div>`
     + `<div class="asec"><h4>Code across all games</h4>${langBars}</div>`
     + `<div class="asec"><h4>Per game <span style="color:#cfe0ff;font-weight:700">${(d.games||[]).filter(g=>g.ok).length}</span></h4><div class="arows">${(d.games||[]).map(analyticsRow).join('')}</div></div>`
     + note;
+  $('analyticsBody').innerHTML =
+    `<div class="atabs"><button class="atab active" data-tab="cost">Cost &amp; breakdown</button><button class="atab" data-tab="overlap">Code overlap</button></div>`
+    + `<div id="anPanelCost">${costPanel}</div>`
+    + `<div id="anPanelOverlap" style="display:none">${overlapHTML(d)}</div>`;
+  $('analyticsBody').querySelectorAll('.atab').forEach((btn) => { btn.onclick = () => {
+    const tab = btn.dataset.tab;
+    $('analyticsBody').querySelectorAll('.atab').forEach((b) => b.classList.toggle('active', b === btn));
+    $('anPanelCost').style.display = tab === 'cost' ? '' : 'none';
+    $('anPanelOverlap').style.display = tab === 'overlap' ? '' : 'none';
+  }; });
+}
+
+// ── Code-overlap tab: component × game matrix (blue = shared, amber = customized) ──
+const OV_BAND_COLOR = { 'Game code':'#ffd34d','Engine runtime':'#6fb6f0','Platform':'#5fd66e','Config & meta':'#c4a6ff','Docs & playbook':'#ff8ab0' };
+function overlapMatrix(o){
+  const shortNm = (n) => n.replace(/^the-/, '').replace(/-/g, ' ');
+  const heads = o.games.map((g) => `<th class="ovh"><div class="ovhx">${esc(shortNm(g.name))}</div></th>`).join('');
+  let body = '', last = null;
+  for (const r of o.rows) {
+    if (r.band !== last) { last = r.band; body += `<tr><td class="ovband" colspan="${o.order.length+2}"><span class="ovbd" style="background:${OV_BAND_COLOR[r.band]||'#9fb3e0'}"></span>${esc(r.band)}</td></tr>`; }
+    const cells = r.cells.map((c) => `<td class="ovc ovc${c}" title="${esc(r.path)}"></td>`).join('');
+    body += `<tr><td class="ovp">${esc(r.path)}</td>${cells}<td class="ovm">${r.present}/${o.order.length}</td></tr>`;
+  }
+  const foot = o.colShared.map((p) => `<td class="ovf"><div class="ovfbar"><div class="ovffill" style="height:${p}%"></div></div><div class="ovfn">${p}</div></td>`).join('');
+  return `<div class="ovwrap"><table class="ovt"><thead><tr><th></th>${heads}<th></th></tr></thead>`
+    + `<tbody>${body}<tr><td class="ovp" style="text-align:right;color:var(--dim)">% shared →</td>${foot}<td></td></tr></tbody></table></div>`;
+}
+function overlapHTML(d){
+  const o = d.overlap;
+  if (!o || !o.rows || !o.rows.length) return '<p class="muted" style="padding:14px 2px">Overlap data isn\'t in this snapshot yet — hit ↻ refresh.</p>';
+  const avg = Math.round(o.colShared.reduce((a,b)=>a+b,0) / (o.colShared.length||1));
+  const summary = `<div class="asum">
+    <div class="acard"><div class="an">${o.order.length}</div><div class="al">games on the engine</div></div>
+    <div class="acard"><div class="an">${o.components}</div><div class="al">shared components</div></div>
+    <div class="acard"><div class="an" style="color:var(--blue)">${o.spine}</div><div class="al">in the spine (all ${o.order.length})</div></div>
+    <div class="acard"><div class="an" style="color:var(--gold)">${avg}%</div><div class="al">avg shared-identical</div></div>
+  </div>`;
+  const intro = `<p class="muted" style="font-size:12.5px;margin:6px 0 0">Every game is a clone of the base engine. Each component (rows, game code first) is mapped against each game (columns) by blob SHA — <b style="color:#62b3ff">blue</b> where the code is byte-identical (overlap), <b style="color:#f0a93a">amber</b> where a game customized it. Bottom row = each game's % of components kept identical.</p>`;
+  const legend = `<div class="legend" style="margin:14px 0 2px">
+    <span class="li"><span class="sw" style="background:linear-gradient(180deg,#62b3ff,#3a7dff)"></span>Shared — identical to canonical</span>
+    <span class="li"><span class="sw" style="background:linear-gradient(180deg,#ffce5a,#f0a93a)"></span>Variant — customized for that game</span>
+    <span class="li"><span class="sw" style="background:#0e1730"></span>Absent</span></div>`;
+  return intro + summary + legend + overlapMatrix(o);
 }
 
 async function loadAnalytics(force){

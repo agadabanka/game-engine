@@ -77,6 +77,15 @@ const ASSET_KIND = {
 };
 const IMG_EXT = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'avif']);
 
+// Curated components for the code-overlap view, grouped into bands (game code first).
+const OVERLAP_BANDS = [
+  ['Game code', ['src/game/game.js', 'src/game/levels.js', 'src/game/sprites.js', 'src/game/characters.js', 'src/index.html', 'src/build.html', 'src/diary.html', 'src/design.html', 'src/assets/sprites/manifest.json', 'src/assets/backdrops/manifest.json']],
+  ['Engine runtime', ['src/vendor/studio.js', 'src/vendor/phaser.min.js']],
+  ['Platform', ['server.js', 'lib/gemini.js', 'lib/lyria.js', 'lib/store.js', 'eval.mjs', 'diag.mjs']],
+  ['Config & meta', ['package.json', 'railway.json', 'GAME_META.json', '.claude/settings.json']],
+  ['Docs & playbook', ['DIARY.md', 'DESIGN.md', 'STORY.md', 'CAST.md', 'README.md', 'BOOTSTRAP.md', 'book/book.html']],
+];
+
 const extOf = (p) => { const m = /\.([a-z0-9]+)$/i.exec(p); return m ? m[1].toLowerCase() : ''; };
 // Caches and VCS internals — excluded from the "shipped" file scan (their
 // contents are counted separately, as billed generations).
@@ -106,6 +115,36 @@ async function repoTree(repo, token) {
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
+
+// ── code-overlap matrix ──
+// Map curated components (rows) against every game (columns) by blob SHA:
+//   0 = absent · 1 = present-but-customized (variant) · 2 = identical to the
+//   canonical (modal) version → pure overlap. Reuses the trees already pulled.
+function buildOverlap(treeList, games) {
+  const wanted = new Set(OVERLAP_BANDS.flatMap(([, ps]) => ps));
+  const byPath = {};   // path → { gid: sha }
+  for (const { g, tree } of treeList) {
+    if (!tree) continue;
+    for (const e of tree) {
+      if (e.type !== 'blob' || !wanted.has(e.path)) continue;
+      (byPath[e.path] = byPath[e.path] || {})[g.id] = e.sha;
+    }
+  }
+  const order = games.map((g) => g.id);
+  const modal = (m) => { const c = {}; for (const s of Object.values(m)) c[s] = (c[s] || 0) + 1; return Object.entries(c).sort((a, b) => b[1] - a[1])[0][0]; };
+  const rows = [];
+  for (const [band, paths] of OVERLAP_BANDS) for (const p of paths) {
+    const m = byPath[p]; if (!m) continue;
+    const canon = modal(m);
+    const cells = order.map((gid) => { const s = m[gid]; return s ? (s === canon ? 2 : 1) : 0; });
+    const present = cells.filter(Boolean).length;
+    if (present < 2) continue;
+    rows.push({ band, path: p, cells, present, variants: new Set(Object.values(m)).size });
+  }
+  const colShared = order.map((_, i) => { let s = 0, p = 0; for (const r of rows) if (r.cells[i]) { p++; if (r.cells[i] === 2) s++; } return p ? Math.round(s / p * 100) : 0; });
+  const spine = rows.filter((r) => r.present === order.length).length;
+  return { games: games.map((g) => ({ id: g.id, name: g.name })), order, rows, colShared, spine, components: rows.length };
+}
 
 // Count BILLED generations from a repo's committed generation caches.
 // .cache/lyria/* → Lyria clips; image files under .cache|.artcache → Nano Banana.
@@ -229,7 +268,8 @@ export async function analyzeAll(games, opts = {}) {
   for (const k of ['code', 'art', 'music', 'total']) totals.cost[k] = round2(totals.cost[k]);
 
   snaps.sort((a, b) => (b.cost?.total || 0) - (a.cost?.total || 0));   // biggest spend first
-  return { generated: new Date().toISOString(), pricing: PRICING, estimate: ESTIMATE, totals, games: snaps };
+  const overlap = buildOverlap(trees, list);   // reuses the trees already pulled (no extra API calls)
+  return { generated: new Date().toISOString(), pricing: PRICING, estimate: ESTIMATE, totals, games: snaps, overlap };
 }
 
 // Single-game snapshot (no cross-fleet dedup — authored == total). Kept for ad-hoc use.
