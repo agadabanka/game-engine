@@ -174,6 +174,37 @@
   .thumb .tcap .trec:hover{ filter:brightness(1.25); }
   .thumb .tdot{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
   .thumb .tdot.live{ background:var(--green);} .thumb .tdot.idle{ background:var(--orange);} .thumb .tdot.off{ background:#5b6b86; }
+  /* ── Analytics modal ── */
+  #analytics{ width:min(1000px,95vw); max-height:92vh; border:1px solid var(--line); border-radius:16px; background:var(--panel); color:var(--ink); padding:0; overflow:hidden; }
+  #analytics::backdrop{ background:rgba(4,7,15,.72); backdrop-filter:blur(3px); }
+  #analytics .ahead{ display:flex; align-items:center; gap:12px; padding:16px 22px; border-bottom:1px solid var(--line); position:sticky; top:0; background:linear-gradient(180deg,#16213f,#121a30); z-index:3; }
+  #analytics .ahead h3{ margin:0; font-size:18px; } #analytics .ahead .sp{ flex:1; }
+  #analytics .ahead .x{ background:#1b2747; border:1px solid var(--line); color:var(--ink); border-radius:9px; width:32px; height:32px; cursor:pointer; font-size:15px; }
+  #analytics .abody{ padding:18px 22px 28px; overflow-y:auto; max-height:calc(92vh - 62px); }
+  .asum{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:8px; }
+  .acard{ background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:13px 15px; }
+  .acard .an{ font-size:25px; font-weight:800; line-height:1.05; } .acard .al{ font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:.08em; margin-top:5px; }
+  .acard .asub{ font-size:11.5px; color:#bcd0f5; margin-top:6px; }
+  .asec{ margin-top:24px; } .asec h4{ font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; border-bottom:1px solid var(--line); padding-bottom:7px; }
+  /* stacked proportion bar + legend */
+  .sbar{ display:flex; height:13px; border-radius:7px; overflow:hidden; background:#0e1730; border:1px solid var(--line); }
+  .sbar > span{ display:block; height:100%; } .sbar.thin{ height:9px; }
+  .legend{ display:flex; flex-wrap:wrap; gap:5px 14px; margin-top:9px; font-size:11.5px; color:#cfe0ff; }
+  .legend .li{ display:flex; align-items:center; gap:6px; }
+  .legend .sw{ width:10px; height:10px; border-radius:3px; flex:none; }
+  .legend .lv{ color:var(--dim); }
+  /* per-game analytics rows */
+  .arows{ display:flex; flex-direction:column; gap:10px; }
+  .arow{ background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 15px; }
+  .arow .at{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:9px; }
+  .arow .at .anm{ font-size:14.5px; font-weight:800; } .arow .at .acost{ margin-left:auto; font-size:15px; font-weight:800; color:var(--green); }
+  .arow .at .ameta{ font-size:11px; color:var(--dim); }
+  .agrid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; } @media (max-width:680px){ .agrid{ grid-template-columns:1fr; } }
+  .agrid .gh{ font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--dim); margin-bottom:6px; display:flex; justify-content:space-between; }
+  .acost-split{ display:flex; flex-wrap:wrap; gap:5px 14px; margin-top:9px; font-size:11.5px; }
+  .acost-split .cs{ display:flex; align-items:center; gap:6px; } .acost-split .cs b{ color:#dde6ff; }
+  .anote{ font-size:11px; color:var(--dim); margin-top:18px; line-height:1.5; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:11px 13px; }
+  .anote b{ color:#cfe0ff; }
 </style>
 </head>
 <body>
@@ -181,6 +212,7 @@
   <h1>🎛 Game Engine</h1><span class="sub">mission control — look <b>across</b> every game, click any one to look <b>inside</b></span>
   <span class="sp"></span>
   <a href="/shorts.html" class="hact">📱 Shorts</a>
+  <button class="hact" id="analyticsBtn">📊 Analytics</button>
   <button class="hact" id="add">+ register game</button>
   <button class="hact primary" id="refresh">↻ refresh</button>
   <a href="https://github.com/agadabanka/game-engine" class="hact" target="_blank" rel="noopener">repo ↗</a>
@@ -215,6 +247,16 @@
     <button class="x" title="close" onclick="document.getElementById('grid').close()">✕</button>
   </div>
   <div class="thumbgrid" id="thumbGrid"></div>
+</dialog>
+
+<dialog id="analytics">
+  <div class="ahead">
+    <h3>📊 Game analytics</h3>
+    <span class="sp"></span>
+    <button class="hact" id="analyticsRefresh" title="Re-pull from GitHub">↻ refresh</button>
+    <button class="x" title="close" onclick="document.getElementById('analytics').close()">✕</button>
+  </div>
+  <div class="abody" id="analyticsBody"><p class="muted">loading…</p></div>
 </dialog>
 
 <script>
@@ -479,6 +521,100 @@ async function load(force){
     : '<p class="muted">no notes yet — leave one in any game via ⏸ Pause → 📝, or set a game\'s live URL to start monitoring.</p>';
   $('gen').textContent = 'updated ' + new Date(d.generated).toLocaleString() + ' · pulls each game\'s /api/notes + /api/diary + /api/meta';
 }
+
+// ── ANALYTICS: code · assets · cost (tokens × API) ──
+const LANG_COLORS = { 'JavaScript':'#ffd34d','TypeScript':'#6fb6f0','HTML':'#ff8ab0','CSS':'#c4a6ff','JSON / data':'#5fd66e','Markdown / docs':'#9fb3e0','Shell':'#ffb14d','Python':'#7fe0c8' };
+const KIND_COLORS = { 'art':'#ff8ab0','music':'#c4a6ff','video':'#6fb6f0','font':'#9fb3e0','other':'#5b6b86' };
+const KIND_LABEL = { 'art':'art (Nano Banana)','music':'music (Lyria)','video':'video','font':'fonts','other':'other' };
+const API_COLORS = { code:'#ffd34d', art:'#ff8ab0', music:'#c4a6ff' };
+const fallColor = (i) => ['#ffd34d','#6fb6f0','#ff8ab0','#c4a6ff','#5fd66e','#ffb14d','#7fe0c8','#9fb3e0'][i % 8];
+const usd = (n) => '$' + (Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const kb = (b) => { b = Number(b) || 0; return b >= 1048576 ? (b/1048576).toFixed(1)+' MB' : Math.round(b/1024)+' KB'; };
+const compact = (n) => { n = Number(n) || 0; return n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'k' : String(n); };
+
+// a stacked proportion bar + legend from [{label, value, color, suffix}]
+function stackBar(segs, { thin = false, fmt = (v) => v } = {}) {
+  const items = segs.filter((s) => s.value > 0);
+  const total = items.reduce((n, s) => n + s.value, 0) || 1;
+  const bar = items.map((s) => `<span style="width:${(s.value/total*100).toFixed(2)}%;background:${s.color}" title="${esc(s.label)}: ${esc(fmt(s.value))}"></span>`).join('');
+  const legend = items.map((s) => `<span class="li"><span class="sw" style="background:${s.color}"></span>${esc(s.label)} <span class="lv">${esc(fmt(s.value))}</span></span>`).join('');
+  return `<div class="sbar${thin ? ' thin' : ''}">${bar || '<span style="width:100%;background:#1b2747"></span>'}</div><div class="legend">${legend || '<span class="lv">none</span>'}</div>`;
+}
+
+function analyticsSummary(d){
+  const t = d.totals || {};
+  const c = t.cost || {}; const code = t.code || {}; const as = t.assets || {};
+  const art = as.byKind?.art?.count || 0, music = as.byKind?.music?.count || 0;
+  return `<div class="asum">
+    <div class="acard"><div class="an" style="color:var(--green)">${usd(c.total)}</div><div class="al">est. total cost</div><div class="asub">${t.analyzed||0}/${t.games||0} games analyzed</div></div>
+    <div class="acard"><div class="an" style="color:var(--gold)">${usd(c.code)}</div><div class="al">Claude · code</div><div class="asub">~${compact(c.codeTokens)} tokens</div></div>
+    <div class="acard"><div class="an" style="color:var(--pink)">${usd(c.art)}</div><div class="al">Nano Banana · art</div><div class="asub">${c.images||0} images</div></div>
+    <div class="acard"><div class="an" style="color:var(--violet)">${usd(c.music)}</div><div class="al">Lyria · music</div><div class="asub">${c.tracks||0} tracks</div></div>
+    <div class="acard"><div class="an">${compact(code.lines)}</div><div class="al">lines of code</div><div class="asub">${kb(code.bytes)} · ${code.files||0} files</div></div>
+    <div class="acard"><div class="an">${as.count||0}</div><div class="al">assets</div><div class="asub">${art} art · ${music} music</div></div>
+  </div>`;
+}
+
+function analyticsRow(g){
+  if (!g.ok) return `<div class="arow"><div class="at"><span class="anm">${esc(g.name||g.id)}</span><span class="ameta">— ${esc(g.error||'unavailable')}</span></div></div>`;
+  const langs = Object.entries(g.code.byLang).sort((a,b)=>b[1].bytes-a[1].bytes)
+    .map(([l,v],i)=>({ label:l, value:v.bytes, color:LANG_COLORS[l]||fallColor(i) }));
+  const kinds = Object.entries(g.assets.byKind).sort((a,b)=>b[1].count-a[1].count)
+    .map(([k,v])=>({ label:KIND_LABEL[k]||k, value:v.count, color:KIND_COLORS[k]||'#5b6b86' }));
+  const cost = [
+    { label:'code', value:g.cost.code.usd, color:API_COLORS.code },
+    { label:'art', value:g.cost.art.usd, color:API_COLORS.art },
+    { label:'music', value:g.cost.music.usd, color:API_COLORS.music },
+  ];
+  return `<div class="arow">
+    <div class="at"><span class="anm">${esc(g.name)}</span>
+      <span class="ameta">${compact(g.code.lines)} lines · ${kb(g.code.bytes)} · ${g.assets.count} assets</span>
+      <span class="acost">${usd(g.cost.total)}</span></div>
+    <div class="agrid">
+      <div><div class="gh"><span>Code split</span><span>${kb(g.code.bytes)}</span></div>${stackBar(langs,{fmt:kb})}</div>
+      <div><div class="gh"><span>Asset split</span><span>${g.assets.count} files</span></div>${stackBar(kinds,{fmt:(v)=>v+''})}</div>
+    </div>
+    <div class="acost-split">
+      <span class="cs"><span class="sw" style="background:${API_COLORS.code};width:10px;height:10px;border-radius:3px"></span>Claude code <b>${usd(g.cost.code.usd)}</b> <span class="lv" style="color:var(--dim)">~${compact(g.cost.code.tokens)} tok</span></span>
+      <span class="cs"><span class="sw" style="background:${API_COLORS.art};width:10px;height:10px;border-radius:3px"></span>Nano Banana <b>${usd(g.cost.art.usd)}</b> <span class="lv" style="color:var(--dim)">${g.cost.art.images} img</span></span>
+      <span class="cs"><span class="sw" style="background:${API_COLORS.music};width:10px;height:10px;border-radius:3px"></span>Lyria <b>${usd(g.cost.music.usd)}</b> <span class="lv" style="color:var(--dim)">${g.cost.music.tracks} trk</span></span>
+    </div>
+  </div>`;
+}
+
+function renderAnalytics(d){
+  if (!d || !d.games) { $('analyticsBody').innerHTML = '<p class="muted">could not load analytics.</p>'; return; }
+  const t = d.totals || {};
+  const costBars = stackBar([
+    { label:'Claude · code', value:t.cost?.code||0, color:API_COLORS.code },
+    { label:'Nano Banana · art', value:t.cost?.art||0, color:API_COLORS.art },
+    { label:'Lyria · music', value:t.cost?.music||0, color:API_COLORS.music },
+  ], { fmt: usd });
+  const langBars = stackBar(Object.entries(t.code?.byLang||{}).sort((a,b)=>b[1].bytes-a[1].bytes)
+    .map(([l,v],i)=>({ label:l, value:v.bytes, color:LANG_COLORS[l]||fallColor(i) })), { fmt: kb });
+  const p = d.pricing || {}, e = d.estimate || {};
+  const note = `<div class="anote"><b>How cost is estimated.</b> Pulled live from each game's GitHub repo (one git-tree read per repo; vendored libraries and caches excluded).
+    <b>Code</b> → ${esc((p.claude&&p.claude.model)||'Claude')} tokens estimated from authored code size (~${e.bytesPerToken} bytes/token, ×${e.outputChurn} iteration churn, ×${e.inputRatio} context reads) at ${usd(p.claude&&p.claude.inputPerM)}/M in · ${usd(p.claude&&p.claude.outputPerM)}/M out.
+    <b>Art</b> → ${esc((p.art&&p.art.model)||'Nano Banana')} at ${usd(p.art&&p.art.perImage)}/image (shipped images).
+    <b>Music</b> → ${esc((p.music&&p.music.model)||'Lyria')} at ${usd(p.music&&p.music.perTrack)}/clip (shipped tracks).
+    Token spend is a heuristic — tune the rates via env vars. ${d.generated ? 'Updated ' + new Date(d.generated).toLocaleString() + '.' : ''}</div>`;
+  $('analyticsBody').innerHTML = analyticsSummary(d)
+    + `<div class="asec"><h4>Cost by API</h4>${costBars}</div>`
+    + `<div class="asec"><h4>Code across all games</h4>${langBars}</div>`
+    + `<div class="asec"><h4>Per game <span style="color:#cfe0ff;font-weight:700">${(d.games||[]).filter(g=>g.ok).length}</span></h4><div class="arows">${(d.games||[]).map(analyticsRow).join('')}</div></div>`
+    + note;
+}
+
+async function loadAnalytics(force){
+  $('analyticsBody').innerHTML = '<p class="muted">analyzing repos… ' + (force ? 're-pulling from GitHub' : 'this can take a moment on first open') + '</p>';
+  const d = await fetch('/api/analytics' + (force ? '?force=1' : '')).then((r)=>r.json()).catch(()=>null);
+  renderAnalytics(d);
+}
+function openAnalytics(){ $('analytics').showModal(); loadAnalytics(false); }
+window.openAnalytics = openAnalytics;
+$('analyticsBtn').onclick = openAnalytics;
+$('analyticsRefresh').onclick = () => loadAnalytics(true);
+$('analytics').addEventListener('click', (e) => { if (e.target.id === 'analytics') e.target.close(); });
 
 $('refresh').onclick = () => load(true);
 $('add').onclick = () => $('dlg').showModal();
