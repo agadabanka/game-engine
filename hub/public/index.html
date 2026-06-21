@@ -548,10 +548,10 @@ function analyticsSummary(d){
   return `<div class="asum">
     <div class="acard"><div class="an" style="color:var(--green)">${usd(c.total)}</div><div class="al">est. total cost</div><div class="asub">${t.analyzed||0}/${t.games||0} games analyzed</div></div>
     <div class="acard"><div class="an" style="color:var(--gold)">${usd(c.code)}</div><div class="al">Claude · code</div><div class="asub">~${compact(c.codeTokens)} tokens</div></div>
-    <div class="acard"><div class="an" style="color:var(--pink)">${usd(c.art)}</div><div class="al">Nano Banana · art</div><div class="asub">${c.images||0} images</div></div>
-    <div class="acard"><div class="an" style="color:var(--violet)">${usd(c.music)}</div><div class="al">Lyria · music</div><div class="asub">${c.tracks||0} tracks</div></div>
-    <div class="acard"><div class="an">${compact(code.lines)}</div><div class="al">lines of code</div><div class="asub">${kb(code.bytes)} · ${code.files||0} files</div></div>
-    <div class="acard"><div class="an">${as.count||0}</div><div class="al">assets</div><div class="asub">${art} art · ${music} music</div></div>
+    <div class="acard"><div class="an" style="color:var(--pink)">${usd(c.art)}</div><div class="al">Nano Banana · art</div><div class="asub">${c.images||0} generations</div></div>
+    <div class="acard"><div class="an" style="color:var(--violet)">${usd(c.music)}</div><div class="al">Lyria · music</div><div class="asub">${c.tracks||0} generations</div></div>
+    <div class="acard"><div class="an">${compact(code.authoredLines)}</div><div class="al">lines authored</div><div class="asub">${kb(code.authoredBytes)} of ${kb(code.bytes)} total</div></div>
+    <div class="acard"><div class="an">${as.count||0}</div><div class="al">assets shipped</div><div class="asub">${art} art · ${music} music</div></div>
   </div>`;
 }
 
@@ -561,23 +561,21 @@ function analyticsRow(g){
     .map(([l,v],i)=>({ label:l, value:v.bytes, color:LANG_COLORS[l]||fallColor(i) }));
   const kinds = Object.entries(g.assets.byKind).sort((a,b)=>b[1].count-a[1].count)
     .map(([k,v])=>({ label:KIND_LABEL[k]||k, value:v.count, color:KIND_COLORS[k]||'#5b6b86' }));
-  const cost = [
-    { label:'code', value:g.cost.code.usd, color:API_COLORS.code },
-    { label:'art', value:g.cost.art.usd, color:API_COLORS.art },
-    { label:'music', value:g.cost.music.usd, color:API_COLORS.music },
-  ];
+  const ge = g.assets.generations || { art:0, music:0, artSource:'unique', musicSource:'unique' };
+  const src = (s) => s === 'cache' ? '<span style="color:var(--green)" title="exact billed count from the committed generation cache">✓ cache</span>' : '<span title="estimated from assets unique to this game (first-introduced)">est.</span>';
+  const authPct = g.code.bytes ? Math.round(g.code.authoredBytes / g.code.bytes * 100) : 0;
   return `<div class="arow">
     <div class="at"><span class="anm">${esc(g.name)}</span>
-      <span class="ameta">${compact(g.code.lines)} lines · ${kb(g.code.bytes)} · ${g.assets.count} assets</span>
+      <span class="ameta">${compact(g.code.authoredLines)} authored / ${compact(g.code.lines)} lines · ${g.assets.count} assets</span>
       <span class="acost">${usd(g.cost.total)}</span></div>
     <div class="agrid">
-      <div><div class="gh"><span>Code split</span><span>${kb(g.code.bytes)}</span></div>${stackBar(langs,{fmt:kb})}</div>
+      <div><div class="gh"><span>Code split (total ${kb(g.code.bytes)})</span><span>${authPct}% authored</span></div>${stackBar(langs,{fmt:kb})}</div>
       <div><div class="gh"><span>Asset split</span><span>${g.assets.count} files</span></div>${stackBar(kinds,{fmt:(v)=>v+''})}</div>
     </div>
     <div class="acost-split">
-      <span class="cs"><span class="sw" style="background:${API_COLORS.code};width:10px;height:10px;border-radius:3px"></span>Claude code <b>${usd(g.cost.code.usd)}</b> <span class="lv" style="color:var(--dim)">~${compact(g.cost.code.tokens)} tok</span></span>
-      <span class="cs"><span class="sw" style="background:${API_COLORS.art};width:10px;height:10px;border-radius:3px"></span>Nano Banana <b>${usd(g.cost.art.usd)}</b> <span class="lv" style="color:var(--dim)">${g.cost.art.images} img</span></span>
-      <span class="cs"><span class="sw" style="background:${API_COLORS.music};width:10px;height:10px;border-radius:3px"></span>Lyria <b>${usd(g.cost.music.usd)}</b> <span class="lv" style="color:var(--dim)">${g.cost.music.tracks} trk</span></span>
+      <span class="cs"><span class="sw" style="background:${API_COLORS.code};width:10px;height:10px;border-radius:3px"></span>Claude code <b>${usd(g.cost.code.usd)}</b> <span class="lv" style="color:var(--dim)">${kb(g.code.authoredBytes)} authored · ~${compact(g.cost.code.tokens)} tok</span></span>
+      <span class="cs"><span class="sw" style="background:${API_COLORS.art};width:10px;height:10px;border-radius:3px"></span>Nano Banana <b>${usd(g.cost.art.usd)}</b> <span class="lv" style="color:var(--dim)">${g.cost.art.images} img · ${src(ge.artSource)}</span></span>
+      <span class="cs"><span class="sw" style="background:${API_COLORS.music};width:10px;height:10px;border-radius:3px"></span>Lyria <b>${usd(g.cost.music.usd)}</b> <span class="lv" style="color:var(--dim)">${g.cost.music.tracks} trk · ${src(ge.musicSource)}</span></span>
     </div>
   </div>`;
 }
@@ -593,11 +591,10 @@ function renderAnalytics(d){
   const langBars = stackBar(Object.entries(t.code?.byLang||{}).sort((a,b)=>b[1].bytes-a[1].bytes)
     .map(([l,v],i)=>({ label:l, value:v.bytes, color:LANG_COLORS[l]||fallColor(i) })), { fmt: kb });
   const p = d.pricing || {}, e = d.estimate || {};
-  const note = `<div class="anote"><b>How cost is estimated.</b> Pulled live from each game's GitHub repo (one git-tree read per repo; vendored libraries and caches excluded).
+  const note = `<div class="anote"><b>How this is measured.</b> Pulled live from each game's GitHub repo (one git-tree read per repo). Every game is a clone of the base engine, so shared code &amp; inherited art are attributed <b>once</b> to the game that first introduced them (by blob SHA) — "authored" code and "generated" assets count only what each game added, so nothing is billed 16×.
     <b>Code</b> → ${esc((p.claude&&p.claude.model)||'Claude')} tokens estimated from authored code size (~${e.bytesPerToken} bytes/token, ×${e.outputChurn} iteration churn, ×${e.inputRatio} context reads) at ${usd(p.claude&&p.claude.inputPerM)}/M in · ${usd(p.claude&&p.claude.outputPerM)}/M out.
-    <b>Art</b> → ${esc((p.art&&p.art.model)||'Nano Banana')} at ${usd(p.art&&p.art.perImage)}/image (shipped images).
-    <b>Music</b> → ${esc((p.music&&p.music.model)||'Lyria')} at ${usd(p.music&&p.music.perTrack)}/clip (shipped tracks).
-    Token spend is a heuristic — tune the rates via env vars. ${d.generated ? 'Updated ' + new Date(d.generated).toLocaleString() + '.' : ''}</div>`;
+    <b>Art</b> → ${esc((p.art&&p.art.model)||'Nano Banana')} at ${usd(p.art&&p.art.perImage)}/image. <b>Music</b> → ${esc((p.music&&p.music.model)||'Lyria')} at ${usd(p.music&&p.music.perTrack)}/clip.
+    Where a repo commits its generation cache the counts are <b>exact billed calls</b> (✓ cache); otherwise they're estimated from each game's unique assets. Token spend is a heuristic — tune rates via env vars. ${d.generated ? 'Updated ' + new Date(d.generated).toLocaleString() + '.' : ''}</div>`;
   $('analyticsBody').innerHTML = analyticsSummary(d)
     + `<div class="asec"><h4>Cost by API</h4>${costBars}</div>`
     + `<div class="asec"><h4>Code across all games</h4>${langBars}</div>`
