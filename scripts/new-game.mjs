@@ -15,10 +15,14 @@
 //   --public   create the repo PUBLIC     --dry-run  scaffold locally, skip GitHub/push/register
 //              (game repos are PRIVATE by default — standing owner rule)
 //   --local    scaffold from the vendored base in engine/game-template/ instead of cloning --base
+//   --engine <phaser|claystone>  which engine to build on (default phaser). claystone =
+//             the determinism-first, zero-dependency option, scaffolded via
+//             agadabanka/claystone-engine (same Studio.* seam, headless 0-death gate).
 //
 // Needs GH_TOKEN. After it runs, finish the deploy with the printed Railway steps.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { treeMarkdown } from '../tools/lib/pipeline.mjs';
@@ -41,6 +45,10 @@ const hubUrl = flag('hub', process.env.HUB_URL || '');
 const isPrivate = !has('public');
 const dryRun = has('dry-run');
 const useLocal = has('local');
+// Which engine to build on. Phaser (the proven base) stays the default; `--engine claystone`
+// is the determinism-first option, scaffolded via the claystone-engine repo.
+const engine = (flag('engine', 'phaser') || 'phaser').toLowerCase();
+if (!['phaser', 'claystone'].includes(engine)) { console.error('✗ --engine must be phaser|claystone'); process.exit(1); }
 const GH = process.env.GH_TOKEN;
 if (!GH && !dryRun) { console.error('GH_TOKEN required (or use --dry-run)'); process.exit(1); }
 
@@ -60,40 +68,58 @@ const gh = async (route, method = 'GET', body) => {
 const localBase = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'engine', 'game-template');
 
 console.log(`\n🎮 new game: "${name}"  (slug: ${slug})`);
-console.log(`   base ${useLocal ? `engine/game-template (local)` : baseRepo} → ${dir}${dryRun ? '   [DRY RUN]' : ''}\n`);
+console.log(`   engine ${engine}${engine === 'phaser' ? ` · base ${useLocal ? 'engine/game-template (local)' : baseRepo}` : ' (claystone-engine)'} → ${dir}${dryRun ? '   [DRY RUN]' : ''}\n`);
 
-// 1. acquire the proven base (a complete, playable game) as the new game's tree
+// 1. acquire the game tree.
 if (fs.existsSync(dir)) { console.error(`✗ ${dir} already exists — pick another --dir or remove it.`); process.exit(1); }
-if (useLocal) {
-  if (!fs.existsSync(localBase)) { console.error(`✗ --local given but ${localBase} is missing.`); process.exit(1); }
-  console.log('• copying vendored base from engine/game-template…');
-  fs.cpSync(localBase, dir, { recursive: true });
-  fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true }); // no-op if vendored copy has none
+
+if (engine === 'claystone') {
+  // OPTION: build on the determinism-first Claystone engine instead of Phaser. We clone
+  // claystone-engine and delegate to its scaffolder, which writes a self-contained, playable
+  // game (vendored engine/ · Canvas2D index.html · game.js on the Studio.* seam · headless
+  // eval.mjs) plus package.json / README.md / DIARY.md / GAME_META.json (engine:"claystone").
+  // --gate makes it self-verify the deterministic 0-death gate before we ever push.
+  const cstone = path.join(os.tmpdir(), `claystone-engine-${Date.now()}`);
+  const cUrl = GH ? `https://x-access-token:${GH}@github.com/agadabanka/claystone-engine.git`
+                  : `https://github.com/agadabanka/claystone-engine.git`;
+  console.log('• cloning claystone-engine (engine source)…');
+  run('git', ['clone', '--depth', '1', cUrl, cstone]);
+  console.log('• scaffolding on Claystone (with the 0-death gate)…');
+  run('node', [path.join(cstone, 'scripts', 'new-claystone-game.mjs'), name,
+    '--hero', hero, '--tagline', tagline, '--verb', verb, '--dir', dir, '--gate'], { stdio: 'inherit' });
+  fs.rmSync(cstone, { recursive: true, force: true });
 } else {
-  const cloneUrl = GH ? `https://x-access-token:${GH}@github.com/${baseRepo}.git` : `https://github.com/${baseRepo}.git`;
-  console.log('• cloning base…');
-  run('git', ['clone', '--depth', '1', cloneUrl, dir]);
-  fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+  if (useLocal) {
+    if (!fs.existsSync(localBase)) { console.error(`✗ --local given but ${localBase} is missing.`); process.exit(1); }
+    console.log('• copying vendored base from engine/game-template…');
+    fs.cpSync(localBase, dir, { recursive: true });
+    fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true }); // no-op if vendored copy has none
+  } else {
+    const cloneUrl = GH ? `https://x-access-token:${GH}@github.com/${baseRepo}.git` : `https://github.com/${baseRepo}.git`;
+    console.log('• cloning base…');
+    run('git', ['clone', '--depth', '1', cloneUrl, dir]);
+    fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+  }
+
+  // 2. rebrand the safe, structural touch-points (name/description/title + fresh diary).
+  const edit = (rel, fn) => { const p = path.join(dir, rel); if (!fs.existsSync(p)) return; fs.writeFileSync(p, fn(fs.readFileSync(p, 'utf8'))); };
+  edit('package.json', (s) => { const j = JSON.parse(s); j.name = slug; j.description = tagline; return JSON.stringify(j, null, 2) + '\n'; });
+  edit('README.md', (s) => `# ${name}\n\n> ${tagline}\n\n_Scaffolded from \`${baseRepo}\` with the **game-engine**. Re-skin the hero, verb, art, and music via the documented pipeline (see the engine's playbook), then deploy._\n\n---\n\n${s}`);
+
+  // 3. a fresh diary + the meta the hub reads
+  const today = new Date().toISOString().slice(0, 10);
+  fs.writeFileSync(path.join(dir, 'DIARY.md'),
+    `# ${name} — build diary\n\nNewest at the bottom. Viewable in-game at **/diary.html**.\n\n---\n\n### Day one — scaffolded from the engine (${today})\n- Created with \`new-game\` off \`${baseRepo}\`: a complete, playable platformer wired to the\n  whole stack (server/store/Gemini/Lyria · Phaser engine · level DSL + merge · the 0-death\n  gate, felt-fun, recorder, vision judge · in-game notes → diary → issues · the builder).\n- Next: re-skin the hero ("${hero}"), define the core verb ("${verb}"), generate the art\n  + a Lyria score, rework the worlds, and deploy. Leave notes in-game as you playtest.\n\n## The build plan — every step\nEach stage below is also a GitHub issue (created automatically), worked **strictly in order**.\nThe pinned **Build tracker** issue always names the next step.\n\n${treeMarkdown()}\n`);
+
+  const meta = {
+    name, tagline, hero, verb,
+    worlds: [], levelCount: null,
+    controls: 'on-screen + keyboard', art: 'inherited base (re-skin me)', music: 'procedural (add Lyria)',
+    engine: 'game-engine', builder: '/build.html', designLens: '/design.html',
+    scaffolded_from: baseRepo, scaffolded_at: new Date().toISOString(),
+  };
+  fs.writeFileSync(path.join(dir, 'GAME_META.json'), JSON.stringify(meta, null, 2) + '\n');
 }
-
-// 2. rebrand the safe, structural touch-points (name/description/title + fresh diary).
-const edit = (rel, fn) => { const p = path.join(dir, rel); if (!fs.existsSync(p)) return; fs.writeFileSync(p, fn(fs.readFileSync(p, 'utf8'))); };
-edit('package.json', (s) => { const j = JSON.parse(s); j.name = slug; j.description = tagline; return JSON.stringify(j, null, 2) + '\n'; });
-edit('README.md', (s) => `# ${name}\n\n> ${tagline}\n\n_Scaffolded from \`${baseRepo}\` with the **game-engine**. Re-skin the hero, verb, art, and music via the documented pipeline (see the engine's playbook), then deploy._\n\n---\n\n${s}`);
-
-// 3. a fresh diary + the meta the hub reads
-const today = new Date().toISOString().slice(0, 10);
-fs.writeFileSync(path.join(dir, 'DIARY.md'),
-  `# ${name} — build diary\n\nNewest at the bottom. Viewable in-game at **/diary.html**.\n\n---\n\n### Day one — scaffolded from the engine (${today})\n- Created with \`new-game\` off \`${baseRepo}\`: a complete, playable platformer wired to the\n  whole stack (server/store/Gemini/Lyria · Phaser engine · level DSL + merge · the 0-death\n  gate, felt-fun, recorder, vision judge · in-game notes → diary → issues · the builder).\n- Next: re-skin the hero ("${hero}"), define the core verb ("${verb}"), generate the art\n  + a Lyria score, rework the worlds, and deploy. Leave notes in-game as you playtest.\n\n## The build plan — every step\nEach stage below is also a GitHub issue (created automatically), worked **strictly in order**.\nThe pinned **Build tracker** issue always names the next step.\n\n${treeMarkdown()}\n`);
-
-const meta = {
-  name, tagline, hero, verb,
-  worlds: [], levelCount: null,
-  controls: 'on-screen + keyboard', art: 'inherited base (re-skin me)', music: 'procedural (add Lyria)',
-  engine: 'game-engine', builder: '/build.html', designLens: '/design.html',
-  scaffolded_from: baseRepo, scaffolded_at: new Date().toISOString(),
-};
-fs.writeFileSync(path.join(dir, 'GAME_META.json'), JSON.stringify(meta, null, 2) + '\n');
 
 // 3b. install the repo-agnostic notes-to-issues (the base ships one hardcoded to
 // its own repo; a scaffolded game must file its in-game notes into ITS OWN repo,
