@@ -1349,47 +1349,61 @@
       "videos": [
         {
           "name": "Baobab Bluff",
-          "youtube": "https://youtu.be/n9KVB86yJK4"
+          "youtube": "https://youtu.be/99jt_7ngqRc"
         },
         {
           "name": "Cataract Climb",
-          "youtube": "https://youtu.be/hmo3WtbmKjs"
+          "youtube": "https://youtu.be/_fDIc4PyM5o"
         },
         {
           "name": "Ochre Canyon",
-          "youtube": "https://youtu.be/C120whKZhDQ"
+          "youtube": "https://youtu.be/sQI09rhT8GI"
         },
         {
           "name": "Emberreach Highlands",
-          "youtube": "https://youtu.be/AzC23q63u3g"
+          "youtube": "https://youtu.be/NTEZ0MM5RcU"
         },
         {
           "name": "Cloudspire Summit",
-          "youtube": "https://youtu.be/nSOCZZA2Qhk"
+          "youtube": "https://youtu.be/EkVN5BI59DA"
         }
       ],
-      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEt6jcx5AZncUKrhwcGX7ZkA",
-      "youtube": "https://youtu.be/IYW_0liThZw"
+      "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEsWbLIPYeF4ZEjS-SKgxWbL",
+      "youtube": "https://youtu.be/hadqgNpv-L4",
+      "screenshots": [
+        "https://sokwe-summit-production.up.railway.app/diary-shots/level1.jpg",
+        "https://sokwe-summit-production.up.railway.app/diary-shots/level2.jpg",
+        "https://sokwe-summit-production.up.railway.app/diary-shots/level3.jpg",
+        "https://sokwe-summit-production.up.railway.app/diary-shots/level4.jpg",
+        "https://sokwe-summit-production.up.railway.app/diary-shots/level5.jpg"
+      ]
     },
     "shorts": [
       {
         "title": "Baobab Bluff",
         "biome": "Baobab Bluff",
         "level": 1,
-        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453115095"
+        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453369401"
       },
       {
         "title": "Ochre Canyon",
         "biome": "Ochre Canyon",
         "level": 3,
-        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453115098"
+        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453369405"
       },
       {
         "title": "Cloudspire Summit",
         "biome": "Cloudspire Summit",
         "level": 5,
-        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453115099"
+        "mp4": "https://api.github.com/repos/agadabanka/sokwe-summit/releases/assets/453369407"
       }
+    ],
+    "screenshots": [
+      "https://sokwe-summit-production.up.railway.app/diary-shots/level1.jpg",
+      "https://sokwe-summit-production.up.railway.app/diary-shots/level2.jpg",
+      "https://sokwe-summit-production.up.railway.app/diary-shots/level3.jpg",
+      "https://sokwe-summit-production.up.railway.app/diary-shots/level4.jpg",
+      "https://sokwe-summit-production.up.railway.app/diary-shots/level5.jpg"
     ]
   }
 ]
