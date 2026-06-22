@@ -13,6 +13,7 @@
     "refresh": "node hub/refresh.mjs",
     "book": "node tools/build-book.mjs",
     "book:art": "node scripts/gen-book-art.mjs",
+    "pdf": "node tools/pdf/tex-build.mjs",
     "trailer": "node tools/trailer/make-trailer.mjs",
     "sync-sdk": "node scripts/sync-sdk.mjs",
     "eval:all": "node tools/eval-all.mjs",
