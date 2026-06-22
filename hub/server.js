@@ -15,6 +15,7 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 import * as store from './lib/store.js';
 import { snapshotAll } from './lib/aggregate.js';
+import { analyzeAll } from './lib/analytics.js';
 import { generateImage, geminiConfigured } from '../scripts/gemini.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -145,6 +146,40 @@ app.post('/api/refresh', async (_req, res) => {
 });
 
 app.get('/api/games', async (_req, res) => res.json({ games: await getGames() }));
+
+// ── analytics (the "Analytics" modal) ──────────────────────────────────────────
+// Per-game code/asset/cost breakdown. Heavier than the dashboard (one GitHub git-
+// tree pull per repo) and changes slowly, so it gets its own longer-lived cache:
+// serve the last snapshot immediately, refresh in the background, persist to the
+// volume so a restart paints instantly. Force a fresh pull with ?force=1.
+const ANALYTICS_CACHE_MS = Number(process.env.ANALYTICS_CACHE_MS || 600_000);   // 10 min
+let _analytics = { at: 0, data: null, refreshing: null };
+async function refreshAnalytics() {
+  try {
+    const data = await analyzeAll(await getGames(), { ghToken: GH_TOKEN });
+    _analytics = { at: Date.now(), data, refreshing: null };
+    store.set('last_analytics', data).catch((e) => console.error('persist analytics failed', e));
+    return data;
+  } catch (e) {
+    console.error('analytics refresh failed', e);
+    _analytics.refreshing = null; _analytics.at = Date.now();
+    return _analytics.data;
+  }
+}
+async function analytics(force = false) {
+  if (!_analytics.data) { try { _analytics.data = await store.get('last_analytics', null); } catch {} }
+  const fresh = _analytics.data && Date.now() - _analytics.at < ANALYTICS_CACHE_MS;
+  if (force || !fresh) { if (!_analytics.refreshing) _analytics.refreshing = refreshAnalytics(); }
+  if (_analytics.data && !force) return _analytics.data;
+  // nothing cached yet (or a forced pull) → wait for the refresh, bounded so the
+  // request can never hang; fall back to whatever we have.
+  const first = await withTimeout(_analytics.refreshing || refreshAnalytics(), FIRST_PAINT_MS + 4000, null);
+  return first || _analytics.data || { generated: new Date().toISOString(), totals: { games: 0, analyzed: 0 }, games: [], warming: true };
+}
+app.get('/api/analytics', async (req, res) => {
+  try { res.json(await analytics(req.query.force === '1')); }
+  catch (e) { console.error('analytics route failed', e); res.json(_analytics.data || { games: [], totals: { games: 0, analyzed: 0 }, error: String(e) }); }
+});
 
 // ── short-video proxy ──
 // GitHub Release / jsDelivr / raw URLs play inconsistently in cross-origin
