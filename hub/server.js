@@ -167,13 +167,18 @@ app.get('/api/games', async (_req, res) => res.json({ games: await getGames() })
 //              source of truth independent of Dub/PostHog.
 const FUNNEL_KEY = 'funnel';
 async function recordFunnel(kind, { game = 'unknown', source = 'direct', event = null } = {}) {
-  const f = await store.get(FUNNEL_KEY, { clicks: {}, events: {}, recent: [], updated: null });
-  if (kind === 'click') { const k = `${game}|${source}`; f.clicks[k] = (f.clicks[k] || 0) + 1; }
-  else if (kind === 'event') { const k = `${game}|${event}|${source}`; f.events[k] = (f.events[k] || 0) + 1; }
-  f.recent.unshift({ kind, game, source, event, ts: new Date().toISOString() });
-  f.recent = f.recent.slice(0, 500);
-  f.updated = new Date().toISOString();
-  await store.set(FUNNEL_KEY, f);
+  // Atomic read-modify-write: funnel events fire concurrently with each other and
+  // with the periodic refresh — a plain get→mutate→set loses increments AND was
+  // what byte-corrupted the store. update() serializes the whole cycle.
+  await store.update(FUNNEL_KEY, { clicks: {}, events: {}, recent: [], updated: null }, (f) => {
+    f.clicks = f.clicks || {}; f.events = f.events || {}; f.recent = f.recent || [];
+    if (kind === 'click') { const k = `${game}|${source}`; f.clicks[k] = (f.clicks[k] || 0) + 1; }
+    else if (kind === 'event') { const k = `${game}|${event}|${source}`; f.events[k] = (f.events[k] || 0) + 1; }
+    f.recent.unshift({ kind, game, source, event, ts: new Date().toISOString() });
+    f.recent = f.recent.slice(0, 500);
+    f.updated = new Date().toISOString();
+    return f;
+  });
 }
 
 app.get('/go/:slug', async (req, res) => {

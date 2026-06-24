@@ -30,21 +30,67 @@ export const DATA_DIR =
 
 const STORE_PATH = process.env.STORE_PATH || path.join(DATA_DIR, 'store.json');
 
+// Parse a store file that may have been corrupted by a historical concurrent-write
+// race (two JSON documents byte-interleaved into the shared tmp → "Unexpected
+// non-whitespace character after JSON"). Fast path is a plain parse; on failure we
+// salvage the FIRST complete JSON value (the pre-race snapshot) by brace-depth
+// scanning so a single bad write can never permanently brick boot.
+function parseStore(text) {
+  try { return JSON.parse(text); } catch (_) { /* fall through to salvage */ }
+  let depth = 0, inStr = false, esc = false, start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (start === -1) { if (c === '{' || c === '[') start = i; else continue; }
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '{' || c === '[') depth++;
+    else if (c === '}' || c === ']') { if (--depth === 0) return JSON.parse(text.slice(start, i + 1)); }
+  }
+  throw new Error('store: unsalvageable JSON');
+}
+
 async function readAll() {
+  let text;
   try {
-    return JSON.parse(await fs.readFile(STORE_PATH, 'utf8'));
+    text = await fs.readFile(STORE_PATH, 'utf8');
   } catch (err) {
     if (err.code === 'ENOENT') return {};
     throw err;
   }
+  try {
+    return parseStore(text);
+  } catch (err) {
+    // Truly unrecoverable: preserve the bad file for forensics and start clean
+    // rather than crash-looping the whole hub on boot.
+    try { await fs.rename(STORE_PATH, `${STORE_PATH}.corrupt-${Date.now()}`); } catch (_) {}
+    console.error('store: corrupt + unsalvageable, reset to empty —', err.message);
+    return {};
+  }
 }
 
+// Per-write unique tmp name: a SHARED tmp path is what let two concurrent writers
+// interleave bytes and corrupt the store. Unique names make each write self-contained.
+let writeSeq = 0;
 async function writeAll(obj) {
   await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
-  // Write to a temp file then rename — avoids a half-written store on crash.
-  const tmp = `${STORE_PATH}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(obj, null, 2));
-  await fs.rename(tmp, STORE_PATH);
+  const tmp = `${STORE_PATH}.tmp.${process.pid}.${++writeSeq}`;
+  try {
+    await fs.writeFile(tmp, JSON.stringify(obj, null, 2));
+    await fs.rename(tmp, STORE_PATH);   // atomic swap
+  } catch (err) {
+    try { await fs.unlink(tmp); } catch (_) {}
+    throw err;
+  }
+}
+
+// In-process mutex: serialize every read-modify-write so concurrent set()/remove()
+// calls (e.g. funnel + refresh writing at once) can't lose updates or race the file.
+let chain = Promise.resolve();
+function withLock(fn) {
+  const run = chain.then(fn, fn);
+  // keep the chain alive even if fn rejects, but don't swallow the caller's error
+  chain = run.then(() => {}, () => {});
+  return run;
 }
 
 export async function get(key, fallback = null) {
@@ -53,16 +99,32 @@ export async function get(key, fallback = null) {
 }
 
 export async function set(key, value) {
-  const all = await readAll();
-  all[key] = value;
-  await writeAll(all);
-  return value;
+  return withLock(async () => {
+    const all = await readAll();
+    all[key] = value;
+    await writeAll(all);
+    return value;
+  });
 }
 
 export async function remove(key) {
-  const all = await readAll();
-  delete all[key];
-  await writeAll(all);
+  return withLock(async () => {
+    const all = await readAll();
+    delete all[key];
+    await writeAll(all);
+  });
+}
+
+// Atomic read-modify-write for callers that increment/append (funnel counters,
+// event tallies) — the ONLY safe way to do "+1" under concurrency.
+export async function update(key, fallback, fn) {
+  return withLock(async () => {
+    const all = await readAll();
+    const next = fn(key in all ? all[key] : fallback);
+    all[key] = next;
+    await writeAll(all);
+    return next;
+  });
 }
 
 export async function keys() {
