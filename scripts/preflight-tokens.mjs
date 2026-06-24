@@ -54,22 +54,27 @@ add({ name: 'YT_CLIENT_ID/SECRET', stage: 'videos/upload', ok: ytClient,
   fix: 'set YT_CLIENT_ID + YT_CLIENT_SECRET' });
 
 // YouTube refresh token: presence isn't enough — exchange it to confirm it still works.
+// Source order matches yt-upload.mjs: YT_REFRESH_TOKEN env first (survives ephemeral
+// containers), then the on-box /tmp/yt-creds.json file.
 let ytTokenOk = false, ytTokenInfo = 'no saved token';
-if (ytClient && fs.existsSync(YT_CREDS)) {
+let ytToken = null, ytSrc = '';
+if (process.env.YT_REFRESH_TOKEN) { ytToken = process.env.YT_REFRESH_TOKEN; ytSrc = 'YT_REFRESH_TOKEN env'; }
+else if (fs.existsSync(YT_CREDS)) {
+  try { const { refresh_token } = JSON.parse(fs.readFileSync(YT_CREDS, 'utf8')); if (refresh_token) { ytToken = refresh_token; ytSrc = YT_CREDS; } }
+  catch (e) { ytTokenInfo = 'creds file unreadable: ' + e.message; }
+}
+if (ytClient && ytToken) {
   try {
-    const { refresh_token } = JSON.parse(fs.readFileSync(YT_CREDS, 'utf8'));
-    if (refresh_token) {
-      const r = await (await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ client_id: process.env.YT_CLIENT_ID, client_secret: process.env.YT_CLIENT_SECRET, refresh_token, grant_type: 'refresh_token' }) })).json();
-      ytTokenOk = !!r.access_token;
-      ytTokenInfo = r.access_token ? `valid (scope ${r.scope || '?'})` : `saved token rejected: ${r.error || 'unknown'}`;
-    }
-  } catch (e) { ytTokenInfo = 'creds file unreadable: ' + e.message; }
+    const r = await (await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: process.env.YT_CLIENT_ID, client_secret: process.env.YT_CLIENT_SECRET, refresh_token: ytToken, grant_type: 'refresh_token' }) })).json();
+    ytTokenOk = !!r.access_token;
+    ytTokenInfo = r.access_token ? `valid via ${ytSrc} (scope ${r.scope || '?'})` : `token from ${ytSrc} rejected: ${r.error || 'unknown'}`;
+  } catch (e) { ytTokenInfo = 'token exchange failed: ' + e.message; }
 } else if (ytClient) {
-  ytTokenInfo = `no token at ${YT_CREDS} — mint one before the upload stage`;
+  ytTokenInfo = `no token (set YT_REFRESH_TOKEN env or run yt-auth.mjs) — mint one before the upload stage`;
 }
 add({ name: 'YT refresh token', stage: 'videos/upload', ok: ytTokenOk, info: ytTokenInfo,
-  fix: 'YT_CLIENT_ID=… YT_CLIENT_SECRET=… node tools/trailer/yt-auth.mjs   (device flow — relay the code to the user)' });
+  fix: 'set YT_REFRESH_TOKEN env (persists across containers), or run: YT_CLIENT_ID=… YT_CLIENT_SECRET=… node tools/trailer/yt-auth.mjs (device flow — relay the code to the user)' });
 
 // ── report ───────────────────────────────────────────────────────────────────
 console.log('\n🔑 token preflight — credentials for the full make-game pipeline\n');

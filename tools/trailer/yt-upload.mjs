@@ -1,6 +1,7 @@
 // YouTube uploader via OAuth DEVICE FLOW (no browser on this box). Reuses a saved
-// refresh token when present; otherwise prints a code+URL for the user to authorize,
-// polls until granted, then resumable-uploads the video.
+// refresh token when present — YT_REFRESH_TOKEN env first (survives ephemeral
+// containers), then /tmp/yt-creds.json — otherwise prints a code+URL for the user to
+// authorize, polls until granted, then resumable-uploads the video.
 //   YT_CLIENT_ID=... YT_CLIENT_SECRET=... node tools/yt-upload.mjs <file.mp4> "<title>" "<desc>" [public|unlisted|private]
 import fs from 'node:fs';
 
@@ -16,16 +17,23 @@ if (!FILE || !fs.existsSync(FILE)) { console.error('video file not found:', FILE
 const SCOPE = 'https://www.googleapis.com/auth/youtube';   // upload + playlist (broad, so one token does both)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+function savedRefreshToken() {
+  // env var wins (survives ephemeral containers); fall back to the on-box creds file.
+  if (process.env.YT_REFRESH_TOKEN) return { token: process.env.YT_REFRESH_TOKEN, src: 'YT_REFRESH_TOKEN env' };
+  if (fs.existsSync(CREDS)) {
+    try { const { refresh_token } = JSON.parse(fs.readFileSync(CREDS, 'utf8')); if (refresh_token) return { token: refresh_token, src: CREDS }; } catch {}
+  }
+  return null;
+}
+
 async function accessToken() {
   // reuse refresh token if we have one
-  if (fs.existsSync(CREDS)) {
-    const { refresh_token } = JSON.parse(fs.readFileSync(CREDS, 'utf8'));
-    if (refresh_token) {
-      const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ client_id: CID, client_secret: CSEC, refresh_token, grant_type: 'refresh_token' }) });
-      const j = await r.json();
-      if (j.access_token) { console.log('reused saved authorization.'); return j.access_token; }
-    }
+  const saved = savedRefreshToken();
+  if (saved) {
+    const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: CID, client_secret: CSEC, refresh_token: saved.token, grant_type: 'refresh_token' }) });
+    const j = await r.json();
+    if (j.access_token) { console.log(`reused saved authorization (${saved.src}).`); return j.access_token; }
   }
   // device flow
   const dc = await (await fetch('https://oauth2.googleapis.com/device/code', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
