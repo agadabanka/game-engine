@@ -73,6 +73,14 @@ In the scaffolded dir, `node eval.mjs` prints `✓ GATE PASSED` and `out/scoreca
 has `"pass": true` (`won:true`, `dead:false`, `deterministic:true`). Then continue the
 normal make-game stages (levels/feel/diary/hub) against it.
 
+## Parity with the Phaser base
+The Claystone scaffolder overlays a **parity base** so a new game ships, out of the box, with the same
+infra as `engine/game-template`: a zero-dep `server.js` (`/health · /api/meta · /api/diary · /api/notes`),
+an **in-game 📝 note taker** (the notes→diary→issues loop) + `tools/notes-to-issues.mjs`, a `diary.html`,
+`railway.json`, a **themed HUD baseline**, and a `ui-test.mjs` UI eval. When the Phaser base gains a
+feature, run the **claystone-parity** skill to backport it; run **ui-pass** when the chrome needs theming.
+Don't fake Phaser-Studio-only surfaces (level builder, Toon rigs, sprite sheets) — port what maps.
+
 ## Notes
 - Keep Phaser the default. Only use this skill when the engine is explicitly Claystone.
 - All gameplay randomness comes from the engine's seeded RNG — never `Math.random`
