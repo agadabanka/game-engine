@@ -10,11 +10,36 @@ repo that's already wired to the whole stack and showing on the hub.
 
 ## Do this
 
-1. **Get the essentials.** You need a name. Ideally also a one-line tagline, the
+1. **Token preflight — do this FIRST, before anything else.** A new game runs a long
+   pipeline (scaffold → art → music → deploy → videos/upload); the worst outcome is
+   getting most of the way and stalling on a credential. Catch it up front:
+   ```bash
+   node scripts/preflight-tokens.mjs
+   ```
+   It reports every credential the pipeline touches, grouped by the stage that needs it,
+   and **validates the YouTube refresh token by actually exchanging it** (presence isn't
+   enough — it's minted interactively and can expire/be revoked).
+   - If it reports a **hard** credential missing (`GH_TOKEN`, Gemini), stop and get it
+     before scaffolding — those stages can't run without it.
+   - If the **YouTube refresh token** is missing or rejected (containers are ephemeral —
+     `/tmp/yt-creds.json` is wiped when the box is reclaimed, so this is the common case
+     on a fresh session), mint one NOW via the device flow so the videos/upload stage can
+     run unattended at the end:
+     ```bash
+     YT_CLIENT_ID=… YT_CLIENT_SECRET=… node tools/trailer/yt-auth.mjs
+     ```
+     It prints a code + `google.com/device` URL — **relay them to the user**, it polls
+     until they authorize, then saves the token where `yt-upload.mjs` reads it. Re-run the
+     preflight to confirm green before moving on.
+   - Soft/optional gaps (`HUB_URL`, Lyria, `RAILWAY_TOKEN`) don't block scaffolding —
+     note them to the user and continue (music falls back to procedural; deploy/register
+     can be done manually).
+
+2. **Get the essentials.** You need a name. Ideally also a one-line tagline, the
    **hero** (what you play), and the **core verb** (what you do). If the user only
    gave a name, infer sensible defaults and say so — don't block.
 
-2. **Run the scaffolder** from the repo root:
+3. **Run the scaffolder** from the repo root:
    ```bash
    node scripts/new-game.mjs "<Name>" \
      --tagline "<one-liner>" --hero "<hero>" --verb "<verb>" \
@@ -33,7 +58,7 @@ repo that's already wired to the whole stack and showing on the hub.
    - Requires `GH_TOKEN`. The command prints the GitHub URL and the Railway deploy
      steps when done.
 
-3. **Log the build as ISSUES on the new repo — then work against the repo.** Right after
+4. **Log the build as ISSUES on the new repo — then work against the repo.** Right after
    scaffolding, turn the whole make-game pipeline into enforced work items:
    ```bash
    node scripts/make-game-issues.mjs <owner/repo> --game-dir <dir>
@@ -48,7 +73,7 @@ repo that's already wired to the whole stack and showing on the hub.
    meets the bar; an open issue is a stage that isn't done. This is what stops stages from being
    silently skipped or done out of order.
 
-4. **Confirm it landed.** Report the new repo URL, that it's registered on the hub, and the
+5. **Confirm it landed.** Report the new repo URL, that it's registered on the hub, and the
    link to the pipeline issues. Then start resolving them top-down (re-skin the hero with a
    real `Studio.Toon` rig / sprite art, design rich themed levels, a Lyria score, …),
    deploying as its own Railway project (`BOOTSTRAP.md` in the new repo).
