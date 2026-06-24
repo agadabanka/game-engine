@@ -36,5 +36,17 @@
   <script src="./game/characters.js"></script>
   <script src="./game/levels.js"></script>
   <script src="./game/game.js"></script>
+  <!-- analytics: eval-aware gameplay telemetry → PostHog + the hub's server-side counter.
+       `game` is set per-game by the scaffolder / analytics skill. -->
+  <script>
+    window.ANALYTICS = {
+      game: '',                                  // set to the game slug on scaffold
+      posthogKey: 'phc_tbmWC7oDBVoamkb22JW5GnuPXmt7D9fWeH4b6iWmHPgz',
+      posthogHost: 'https://us.i.posthog.com',
+      trackUrl: 'https://hub-production-6d28.up.railway.app/api/track',
+      verbose: false
+    };
+  </script>
+  <script src="./game/telemetry.js"></script>
 </body>
 </html>

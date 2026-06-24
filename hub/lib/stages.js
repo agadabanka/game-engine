@@ -29,6 +29,7 @@ export const STAGES = [
   { id: 'gate',     phase: 'ship',  label: '0-death',   hint: 'AI plays + evaluates — every level beatable at 0 deaths' },
   { id: 'deploy',   phase: 'ship',  label: 'Deploy',    hint: 'live on Railway' },
   { id: 'videos',   phase: 'ship',  label: 'Videos',    hint: 'AI playthroughs filmed + uploaded to YouTube' },
+  { id: 'analytics',phase: 'loop',  label: 'Analytics', hint: 'eval-aware gameplay telemetry wired (PostHog + server counter)' },
   { id: 'book',     phase: 'loop',  label: 'Book',      hint: 'illustrated PDF playbook' },
   { id: 'loop',     phase: 'loop',  label: 'Notes loop',hint: 'in-game notes → GitHub issues → fixes' },
 ];

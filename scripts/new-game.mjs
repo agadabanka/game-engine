@@ -105,6 +105,7 @@ if (engine === 'claystone') {
   const edit = (rel, fn) => { const p = path.join(dir, rel); if (!fs.existsSync(p)) return; fs.writeFileSync(p, fn(fs.readFileSync(p, 'utf8'))); };
   edit('package.json', (s) => { const j = JSON.parse(s); j.name = slug; j.description = tagline; return JSON.stringify(j, null, 2) + '\n'; });
   edit('README.md', (s) => `# ${name}\n\n> ${tagline}\n\n_Scaffolded from \`${baseRepo}\` with the **game-engine**. Re-skin the hero, verb, art, and music via the documented pipeline (see the engine's playbook), then deploy._\n\n---\n\n${s}`);
+  edit('src/index.html', (s) => s.replace("game: ''", `game: '${slug}'`));   // analytics: stamp the game slug into window.ANALYTICS (telemetry → PostHog + hub /api/track)
 
   // 3. a fresh diary + the meta the hub reads
   const today = new Date().toISOString().slice(0, 10);
