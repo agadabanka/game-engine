@@ -105,7 +105,18 @@ if (engine === 'claystone') {
   const edit = (rel, fn) => { const p = path.join(dir, rel); if (!fs.existsSync(p)) return; fs.writeFileSync(p, fn(fs.readFileSync(p, 'utf8'))); };
   edit('package.json', (s) => { const j = JSON.parse(s); j.name = slug; j.description = tagline; return JSON.stringify(j, null, 2) + '\n'; });
   edit('README.md', (s) => `# ${name}\n\n> ${tagline}\n\n_Scaffolded from \`${baseRepo}\` with the **game-engine**. Re-skin the hero, verb, art, and music via the documented pipeline (see the engine's playbook), then deploy._\n\n---\n\n${s}`);
-  edit('src/index.html', (s) => s.replace("game: ''", `game: '${slug}'`));   // analytics: stamp the game slug into window.ANALYTICS (telemetry → PostHog + hub /api/track)
+  // analytics (a creation step): ship the eval-aware telemetry client with every
+  // game, copied from the engine so it doesn't depend on the base repo carrying it.
+  const telSrc = path.join(localBase, 'src', 'game', 'telemetry.js');
+  if (fs.existsSync(telSrc)) {
+    fs.mkdirSync(path.join(dir, 'src', 'game'), { recursive: true });
+    fs.copyFileSync(telSrc, path.join(dir, 'src', 'game', 'telemetry.js'));
+    edit('src/index.html', (s) => {
+      if (s.includes('telemetry.js')) return s.replace("game: ''", `game: '${slug}'`);   // config already present → just stamp the slug
+      const cfg = `  <script>\n    window.ANALYTICS = { game: '${slug}', posthogKey: 'phc_tbmWC7oDBVoamkb22JW5GnuPXmt7D9fWeH4b6iWmHPgz', posthogHost: 'https://us.i.posthog.com', trackUrl: 'https://hub-production-6d28.up.railway.app/api/track' };\n  </script>\n  <script src="./game/telemetry.js"></script>\n`;
+      return s.includes('</body>') ? s.replace('</body>', cfg + '</body>') : s + '\n' + cfg;
+    });
+  }
 
   // 3. a fresh diary + the meta the hub reads
   const today = new Date().toISOString().slice(0, 10);
