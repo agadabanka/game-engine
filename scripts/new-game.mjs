@@ -79,15 +79,26 @@ if (engine === 'claystone') {
   // game (vendored engine/ · Canvas2D index.html · game.js on the Studio.* seam · headless
   // eval.mjs) plus package.json / README.md / DIARY.md / GAME_META.json (engine:"claystone").
   // --gate makes it self-verify the deterministic 0-death gate before we ever push.
-  const cstone = path.join(os.tmpdir(), `claystone-engine-${Date.now()}`);
-  const cUrl = GH ? `https://x-access-token:${GH}@github.com/agadabanka/claystone-engine.git`
-                  : `https://github.com/agadabanka/claystone-engine.git`;
-  console.log('• cloning claystone-engine (engine source)…');
-  run('git', ['clone', '--depth', '1', cUrl, cstone]);
+  // Engine source: clone claystone-engine, OR reuse a local copy provided via
+  // --claystone-src <dir> / $CLAYSTONE_SRC. The local path is the escape hatch for sandboxed
+  // or offline environments where git transport to other repos is blocked (the GitHub API
+  // still works, so the engine can be fetched as a tarball and pointed at here).
+  const localSrc = flag('claystone-src', process.env.CLAYSTONE_SRC || '');
+  let cstone, cstoneIsLocal = false;
+  if (localSrc && fs.existsSync(path.join(localSrc, 'scripts', 'new-claystone-game.mjs'))) {
+    cstone = path.resolve(localSrc); cstoneIsLocal = true;
+    console.log(`• using local claystone-engine source: ${cstone}`);
+  } else {
+    cstone = path.join(os.tmpdir(), `claystone-engine-${Date.now()}`);
+    const cUrl = GH ? `https://x-access-token:${GH}@github.com/agadabanka/claystone-engine.git`
+                    : `https://github.com/agadabanka/claystone-engine.git`;
+    console.log('• cloning claystone-engine (engine source)…');
+    run('git', ['clone', '--depth', '1', cUrl, cstone]);
+  }
   console.log('• scaffolding on Claystone (with the 0-death gate)…');
   run('node', [path.join(cstone, 'scripts', 'new-claystone-game.mjs'), name,
     '--hero', hero, '--tagline', tagline, '--verb', verb, '--dir', dir, '--gate'], { stdio: 'inherit' });
-  fs.rmSync(cstone, { recursive: true, force: true });
+  if (!cstoneIsLocal) fs.rmSync(cstone, { recursive: true, force: true });
 } else {
   if (useLocal) {
     if (!fs.existsSync(localBase)) { console.error(`✗ --local given but ${localBase} is missing.`); process.exit(1); }
@@ -158,9 +169,17 @@ try {
   try { const repo = await gh(`/orgs/${owner}/repos`, 'POST', { name: slug, description: tagline, private: isPrivate }); repoFull = repo.full_name; }
   catch { throw e; }
 }
-run('git', ['remote', 'add', 'origin', `https://x-access-token:${GH}@github.com/${repoFull}.git`], { cwd: dir });
-run('git', ['push', '-u', 'origin', 'main'], { cwd: dir });
-console.log(`• pushed → https://github.com/${repoFull}`);
+let pushed = false;
+try {
+  run('git', ['remote', 'add', 'origin', `https://x-access-token:${GH}@github.com/${repoFull}.git`], { cwd: dir });
+  run('git', ['push', '-u', 'origin', 'main'], { cwd: dir });
+  pushed = true;
+  console.log(`• pushed → https://github.com/${repoFull}`);
+} catch (e) {
+  console.log(`• git push blocked (${String(e.message || e).split('\n')[0].slice(0, 100)}).`);
+  console.log(`  Repo exists at https://github.com/${repoFull} — push the scaffold with the GitHub Contents/Git-Data API`);
+  console.log(`  (e.g. in a sandbox where git transport is restricted but the API is reachable).`);
+}
 
 // 5b. create ALL pipeline issues + the pinned Build tracker (every stage × sub-steps, in order).
 try {
