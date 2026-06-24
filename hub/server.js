@@ -21,6 +21,16 @@ import { generateImage, geminiConfigured } from '../scripts/gemini.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: '8mb' }));   // Studio IDE art notes can carry a small candidate image
+
+// On the public brand domain (play.funstackstudios.com) the root serves the
+// player-facing hub (public/play.html); on the Railway URL the root stays
+// mission-control. So the brand domain only ever shows the player page.
+const PLAY_HOST = process.env.PLAY_HOST || 'play.funstackstudios.com';
+app.get('/', (req, res, next) => {
+  if (req.hostname === PLAY_HOST) return res.sendFile(path.join(__dirname, 'public', 'play.html'));
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // pretty route for the Studio IDE (the static file also serves at /ide.html)
@@ -146,6 +156,48 @@ app.post('/api/refresh', async (_req, res) => {
 });
 
 app.get('/api/games', async (_req, res) => res.json({ games: await getGames() }));
+
+// ── flywheel funnel: first-party, ad-blocker-proof tracking ────────────────────
+// /go/:slug    bio/Dub link → here → 302 to the game (UTM preserved). A plain
+//              server-side redirect (no JS, no cookies) so ad-blockers can't strip
+//              the click. Also fixes Dub's "malicious URL" block on *.up.railway.app
+//              because the public link now points at the brand domain.
+// /api/track   in-game events (play_started, level_complete) POSTed cross-origin.
+// /api/funnel  first-party readout (clicks + events by game×source), our own
+//              source of truth independent of Dub/PostHog.
+const FUNNEL_KEY = 'funnel';
+async function recordFunnel(kind, { game = 'unknown', source = 'direct', event = null } = {}) {
+  const f = await store.get(FUNNEL_KEY, { clicks: {}, events: {}, recent: [], updated: null });
+  if (kind === 'click') { const k = `${game}|${source}`; f.clicks[k] = (f.clicks[k] || 0) + 1; }
+  else if (kind === 'event') { const k = `${game}|${event}|${source}`; f.events[k] = (f.events[k] || 0) + 1; }
+  f.recent.unshift({ kind, game, source, event, ts: new Date().toISOString() });
+  f.recent = f.recent.slice(0, 500);
+  f.updated = new Date().toISOString();
+  await store.set(FUNNEL_KEY, f);
+}
+
+app.get('/go/:slug', async (req, res) => {
+  const g = (await getGames()).find((x) => x.id === req.params.slug);
+  if (!g || !g.url) return res.status(404).send('unknown game');
+  let dest;
+  try { dest = new URL(g.url.replace(/\/+$/, '') + '/'); } catch { return res.status(500).send('bad game url'); }
+  for (const [k, v] of Object.entries(req.query)) if (typeof v === 'string') dest.searchParams.set(k, v);
+  recordFunnel('click', { game: g.id, source: String(req.query.utm_source || 'direct') }).catch((e) => console.error('funnel click', e));
+  res.redirect(302, dest.toString());
+});
+
+app.options('/api/track', (_req, res) => res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' }).end());
+app.post('/api/track', async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  const { game = 'unknown', event = 'event', source = 'direct' } = req.body || {};
+  recordFunnel('event', { game: String(game).slice(0, 60), event: String(event).slice(0, 60), source: String(source).slice(0, 60) }).catch((e) => console.error('funnel track', e));
+  res.json({ ok: true });
+});
+
+app.get('/api/funnel', async (req, res) => {
+  if (ADMIN_TOKEN && req.query.token !== ADMIN_TOKEN) return res.status(401).json({ error: 'unauthorized' });
+  res.json(await store.get(FUNNEL_KEY, { clicks: {}, events: {}, recent: [], updated: null }));
+});
 
 // ── analytics (the "Analytics" modal) ──────────────────────────────────────────
 // Per-game code/asset/cost breakdown. Heavier than the dashboard (one GitHub git-
