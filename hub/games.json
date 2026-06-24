@@ -1405,5 +1405,53 @@
       "https://sokwe-summit-production.up.railway.app/diary-shots/level4.jpg",
       "https://sokwe-summit-production.up.railway.app/diary-shots/level5.jpg"
     ]
+  },
+  {
+    "id": "gumdrop-gambit",
+    "name": "Gumdrop Gambit",
+    "repo": "agadabanka/gumdrop-gambit",
+    "url": "https://gumdrop-gambit-production.up.railway.app",
+    "tagline": "Isometric chess in a candy world",
+    "hero": "whimsical candy pieces",
+    "verb": "checkmate",
+    "meta": {
+      "hero": "whimsical candy pieces",
+      "verb": "checkmate",
+      "controls": "point-and-click (tap a piece, tap a glowing square)",
+      "art": "Gemini candy backdrops + vector pieces",
+      "music": "Lyria (a loop per world + title)",
+      "engine": "claystone",
+      "worlds": [
+        "Lollipop Meadow",
+        "Chocolate River",
+        "Gumdrop Hills",
+        "Cotton Candy Sky",
+        "Peppermint Ice"
+      ],
+      "videos": {
+        "montage": "https://youtu.be/UZoqXSm7ClE",
+        "playlist": "https://www.youtube.com/playlist?list=PL3Nc3-ECJaEuiKNYa3bCHZdfCQ-NoCALY"
+      },
+      "stages": {
+        "scaffold": "done",
+        "identity": "done",
+        "levels": "done",
+        "gate": "done",
+        "feel": "done",
+        "character": "done",
+        "art": "done",
+        "music": "done",
+        "deploy": "done",
+        "videos": "done",
+        "shorts": "done",
+        "diary": "done",
+        "loop": "done"
+      }
+    },
+    "shorts": [
+      "https://github.com/agadabanka/gumdrop-gambit/releases/download/shorts-v1/short1.mp4",
+      "https://github.com/agadabanka/gumdrop-gambit/releases/download/shorts-v1/short3.mp4",
+      "https://github.com/agadabanka/gumdrop-gambit/releases/download/shorts-v1/short5.mp4"
+    ]
   }
 ]
