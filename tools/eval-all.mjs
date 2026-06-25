@@ -11,6 +11,11 @@
 //      as-shipped. eval:"none" games are skipped with a note (not failed).
 // Exits non-zero if any runnable target is red. See tools/golden-games.json.
 //
+// This run also produces the deterministic frame-200 screenshots that tools/visual-qa.mjs
+// SSIMs against committed baselines; refresh those baselines from CI's renderer after an
+// intentional restyle (see .github/workflows/cross-game-eval.yml — dispatch rebaseline=true
+// or push a commit whose message contains [rebaseline]).
+//
 //   node tools/eval-all.mjs                 # template + golden set
 //   node tools/eval-all.mjs --only grovekeep
 //   node tools/eval-all.mjs --game <dir>    # also eval a game checked out at <dir>
