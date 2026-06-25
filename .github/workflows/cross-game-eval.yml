@@ -7,10 +7,12 @@
 # games that can't be cloned are SKIPPED (not failed) — see tools/eval-all.mjs.
 #
 # After an intentional engine/template restyle the visual baselines drift. Refresh them
-# from CI's own renderer: Actions → cross-game-eval → "Run workflow" with
-# rebaseline=true. That captures this run's screenshots as the new goldens and commits
-# them — baselines MUST come from CI, since a different machine renders the frame
-# slightly differently and would keep the gate red.
+# from CI's own renderer either way:
+#   • Actions → cross-game-eval → "Run workflow" with rebaseline=true, or
+#   • push a commit whose message contains the marker [rebaseline].
+# Either captures this run's screenshots as the new goldens and commits them — baselines
+# MUST come from CI, since a different machine renders the frame slightly differently and
+# would keep the gate red.
 name: cross-game-eval
 on:
   push:
@@ -59,13 +61,14 @@ jobs:
       # Normal runs: compare this run's screenshots against the committed baselines.
       # Skipped on a re-baseline dispatch (where we're deliberately replacing them).
       - name: Visual QA — screenshots vs golden baselines
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.rebaseline) }}
+        if: ${{ !((github.event_name == 'workflow_dispatch' && inputs.rebaseline) || contains(github.event.head_commit.message, '[rebaseline]')) }}
         run: node tools/visual-qa.mjs
-      # Re-baseline (manual): accept THIS CI run's renders as the new baselines and
-      # commit them. Captured in-CI so the baseline matches the environment the gate
-      # runs in — a baseline captured elsewhere can drift against CI's renderer.
-      - name: Re-baseline visual goldens (manual dispatch)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.rebaseline }}
+      # Re-baseline: accept THIS CI run's renders as the new baselines and commit them.
+      # Captured in-CI so the baseline matches the environment the gate runs in — a
+      # baseline captured elsewhere can drift against CI's renderer. Triggered by a
+      # workflow_dispatch with rebaseline=true OR a commit message containing [rebaseline].
+      - name: Re-baseline visual goldens (dispatch or [rebaseline] commit)
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.rebaseline) || contains(github.event.head_commit.message, '[rebaseline]') }}
         run: |
           node tools/visual-qa.mjs --update
           if git diff --quiet -- tools/golden-baselines; then
