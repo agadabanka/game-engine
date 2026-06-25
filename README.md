@@ -58,6 +58,7 @@ hub/            the mission-control app (Railway-deployed)
 scripts/new-game.mjs   the scaffolder
 book/           the engine's illustrated PDF playbook
 docs/ENGINE.md  the architecture (the platform field-map, in prose)
+docs/HOSTING.md the public front door: DNS → Railway edge → hub → games + analytics
 ```
 
 ## The stack, bottom-up
