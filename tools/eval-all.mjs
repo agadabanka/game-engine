@@ -87,11 +87,25 @@ for (const t of targets) {
   if (t.skip) { console.log(`  ⚠ ${t.id} (${t.archetype}) · SKIP — ${t.note || 'no eval'}`); results.push({ id: t.id, archetype: t.archetype, skip: true, note: t.note }); continue; }
   process.stdout.write(`  ⏳ ${t.id} (${t.archetype})… `);
   let r;
-  try {
-    let dir = t.dir, evalPath = t.evalPath;
-    if (t.golden) { dir = ensureClone(t.golden); if (t.golden.sdk === 'head') fs.copyFileSync(SDK, path.join(dir, 'src/vendor/studio.js')); evalPath = path.join(dir, 'eval.mjs'); }
-    r = runEval(t.id, dir, evalPath);
-  } catch (e) { r = { id: t.id, ok: false, err: String(e.message).slice(0, 140) }; }
+  let dir = t.dir, evalPath = t.evalPath;
+  if (t.golden) {
+    // Fetch the source first. A clone failure (private repo with no/invalid GH_TOKEN,
+    // or a network blip) means we have NO signal to gate on — the safety net asks
+    // "does engine HEAD break a shipped game?", and you can't answer that without the
+    // game. So SKIP it (like a game with no eval) instead of reddening the gate on a
+    // CI credentials gap. A clone that SUCCEEDS but whose eval fails is still a FAIL.
+    try { dir = ensureClone(t.golden); }
+    catch (e) {
+      const why = GH ? 'clone failed (auth/network)' : 'no GH_TOKEN in CI';
+      console.log(`⚠ SKIP — source unavailable (${why})`);
+      results.push({ id: t.id, archetype: t.archetype, sdk: t.sdk, skip: true, unavailable: true, note: `source unavailable — ${why}` });
+      continue;
+    }
+    if (t.golden.sdk === 'head') fs.copyFileSync(SDK, path.join(dir, 'src/vendor/studio.js'));
+    evalPath = path.join(dir, 'eval.mjs');
+  }
+  try { r = runEval(t.id, dir, evalPath); }
+  catch (e) { r = { id: t.id, ok: false, err: String(e.message).slice(0, 140) }; }
   r.archetype = t.archetype; r.sdk = t.sdk;
   results.push(r);
   console.log(`${r.ok ? '✓ PASS' : '✗ FAIL'}${r.sdk === 'head' ? ' [SDK HEAD]' : ' [as-shipped]'}${r.fun != null ? ` · FUN ${r.fun}` : ''}${r.err ? ` · ${r.err}` : ''}`);
@@ -102,6 +116,8 @@ const passed = gated.filter((r) => r.ok).length;
 const summary = { ran: new Date().toISOString(), passed, total: gated.length, skipped: results.filter((r) => r.skip).length, ok: passed === gated.length, results };
 fs.writeFileSync(path.join(WORK, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
 console.log(`\n${summary.ok ? '✓' : '✗'} ${passed}/${gated.length} gated targets pass${summary.skipped ? ` (${summary.skipped} skipped)` : ''}`);
+const unavailable = results.filter((r) => r.unavailable);
+if (unavailable.length) console.log(`  ⚠ ${unavailable.length} golden game(s) un-evaluated — ${unavailable.map((r) => r.id).join(', ')}. Set a repo secret GH_TOKEN (PAT with read access to the golden game repos) to restore cross-game coverage.`);
 
 if (!flag('--no-board')) {
   try { const { renderEvalBoard } = await import('./lib/render-board.mjs'); const out = path.join(WORK, 'eval-board.png'); await renderEvalBoard(summary, out); console.log(`  board → ${path.relative(ROOT, out)}`); }
