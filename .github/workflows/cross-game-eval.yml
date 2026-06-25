@@ -3,7 +3,14 @@
 # silently break shipped games. Optimised to the golden set (fast, ~minutes).
 #
 # Requires a repo secret `GH_TOKEN` (a PAT with read access to the golden game repos),
-# since the default GITHUB_TOKEN can't clone other private repos.
+# since the default GITHUB_TOKEN can't clone other private repos. Without it, golden
+# games that can't be cloned are SKIPPED (not failed) — see tools/eval-all.mjs.
+#
+# After an intentional engine/template restyle the visual baselines drift. Refresh them
+# from CI's own renderer: Actions → cross-game-eval → "Run workflow" with
+# rebaseline=true. That captures this run's screenshots as the new goldens and commits
+# them — baselines MUST come from CI, since a different machine renders the frame
+# slightly differently and would keep the gate red.
 name: cross-game-eval
 on:
   push:
@@ -19,6 +26,15 @@ on:
       - 'tools/eval-all.mjs'
       - 'tools/golden-games.json'
   workflow_dispatch:
+    inputs:
+      rebaseline:
+        description: 'Capture this run''s screenshots as the new golden visual baselines and commit them (run after an intentional engine/template restyle).'
+        type: boolean
+        default: false
+
+# default: read-only. The re-baseline path needs write to commit refreshed baselines.
+permissions:
+  contents: write
 
 jobs:
   golden:
@@ -40,8 +56,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: node tools/eval-all.mjs
+      # Normal runs: compare this run's screenshots against the committed baselines.
+      # Skipped on a re-baseline dispatch (where we're deliberately replacing them).
       - name: Visual QA — screenshots vs golden baselines
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.rebaseline) }}
         run: node tools/visual-qa.mjs
+      # Re-baseline (manual): accept THIS CI run's renders as the new baselines and
+      # commit them. Captured in-CI so the baseline matches the environment the gate
+      # runs in — a baseline captured elsewhere can drift against CI's renderer.
+      - name: Re-baseline visual goldens (manual dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.rebaseline }}
+        run: |
+          node tools/visual-qa.mjs --update
+          if git diff --quiet -- tools/golden-baselines; then
+            echo "no baseline changes"; exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tools/golden-baselines
+          git commit -m "ci(visual-qa): re-baseline golden screenshots from CI render"
+          git push
       - name: Upload eval board + scorecards
         if: always()
         uses: actions/upload-artifact@v4
