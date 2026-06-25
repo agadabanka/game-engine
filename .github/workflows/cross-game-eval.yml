@@ -16,6 +16,7 @@
 name: cross-game-eval
 on:
   push:
+    branches: [main]
     paths:
       - 'engine/sdk/**'
       - 'engine/game-template/**'
