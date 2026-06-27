@@ -2,13 +2,19 @@
 
 ## Repository access — fetch repos via `$GH_TOKEN`, over git (not the REST API)
 
-This environment provides a GitHub PAT in **`$GH_TOKEN`**. Use it through **git**:
+Clone IN-SCOPE repos with a **plain GitHub URL** — git is pre-configured to rewrite
+`https://github.com/` to the local git proxy (`http://local_proxy@127.0.0.1:41729/git/`),
+which injects auth. **No token in the URL.**
 
 ```bash
-# clone / fetch / ls-remote any IN-SCOPE repo with the token in the URL
-git clone  "https://x-access-token:${GH_TOKEN}@github.com/<owner>/<repo>.git" <dir>
-git -C <dir> fetch "https://x-access-token:${GH_TOKEN}@github.com/<owner>/<repo>.git"
+# canonical: the rewrite + local proxy handle auth
+git clone https://github.com/<owner>/<repo>.git <dir>
 ```
+
+Do NOT put the token in the URL (`https://x-access-token:$GH_TOKEN@github.com/...`):
+the embedded creds make git SKIP the `insteadOf` rewrite, so it goes to github.com
+through the HTTPS egress proxy instead of the local git proxy. It still works for
+in-scope repos, but it's the wrong path and muddies debugging — prefer the plain URL.
 
 Two hard rules learned the hard way:
 
@@ -31,10 +37,14 @@ Two hard rules learned the hard way:
    - Do **not** try to route around the agent proxy to reach a repo; report the blocked
      repo instead.
 
+An out-of-scope repo returns **403 from the local git proxy** (and the GitHub MCP
+returns *"Access denied… Allowed repositories: …"*) — proven across every URL form.
+No token or URL trick bypasses it; widening the environment scope is the only fix.
+
 ### Quick self-check at the start of a task that touches another repo
 ```bash
-git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/<owner>/<repo>.git" HEAD \
-  && echo "in scope" || echo "NOT in scope — add_repo or widen the environment scope"
+git ls-remote https://github.com/<owner>/<repo>.git HEAD \
+  && echo "in scope" || echo "NOT in scope — widen the environment Repository Scope"
 ```
 
 ## Git workflow

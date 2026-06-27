@@ -1,0 +1,133 @@
+% Analytics hardening — Dub features & the Rainbow Run plan
+% TeX backend (Tectonic). Build: node tools/pdf/tex-build.mjs docs/pdf/analytics-dub.tex
+% Authored from docs/ANALYTICS-DUB.md.
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=0.9in]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage[colorlinks=true,linkcolor=accent,urlcolor=accent]{hyperref}
+
+\newcommand{\doctitle}{Analytics Hardening --- Dub Features \& the Rainbow Run Plan}
+
+\definecolor{ink}{HTML}{1B1F24}
+\definecolor{accent}{HTML}{0B7285}
+\definecolor{soft}{HTML}{F1F3F5}
+\definecolor{line}{HTML}{CED4DA}
+
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{ink}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.3em}{0.4em}
+
+\pagestyle{fancy}\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0.4pt}
+\fancyfoot[L]{\small\color{ink}game-engine · analytics}
+\fancyfoot[R]{\small\thepage}
+
+\newcommand{\callout}[1]{\par\medskip\noindent
+  \colorbox{soft}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\color{ink}#1}}\par\medskip}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{3em}\tolerance=1200
+
+\title{\color{accent}\doctitle}
+\author{Engine · TeX backend}
+\date{\today}
+
+\begin{document}
+\maketitle\thispagestyle{fancy}
+
+\section{The model --- three layers, each doing its best job}
+\begin{center}\small
+\begin{tabular}{@{}P{2.3cm}P{4.2cm}P{6.6cm}@{}}
+\toprule
+Layer & Job & Owns \\
+\midrule
+\textbf{Dub} & top-of-funnel \textbf{attribution} --- which \emph{short} drove a click & link clicks, device/geo of clickers, \texttt{utm\_*} + \texttt{dub\_id} \\
+\textbf{PostHog} & the \textbf{funnel + retention} (play $\to$ engage $\to$ return) & \texttt{game\_open} $\to$ \texttt{level\_start} $\to$ \texttt{level\_complete}, cohorts, drill-in \\
+\textbf{Hub /api/track} & server-side \textbf{truth} (ad-blocker-proof) + \textbf{eval signal} & death heatmaps, completion/pacing, difficulty calibration \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\callout{\textbf{Key idea:} Dub passes \texttt{utm\_content} (the short id) + \texttt{dub\_id}
+into the game; the game threads them into \textbf{PostHog} event/person properties, so every
+funnel and retention chart can be broken down by \emph{which short} the player came from.
+PostHog is the funnel; Dub is the attribution that feeds it.}
+
+\section{Dub features --- how you'd actually use each}
+For your case: 16 free browser games, plays driven by short-form video.
+
+\begin{center}\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}P{2.2cm}P{1.4cm}P{3.7cm}P{4.7cm}P{0.9cm}@{}}
+\toprule
+Feature & Tier & What it is & How you use it & Prio. \\
+\midrule
+\textbf{Conversion tracking} & Free*/Pro & ties a click to downstream events (play, complete) & attribute \emph{plays \& completions} to a short, not just clicks & High \\
+\textbf{50K events/mo} & Pro & conversion-event volume cap & 16 games of real plays blow past Free's low cap & High \\
+\textbf{1-year retention} & Pro & data kept 365d (Free $\approx$30d) & you need \emph{months} to see which shorts retain & High \\
+\textbf{Advanced analytics} & Pro & device/geo/browser/referrer breakdown & know \emph{who \& where} plays come from & High \\
+\textbf{UTM builder} & Pro & standardize \texttt{utm\_*} + templates & clean funnel data across every short & High \\
+\textbf{Custom domain} & Free/Pro & branded \texttt{go.funstackstudios.com/x} & trust + CTR + first-party & Med \\
+\textbf{Device targeting} & Pro & route iOS/Android/desktop differently & send mobile to a touch-tuned entry & Med \\
+Tags / Folders & Pro & organize links & one folder per game, tags per platform & Med \\
+Custom previews & Pro & OG card when a link is shared & branded preview in DMs/X & Med \\
+Custom QR codes & Pro & branded QR per link & QR end-card in a short / IRL & Low \\
+A/B testing & Business & two destinations, winner by conversions & test variants once volume justifies & Later \\
+Geo targeting & Pro & region-specific destinations & only once you localize & Later \\
+Deep links & Pro & open a mobile \emph{app} from a link & N/A --- web-only, no app & --- \\
+Cloaking / expiry / password & Pro & hide / time-box / gate a link & no reason to hide the play URL & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent\footnotesize *Conversion tracking \emph{works} on Free, but with a low event cap,
+basic analytics, and $\approx$30-day retention. Pro's value is \textbf{volume + depth + retention}.\normalsize
+
+\section{Verdict on upgrading}
+\textbf{Free-first:} wire the full click $\to$ play $\to$ complete funnel and validate it
+end-to-end on Free. \textbf{Upgrade to Pro (\$30/mo)} when you hit the event cap or want
+1-year retention + advanced breakdowns + a branded short domain --- i.e.\ once the funnel is
+proven and running for real across games. A/B testing is a \emph{Business}-tier feature, not
+Pro --- don't upgrade for it yet.
+
+\section{What ``hardened'' Rainbow Run analytics looks like}
+\textbf{Attribution threading:} \texttt{Dub link} $\to$ \texttt{/go/rainbow-run?utm\_*}
+(Dub appends \texttt{dub\_id}) $\to$ game. The game reads \texttt{utm\_source/medium/content}
++ \texttt{dub\_id} on load and attaches them to \emph{every} PostHog event + the hub
+\texttt{/api/track} payload.
+
+\begin{center}\small
+\begin{tabular}{@{}P{3.0cm}P{4.0cm}P{7.0cm}@{}}
+\toprule
+Event & When & Key props \\
+\midrule
+\texttt{game\_open} & first load & utm\_source/medium/\textbf{content} (short id), dub\_id, device \\
+\texttt{level\_start} & each biome (re)load & level, biome \\
+\texttt{checkpoint} & mid-level checkpoint & level, x \\
+\texttt{coin\_collect} & pickup & level, coins, x, y \\
+\texttt{player\_death} & death & level, biome, \textbf{cause} (fall/hazard), x, y, t\_ms \\
+\texttt{level\_complete} & win & level, duration\_ms, deaths, coins \\
+\texttt{weather\_shift} & biome weather change (RR's hook) & level, weather \\
+\texttt{game\_complete} & final level done & total\_time, total\_deaths \\
+\texttt{player\_idle} / \texttt{quit} & disengage & level, x, ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{PostHog funnels you'll get:} \texttt{pageview $\to$ game\_open $\to$ level\_start
+$\to$ level\_complete}, broken down by \texttt{utm\_content} (which short converts best), plus
+retention by short. \textbf{Dub} shows clicks $\to$ conversions per short. \textbf{Hub
+/api/funnel} is the ad-blocker-proof reconciliation + feeds the game-design eval.
+
+\callout{\textbf{The one blocker:} editing the game needs write access to
+\texttt{agadabanka/rainbow-run}, which isn't in this session's scope. Add it: Claude Code web
+$\to$ this environment $\to$ Settings $\to$ Repository Scope $\to$ add
+\texttt{agadabanka/rainbow-run}. Then everything above ships in one pass.}
+
+\end{document}
