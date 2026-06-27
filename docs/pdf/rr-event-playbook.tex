@@ -1,0 +1,224 @@
+% Rainbow Run — Analytics Event Playbook (Dub + PostHog), scenario by scenario.
+% TeX backend (Tectonic). Build: node tools/pdf/tex-build.mjs docs/pdf/rr-event-playbook.tex
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=0.85in]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage[colorlinks=true,linkcolor=accent,urlcolor=accent]{hyperref}
+
+\newcommand{\doctitle}{Rainbow Run --- Analytics Event Playbook}
+
+\definecolor{ink}{HTML}{1B1F24}
+\definecolor{accent}{HTML}{0B7285}
+\definecolor{dub}{HTML}{E8590C}
+\definecolor{ph}{HTML}{6741D9}
+\definecolor{hub}{HTML}{2B8A3E}
+\definecolor{soft}{HTML}{F1F3F5}
+\definecolor{line}{HTML}{CED4DA}
+
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{ink}}{}{0em}{}
+\titlespacing*{\section}{0pt}{1.2em}{0.4em}
+\titlespacing*{\subsection}{0pt}{0.9em}{0.3em}
+
+\pagestyle{fancy}\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0.4pt}
+\fancyfoot[L]{\small\color{ink}Rainbow Run · event playbook}
+\fancyfoot[R]{\small\thepage}
+
+\newcommand{\callout}[1]{\par\smallskip\noindent
+  \colorbox{soft}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\color{ink}#1}}\par\smallskip}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{3em}\tolerance=1200
+
+% layer chips
+\newcommand{\Dub}{\textcolor{dub}{\textbf{Dub}}}
+\newcommand{\PH}{\textcolor{ph}{\textbf{PostHog}}}
+\newcommand{\Hub}{\textcolor{hub}{\textbf{Hub}}}
+
+\lstdefinestyle{json}{basicstyle=\ttfamily\scriptsize,backgroundcolor=\color{soft},
+  frame=single,rulecolor=\color{line},breaklines=true,columns=fullflexible,
+  xleftmargin=0.5em,framexleftmargin=0.5em,aboveskip=4pt,belowskip=4pt}
+
+\title{\color{accent}\doctitle\\[2pt]\large\color{ink}\normalfont What \textcolor{dub}{Dub} \& \textcolor{ph}{PostHog} record, scenario by scenario}
+\author{Engine · TeX backend}
+\date{\today}
+
+\begin{document}
+\maketitle\thispagestyle{fancy}
+
+\section{How to read this}
+Every player interaction leaves a trail across \emph{three} layers. This playbook walks real
+Rainbow Run journeys and shows exactly what each layer captures at each step --- so you know what
+data you'll have to answer ``what's working?''.
+
+\begin{center}\small
+\begin{tabular}{@{}P{2.4cm}P{5.0cm}P{7.1cm}@{}}
+\toprule
+Layer & Records & Answers \\
+\midrule
+\Dub & the \textbf{click} on a short's link --- device, geo, referrer, \texttt{dub\_id} & which \emph{short} drives traffic; (phase 2) click$\to$conversion \\
+\PH & the \textbf{in-game funnel} --- every event below, with \texttt{utm\_*}/\texttt{dub\_id} attached, + session replay & where players drop, who converts, who returns \\
+\Hub \texttt{/api/track} & a \textbf{server-side count} of the same events (ad-blocker-proof) & the true denominator; the game-design eval signal \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\callout{\textbf{The thread that ties it together:} a short's Dub link lands on
+\texttt{/go/rainbow-run?utm\_content=L1-sunbeam-meadow} (Dub appends \texttt{dub\_id}); the game
+reads those off the URL and stamps them onto \emph{every} \PH{} event and \Hub{} payload. So every
+chart can be sliced by \textbf{which short the player came from}.}
+
+\section{The event vocabulary (grounded in the real game)}
+Rainbow Run is 5 weather biomes --- \emph{Sunbeam Meadow, Drizzle Dunes, Rainbow Bridge,
+Frostspark Peaks, Thunder Heights} --- played by \emph{Labooboo \& Siya}. The trackable signals:
+
+\begin{center}\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}P{2.7cm}P{4.6cm}P{6.7cm}@{}}
+\toprule
+Event & Fires when & Properties (the interesting ones) \\
+\midrule
+\texttt{game\_open} & first load & utm\_source/medium/\textbf{content}, dub\_id, \$device\_type \\
+\texttt{level\_start} & a biome (re)loads & level (1--5), \textbf{biome} \\
+\texttt{coin\_collect} & a coin is grabbed & level, coins\_so\_far, x, y \\
+\texttt{weather\_shift} & biome weather cycles (sun$\to$rainbow, $\to$storm \ldots) & level, weather \\
+\texttt{player\_death} & a death & level, biome, \textbf{cause} (fall/lagoon/enemy/crumble/ice), x \\
+\texttt{level\_complete} & the goal is reached & level, duration\_ms, deaths, coins \\
+\texttt{game\_complete} & Thunder Heights cleared & total\_time\_ms, total\_deaths \\
+\texttt{player\_idle} / \texttt{player\_quit} & no input $>$Ns / tab closed & level, x, ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Scenarios --- how it actually plays out}
+
+% ---------- Scenario 1 ----------
+\subsection{1 · The full conversion (the happy path)}
+A player on their phone taps the \emph{Thunder Heights} YouTube Short, plays from the start, and
+finishes all five biomes.
+
+\newcommand{\step}[2]{\item[\textcolor{#1}{$\bullet$}]}
+\begin{enumerate}[leftmargin=2.2em,itemsep=1pt,topsep=2pt]
+  \item[\textcolor{dub}{1.}] taps \texttt{dub.sh/PPDuC2r} $\to$ \Dub{} logs a \textbf{click} (device=Mobile, geo, ref=youtube, mints \texttt{dub\_id})
+  \item[\textcolor{hub}{2.}] redirect hits \texttt{/go/rainbow-run?utm\_content=L5-thunder-heights} $\to$ \Hub{} logs \texttt{click rainbow-run|youtube}
+  \item[\textcolor{ph}{3.}] game loads $\to$ \PH{} \texttt{\$pageview}, then \texttt{game\_open} (carrying utm + dub\_id + device)
+  \item[\textcolor{ph}{4.}] \texttt{level\_start} L1 Sunbeam Meadow $\to$ 7$\times$ \texttt{coin\_collect} $\to$ \texttt{weather\_shift} (sun$\to$rainbow) $\to$ \texttt{level\_complete} (0 deaths)
+  \item[\textcolor{ph}{5.}] L2$\to$L4 \ldots one \texttt{player\_death} (cause=\texttt{crumble}) on Frostspark Peaks, respawns, \texttt{level\_complete}
+  \item[\textcolor{ph}{6.}] clears L5 $\to$ \texttt{game\_complete} (total\_deaths=1). \Hub{} mirrors every event server-side.
+\end{enumerate}
+\noindent What \PH{} stores for step 3 (every later event inherits the registered attribution):
+\begin{lstlisting}[style=json]
+{ "event": "game_open",
+  "properties": { "utm_source":"youtube", "utm_medium":"short",
+    "utm_content":"L5-thunder-heights", "dub_id":"pPDuC2r_x9",
+    "$device_type":"Mobile", "$current_url":".../?utm_content=L5-thunder-heights" } }
+\end{lstlisting}
+\noindent and the matching \Hub{} call (ad-blocker-proof, same event, server-side):
+\begin{lstlisting}[style=json]
+POST /api/track  {"game":"rainbow-run","event":"game_open","source":"youtube"}
+\end{lstlisting}
+\callout{\textbf{This player counts as a full conversion under \texttt{utm\_content=L5}} --- they
+land in the funnel's bottom step \emph{and} in ``completion rate by short'' for the Thunder
+Heights short.}
+
+% ---------- Scenario 2 ----------
+\subsection{2 · The top-of-funnel bounce (click, no play)}
+Taps the short, the page opens, but they close the tab before moving.
+\begin{itemize}[leftmargin=2.2em,itemsep=1pt,topsep=2pt]
+  \item \Dub{} \textbf{click} ✓, \Hub{} \texttt{click} ✓ --- but \PH{} sees only \texttt{\$pageview} + maybe \texttt{game\_open}, then \texttt{\$pageleave}. No \texttt{level\_start}.
+\end{itemize}
+\textbf{What it tells you:} the funnel drops hard at \texttt{game\_open $\to$ level\_start}. If one
+short bounces far worse than others (slice by \texttt{utm\_content}), the \emph{landing} is the
+problem --- slow load, wrong expectation set by the short --- not the game.
+
+% ---------- Scenario 3 ----------
+\subsection{3 · The struggler (a difficulty signal)}
+Comes from the \emph{Drizzle Dunes} short, hits the ice + conveyor stretch, dies four times, quits.
+\begin{lstlisting}[style=json]
+player_death { level:2, biome:"Drizzle Dunes", cause:"ice",   x:520 }
+player_death { level:2, biome:"Drizzle Dunes", cause:"fall",  x:540 }   // x4, clustered at the belt
+player_idle  { level:2, x:300, ms:9000 }
+player_quit  { level:2, x:300 }                                          // no level_complete for L2
+\end{lstlisting}
+\textbf{What it tells you:} \texttt{deaths-by-level} shows a spike on L2 at \texttt{x$\approx$520}
+(the ice belt). Open the \PH{} \textbf{session replay} of that play to watch it; the death cluster
+is the difficulty heatmap. This is the loop back into game design --- widen the belt, slow the
+conveyor --- and the same event feeds the engine's reach/difficulty eval.
+
+% ---------- Scenario 4 ----------
+\subsection{4 · The returner (retention by short)}
+Day 1: arrives from the \emph{Sunbeam Meadow} short, plays L1--L2, leaves. Day 3: opens the game
+directly (\texttt{utm\_source=direct}) and plays L3.
+\begin{itemize}[leftmargin=2.2em,itemsep=1pt,topsep=2pt]
+  \item \PH{} ties both visits to one \texttt{distinct\_id}; the day-1 \texttt{utm\_content} stays on the person as a property.
+  \item \PH{} \textbf{Retention} shows a Day-3 return, attributable to the \emph{Sunbeam Meadow} short.
+\end{itemize}
+\textbf{What it tells you:} which shorts bring \emph{sticky} players, not just clicks. A short with
+fewer but higher-retention plays can beat a viral-but-bouncy one.
+
+% ---------- Scenario 5 ----------
+\subsection{5 · Mobile vs desktop (a device gap)}
+A TikTok short sends mostly mobile traffic; those players drop at \texttt{level\_start} far more
+than desktop.
+\begin{center}\footnotesize
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+device & game\_open & level\_complete & completion \% \\
+\midrule
+Desktop & 120 & 54 & 45.0 \\
+Mobile  & 300 & 39 & 13.0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{What it tells you:} \texttt{convert-by-device} exposes a touch-controls problem. Fixes:
+tune the on-screen controls, or use \Dub{} \emph{device targeting} to route mobile to a
+touch-optimized entry.
+
+% ---------- Scenario 6 ----------
+\subsection{6 · The ad-blocked player (why the Hub backstop exists)}
+A player on uBlock: the \PH{} \texttt{phc\_} ingestion request is blocked, so \emph{zero} client
+events arrive --- but the same-origin \Hub{} \texttt{/api/track} calls still land.
+\begin{center}\footnotesize
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & \PH{} (client) & \Hub{} (server) \\
+\midrule
+plays counted & 70 & 100 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{What it tells you:} reconciling the two sizes your blind spot (here $\approx$30\% of
+short-form, mobile-heavy traffic). \PH{} is your rich funnel; \Hub{} is the honest denominator.
+
+\section{What you can now answer (scenario $\to$ insight $\to$ query)}
+\begin{center}\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}P{3.0cm}P{5.2cm}P{5.8cm}@{}}
+\toprule
+Question & PostHog surface & HogQL (\texttt{scripts/posthog-query.mjs}) \\
+\midrule
+Which short converts best? & Funnel, breakdown \texttt{utm\_content} & \texttt{--canned funnel-by-short} \\
+Where do players die? & Trends/Paths + session replay & \texttt{--canned deaths-by-level} \\
+Mobile vs desktop? & Funnel, breakdown \$device\_type & \texttt{--canned convert-by-device} \\
+Which short retains? & Retention, breakdown \texttt{utm\_content} & persons + first-touch query \\
+Who converts (clusters)? & Funnel \textbf{correlation} + behavioral cohorts & \texttt{GROUP BY} on segments \\
+Ad-block blind spot? & --- (compare to Hub) & hub \texttt{/api/funnel} vs PH counts \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\callout{\textbf{Status:} the read path is live (the \texttt{posthog-query.mjs} tool + your personal
+key already query project 484401). The events above start flowing the moment Rainbow Run is
+instrumented (see \texttt{docs/RAINBOW-RUN-ANALYTICS-BRIEF.md}) --- then every scenario here becomes
+a real chart.}
+
+\end{document}
