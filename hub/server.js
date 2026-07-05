@@ -274,7 +274,7 @@ app.get('/v', async (req, res) => {
 // register / update a game (used by the new-game scaffolder + the dashboard "add" form)
 app.post('/api/games', async (req, res) => {
   if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
-  const { name, repo = null, url = null, tagline = null, hero = null, verb = null, shorts = null, shortsPlaylist = null } = req.body || {};
+  const { name, repo = null, url = null, tagline = null, hero = null, verb = null, shorts = null, shortsPlaylist = null, screenshots = null } = req.body || {};
   if (!name) return res.status(400).json({ error: 'name required' });
   const games = await getGames();
   const id = req.body?.id || slug(name);
@@ -283,6 +283,7 @@ app.post('/api/games', async (req, res) => {
   // optional shorts (vertical feed) — lets a game register its hosted shorts via the API/store,
   // so the mobile feed works WITHOUT a hub/games.json edit. Only overwrite when provided.
   if (Array.isArray(shorts)) entry.shorts = shorts;
+  if (Array.isArray(screenshots)) entry.screenshots = screenshots;   // storefront thumbnails via the API (no games.json edit)
   if (shortsPlaylist) entry.shortsPlaylist = shortsPlaylist;
   if (existing) Object.assign(existing, entry); else games.push(entry);
   await store.set('games', games);

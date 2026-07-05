@@ -172,6 +172,10 @@ export async function snapshotGame(game, { ghToken } = {}) {
     if (game.meta.playlist && !out.meta.playlist) out.meta.playlist = game.meta.playlist;
   }
 
+  // storefront thumbnails: prefer the registry entry, else the game's own GAME_META.screenshots
+  // (so a game that lists shots in its meta shows a card image WITHOUT a registry/games.json edit).
+  if ((!out.screenshots || !out.screenshots.length) && Array.isArray(out.meta?.screenshots)) out.screenshots = out.meta.screenshots;
+
   out.videos = normalizeVideos(out.meta);   // the uploaded AI-playthrough gallery
   // a single "watch" link: the game's own meta.playlist if it has a real YouTube
   // playlist, else the montage video (the watch-it-all-in-one), else the first
