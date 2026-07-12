@@ -189,9 +189,17 @@ async function runAgent(job, cwd) {
   if (!query) throw new Error('agent sdk unavailable: ' + _sdkErr);
   const env = { ...process.env };
   delete env.GH_TOKEN; delete env.NOTES_GH_TOKEN; delete env.ADMIN_TOKEN;   // the agent edits code; it never talks to GitHub or pushes
+  // Railway containers run as root, and the bundled CLI refuses
+  // bypassPermissions as root unless it believes it's sandboxed — which this
+  // is: an ephemeral container on a throwaway clone. Also give it a writable
+  // config dir so first-run setup can't trip on the image's HOME.
+  env.IS_SANDBOX = '1';
+  env.CLAUDE_CONFIG_DIR = path.join(os.tmpdir(), 'claude-config');
+  try { fs.mkdirSync(env.CLAUDE_CONFIG_DIR, { recursive: true }); } catch {}
   const abort = new AbortController();
   const watchdog = setTimeout(() => abort.abort(), TIMEOUT_MS);
   let result = null;
+  let stderrTail = '';
   try {
     for await (const msg of query({
       prompt: agentPrompt(job),
@@ -205,12 +213,15 @@ async function runAgent(job, cwd) {
         settingSources: ['project'],   // load the game repo's CLAUDE.md — same context the offline loop gets
         env,
         abortController: abort,
+        stderr: (data) => { stderrTail = (stderrTail + data).slice(-600); },   // keep the tail — it's the only clue when the CLI dies at boot
       },
     })) {
       if (msg.type === 'result') { result = msg; break; }
     }
+  } catch (e) {
+    throw new Error(String(e && e.message || e).slice(0, 160) + (stderrTail ? ' | stderr: ' + stderrTail.slice(-240) : ''));
   } finally { clearTimeout(watchdog); }
-  if (!result) throw new Error('agent ended without a result' + (abort.signal.aborted ? ' (timed out)' : ''));
+  if (!result) throw new Error('agent ended without a result' + (abort.signal.aborted ? ' (timed out)' : '') + (stderrTail ? ' | stderr: ' + stderrTail.slice(-240) : ''));
   if (result.subtype !== 'success') throw new Error('agent run failed: ' + result.subtype);
   job.costUsd = Number(result.total_cost_usd || 0) || undefined;
   return result;
