@@ -228,6 +228,31 @@
   .ovfbar{ width:18px; height:38px; margin:0 auto; background:#0e1730; border:1px solid var(--line); border-radius:3px; display:flex; align-items:flex-end; overflow:hidden; }
   .ovffill{ width:100%; background:linear-gradient(180deg,#62b3ff,#3a7dff); }
   .ovfn{ font-size:10px; color:var(--dim); text-align:center; margin-top:2px; }
+
+  /* ── online mode panel ── */
+  .online{ background:linear-gradient(135deg,#121a33,#0d1428); border:1px solid var(--line); border-radius:14px; padding:12px 16px; margin:14px 0 4px; }
+  .onhead{ display:flex; align-items:center; gap:10px; }
+  .onsub{ color:var(--dim); font-size:12.5px; }
+  .ondot{ width:10px; height:10px; border-radius:50%; background:#5b6b86; box-shadow:0 0 8px rgba(0,0,0,.4); flex:none; }
+  .ondot.ok{ background:var(--green); box-shadow:0 0 10px rgba(95,214,110,.7); }
+  .ondot.busy{ background:var(--orange); box-shadow:0 0 10px rgba(255,177,77,.7); animation:onpulse 1.2s ease-in-out infinite; }
+  .ondot.off{ background:#5b6b86; }
+  @keyframes onpulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+  .onswitch{ display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+  .onswitch .onlbl{ font-size:12px; color:var(--dim); letter-spacing:.06em; text-transform:uppercase; font-weight:700; }
+  .onswitch input{ display:none; }
+  .ontrack{ width:44px; height:24px; border-radius:99px; background:#1b2747; border:1px solid var(--line); position:relative; transition:background .2s; flex:none; }
+  .onknob{ position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#8fa3c8; transition:left .2s, background .2s; }
+  .onswitch input:checked + .ontrack{ background:rgba(95,214,110,.35); }
+  .onswitch input:checked + .ontrack .onknob{ left:22px; background:var(--green); }
+  .onact{ font-size:12.5px; color:#cfe0ff; margin-top:8px; display:flex; flex-wrap:wrap; gap:6px 14px; }
+  .onact .muted{ margin:0 }
+  .onjob{ background:#0e1730; border:1px solid var(--line); border-radius:99px; padding:3px 12px; }
+  .onjob.run{ border-color:rgba(255,177,77,.5); }
+  .onjob.ok{ border-color:rgba(95,214,110,.4); }
+  .onjob.bad{ border-color:rgba(255,110,110,.45); }
+  .fixbtn{ display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#2b3c78,#1d2a55); color:#fff; border:1px solid rgba(122,160,255,.45); border-radius:9px; padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .fixbtn:disabled{ opacity:.5; cursor:default; }
 </style>
 </head>
 <body>
@@ -242,6 +267,20 @@
 </header>
 <div class="wrap">
   <div class="totals" id="totals"></div>
+  <div class="online" id="onlinePanel">
+    <div class="onhead">
+      <span class="ondot" id="onDot"></span>
+      <b>🤖 Online mode</b>
+      <span class="onsub" id="onSub">checking…</span>
+      <span class="sp"></span>
+      <label class="onswitch" title="ON: the hub watches every game for open in-game notes and fixes them automatically. OFF: runs only when you press a game's Fix button.">
+        <span class="onlbl">auto-fix</span>
+        <input type="checkbox" id="onAuto" />
+        <span class="ontrack"><span class="onknob"></span></span>
+      </label>
+    </div>
+    <div class="onact" id="onAct"></div>
+  </div>
   <h2>Games on the engine</h2>
   <div class="cards" id="cards"><p class="muted">loading…</p></div>
   <h2>Notes triage — newest across all games</h2>
@@ -455,7 +494,9 @@ function notesLoop(g){
     <div class="nmeta">${esc(n.kind || 'note')}${n.level != null ? ' · L' + n.level : ''} · ${esc(n.status)} · ${ago(n.created_at)}
       ${n.issueUrl ? `<a href="${esc(n.issueUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">issue #${esc(n.issueNumber)} ↗</a>` : ''}</div>
   </div>`).join('');
-  return `<div class="sect"><h4>📝 Notes → issues → fixes${head}</h4>
+  const fix = g.repo ? `<div style="margin:4px 0 10px"><button class="fixbtn" id="fix-${esc(g.id)}" onclick="event.stopPropagation();runOnline('${esc(g.id)}')" ${iss.open ? '' : 'disabled title="no open notes"'}>🤖 Fix open notes now</button>
+    <span class="muted" style="font-size:12px;margin-left:8px" id="fixmsg-${esc(g.id)}"></span></div>` : '';
+  return `<div class="sect"><h4>📝 Notes → issues → fixes${head}</h4>${fix}
     ${rows ? `<div class="nlist">${rows}</div>` : '<p class="muted">No playtest notes yet — in the live game, ⏸ Pause → 📝 drops a note that files a GitHub issue automatically.</p>'}</div>`;
 }
 function shotsBlock(g){
@@ -690,8 +731,59 @@ $('frm').addEventListener('submit', async (e) => {
   await fetch('/api/games', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   setTimeout(() => load(true), 400);
 });
+// ── ONLINE MODE: the hub's live-dev agent (docs/ONLINE-MODE.md) ──
+let ONLINE = null;
+function onlineJobChip(j){
+  const cls = j.status === 'deployed' ? 'ok' : (j.status === 'failed' ? 'bad' : 'run');
+  const icon = j.status === 'deployed' ? '✅' : (j.status === 'failed' ? '✗' : '🤖');
+  const what = j.status === 'running' || j.status === 'merging'
+    ? `${esc(j.phase)} — ${esc((j.issues.find((i) => i.state === 'fixing') || j.issues[0] || {}).title || '').slice(0, 60)}`
+    : j.status === 'deployed' ? `${j.issues.filter((i) => i.state === 'fixed').length} note(s) fixed${j.mergeSha ? ' · ' + esc(j.mergeSha) : ''}`
+    : j.status === 'failed' ? esc((j.error || 'failed').slice(0, 70)) : esc(j.status);
+  return `<span class="onjob ${cls}">${icon} <b>${esc(j.game)}</b> · ${what}</span>`;
+}
+async function pollOnline(){
+  const d = await fetch('/api/online/status').then((r) => r.json()).catch(() => null);
+  if (!d) return;
+  ONLINE = d;
+  const dot = $('onDot'), sub = $('onSub'), act = $('onAct'), sw = $('onAuto');
+  sw.checked = !!d.auto;
+  if (!d.enabled) {
+    dot.className = 'ondot off';
+    sub.textContent = 'unavailable — ' + (d.reasons || []).join('; ');
+    act.innerHTML = '';
+    return;
+  }
+  dot.className = 'ondot ' + (d.active ? 'busy' : 'ok');
+  sub.textContent = d.active
+    ? `working on ${d.active.game} (${d.active.phase})`
+    : (d.auto ? `watching for new notes (auto${d.auto === '*' ? ' · all games' : ' · ' + d.auto}) · ${d.model}` : `ready — flip auto-fix on, or use a game's Fix button · ${d.model}`);
+  const chips = [];
+  if (d.active) chips.push(onlineJobChip(d.active));
+  for (const j of (d.queue || [])) chips.push(`<span class="onjob">⏳ queued · <b>${esc(j.game)}</b></span>`);
+  for (const j of (d.jobs || []).slice(0, 3)) chips.push(onlineJobChip(j));
+  act.innerHTML = chips.join('') || '<span class="muted">no runs yet — leave a note in a game, then fix it from its card.</span>';
+}
+$('onAuto').addEventListener('change', async (e) => {
+  const on = e.target.checked;
+  await fetch('/api/online/auto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ auto: on ? '*' : '' }) }).catch(() => {});
+  pollOnline();
+});
+window.runOnline = async function (id) {
+  const btn = $('fix-' + id), msg = $('fixmsg-' + id);
+  if (btn) btn.disabled = true;
+  if (msg) msg.textContent = 'queuing…';
+  const r = await fetch('/api/online/' + encodeURIComponent(id) + '/run', { method: 'POST' }).then((x) => x.json()).catch(() => null);
+  if (msg) msg.textContent = r && r.ok ? '🤖 queued — watch the Online mode panel (and the game itself)'
+    : 'could not queue: ' + (r ? (r.error + (r.reasons ? ' — ' + r.reasons.join('; ') : '')) : 'network error');
+  if (btn && !(r && r.ok)) btn.disabled = false;
+  pollOnline();
+};
+
 load();
 setInterval(() => load(false), 90_000);
+pollOnline();
+setInterval(pollOnline, 15_000);
 </script>
 </body>
 </html>

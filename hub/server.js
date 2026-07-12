@@ -325,6 +325,12 @@ app.post('/api/online/:id/run', async (req, res) => {
   try { res.json(await online.enqueue(req.params.id)); }
   catch (e) { console.error('online run', e); res.status(500).json({ ok: false, error: String(e.message).slice(0, 300) }); }
 });
+// the dashboard's on/off switch: '' = off · '*' = all games · 'a,b' = those ids
+app.post('/api/online/auto', async (req, res) => {
+  if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
+  try { res.json({ ok: true, auto: await online.setAuto(String((req.body || {}).auto ?? '')) }); }
+  catch (e) { res.status(500).json({ ok: false, error: String(e.message).slice(0, 200) }); }
+});
 
 // ── Studio IDE ───────────────────────────────────────────────────────────────
 // The IDE composes a high-fidelity SUGGESTION and submits it as a NOTE; the same
