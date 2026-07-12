@@ -736,10 +736,11 @@ let ONLINE = null;
 function onlineJobChip(j){
   const cls = j.status === 'deployed' ? 'ok' : (j.status === 'failed' ? 'bad' : 'run');
   const icon = j.status === 'deployed' ? '✅' : (j.status === 'failed' ? '✗' : '🤖');
+  const when = j.finishedAt ? ' · ' + ago(j.finishedAt) : '';
   const what = j.status === 'running' || j.status === 'merging'
     ? `${esc(j.phase)} — ${esc((j.issues.find((i) => i.state === 'fixing') || j.issues[0] || {}).title || '').slice(0, 60)}`
-    : j.status === 'deployed' ? `${j.issues.filter((i) => i.state === 'fixed').length} note(s) fixed${j.mergeSha ? ' · ' + esc(j.mergeSha) : ''}`
-    : j.status === 'failed' ? esc((j.error || 'failed').slice(0, 70)) : esc(j.status);
+    : j.status === 'deployed' ? `${j.issues.filter((i) => i.state === 'fixed').length} note(s) fixed${j.mergeSha ? ' · ' + esc(j.mergeSha) : ''}${when}`
+    : j.status === 'failed' ? esc((j.error || 'failed').slice(0, 70)) + when : esc(j.status);
   return `<span class="onjob ${cls}">${icon} <b>${esc(j.game)}</b> · ${what}</span>`;
 }
 async function pollOnline(){
