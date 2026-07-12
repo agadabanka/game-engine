@@ -77,6 +77,16 @@ const state = {
   running: false,   // runner loop busy
 };
 let _getGames = async () => [];
+// auto mode is a RUNTIME setting (the dashboard's on/off switch), persisted in
+// the store; the ONLINE_AUTO env var only seeds the default on first boot.
+// '' = off · '*' = every game with a repo · 'a,b' = just those game ids.
+let _auto = '';
+export function getAuto() { return _auto; }
+export async function setAuto(v) {
+  _auto = typeof v === 'string' ? v.trim() : '';
+  try { await store.set('online:auto', _auto); } catch (e) { console.error('[online] persist auto', e.message); }
+  return _auto;
+}
 
 export function reasons() {
   const out = [];
@@ -322,6 +332,7 @@ export function status(gameId) {
     enabled: enabled(),
     reasons: enabled() ? undefined : reasons(),
     model: MODEL,
+    auto: _auto,
     active: (!gameId || (state.active && state.active.game === gameId)) ? publicJob(state.active) : null,
     queue: filt(state.queue).map(publicJob),
     jobs: filt(state.jobs).slice(0, 12).map(publicJob),
@@ -331,21 +342,23 @@ export function status(gameId) {
 export async function init({ getGames }) {
   _getGames = getGames;
   try { state.jobs = (await store.get(HISTORY_KEY, [])) || []; } catch {}
+  try {
+    const saved = await store.get('online:auto', null);
+    _auto = saved !== null ? String(saved) : AUTO;   // env seeds the default; the switch owns it after that
+  } catch { _auto = AUTO; }
   hasGit();
-  if (AUTO) {
-    const tick = async () => {
-      if (!enabled() || state.active || state.queue.length) return;
-      try {
-        const games = (await _getGames()).filter((g) => g.repo && (AUTO === '*' || AUTO.split(',').map((s) => s.trim()).includes(g.id)));
-        for (const g of games) {
-          const r = await enqueue(g.id);
-          if (r.ok) { console.log('[online] auto-enqueued', g.id); break; }   // one at a time
-        }
-      } catch (e) { console.error('[online] auto poll', e.message); }
-    };
-    setInterval(tick, POLL_MS);
-    setTimeout(tick, 30_000);
-    console.log('[online] auto mode on for:', AUTO, 'every', POLL_MS / 1000, 's');
-  }
-  console.log('[online] ready —', enabled() ? 'enabled' : 'disabled (' + reasons().join('; ') + ')');
+  // the auto poller always runs; whether it *acts* is the runtime switch (_auto)
+  const tick = async () => {
+    if (!_auto || !enabled() || state.active || state.queue.length) return;
+    try {
+      const games = (await _getGames()).filter((g) => g.repo && (_auto === '*' || _auto.split(',').map((s) => s.trim()).includes(g.id)));
+      for (const g of games) {
+        const r = await enqueue(g.id);
+        if (r.ok) { console.log('[online] auto-enqueued', g.id); break; }   // one at a time
+      }
+    } catch (e) { console.error('[online] auto poll', e.message); }
+  };
+  setInterval(tick, POLL_MS);
+  setTimeout(tick, 30_000);
+  console.log('[online] ready —', enabled() ? 'enabled' : 'disabled (' + reasons().join('; ') + ')', '· auto:', _auto || 'off');
 }
