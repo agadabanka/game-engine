@@ -116,18 +116,25 @@ async function gh(pathname, init) {
 }
 
 // Open note issues across all configured labels (labels param is AND on the
-// API, so one request per label, deduped by number, oldest first).
+// API, so one request per label, deduped by number, oldest first). Fetch
+// errors are COLLECTED, not swallowed — a token/scope problem must be visible
+// in /queue and the logs, or "no notes" and "can't see the repo" look identical.
 export async function openNotes(repo) {
   const byN = new Map();
+  const errors = [];
   for (const label of LABELS) {
     let list = [];
-    try { list = await gh(`/repos/${repo}/issues?state=open&labels=${encodeURIComponent(label)}&per_page=50&sort=created&direction=asc`); } catch { continue; }
+    try { list = await gh(`/repos/${repo}/issues?state=open&labels=${encodeURIComponent(label)}&per_page=50&sort=created&direction=asc`); }
+    catch (e) { errors.push(String(e.message).slice(0, 160)); continue; }
     for (const is of Array.isArray(list) ? list : []) {
       if (is.pull_request || !is.number) continue;
       byN.set(is.number, { number: is.number, title: is.title || '', body: is.body || '', url: is.html_url, created_at: is.created_at });
     }
   }
-  return [...byN.values()].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  if (errors.length) console.error('[online] openNotes', repo, '—', errors[0]);
+  const notes = [...byN.values()].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  notes.errors = errors.length ? [...new Set(errors)] : undefined;   // carried on the array; JSON drops it unless a caller lifts it
+  return notes;
 }
 
 // ── shell helper with timeout ──

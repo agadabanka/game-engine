@@ -318,8 +318,10 @@ app.options('/api/online/:id/queue', onlineCors, (_req, res) => res.end());
 app.get('/api/online/:id/queue', onlineCors, async (req, res) => {
   const game = (await getGames()).find((g) => g.id === req.params.id);
   if (!game || !game.repo) return res.status(404).json({ error: 'unknown-game-or-no-repo' });
-  try { res.json({ game: game.id, live: online.isLive(game.id), notes: await online.openNotes(game.repo) }); }
-  catch (e) { res.status(502).json({ error: String(e.message).slice(0, 200) }); }
+  try {
+    const notes = await online.openNotes(game.repo);
+    res.json({ game: game.id, live: online.isLive(game.id), notes, errors: notes.errors });
+  } catch (e) { res.status(502).json({ error: String(e.message).slice(0, 200) }); }
 });
 // the IN-GAME live switch: on → join the auto set AND start on open notes right
 // away; off → leave the auto set (the run in flight, if any, completes). CORS-
