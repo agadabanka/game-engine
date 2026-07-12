@@ -1,5 +1,23 @@
 [
   {
+    "id": "rainbow-run",
+    "name": "Rainbow Run",
+    "repo": "agadabanka/rainbow-run",
+    "url": "https://rainbow-run-production.up.railway.app",
+    "tagline": "Run the rainbows with Labooboo & Siya — the weather shifts as you go.",
+    "hero": "Labooboo",
+    "verb": "run · jump"
+  },
+  {
+    "id": "jenga",
+    "name": "Jenga",
+    "repo": "agadabanka/jenga",
+    "url": "https://jenga-production.up.railway.app",
+    "tagline": "Pull, stack, and don't let it topple — cartoon 3D Jenga.",
+    "hero": "a wobbly cartoon tower",
+    "verb": "pull · stack · balance"
+  },
+  {
     "id": "the-platformer",
     "name": "the-platformer",
     "repo": "agadabanka/the-platformer",

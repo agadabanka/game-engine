@@ -16,6 +16,7 @@ import { spawn } from 'node:child_process';
 import * as store from './lib/store.js';
 import { snapshotAll } from './lib/aggregate.js';
 import { analyzeAll } from './lib/analytics.js';
+import * as online from './lib/online.js';
 import { generateImage, geminiConfigured } from '../scripts/gemini.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -299,6 +300,32 @@ app.delete('/api/games/:id', async (req, res) => {
   res.json({ ok: true, count: games.length });
 });
 
+// ── ONLINE MODE · live in-game evolution ─────────────────────────────────────
+// POST /api/online/:id/run   (admin) queue an agent run: fix the game's open
+//                            in-game-note issues, merge to main, Railway deploys.
+// GET  /api/online/status    what's running / recently ran. CORS-open — game
+//                            clients poll it to show "🤖 fixing: <note>" toasts
+//                            (the vendored update-shell.js does this).
+// GET  /api/online/:id/queue the game's open note issues (what a run would take).
+// Worker + config docs: hub/lib/online.js.
+const onlineCors = (_req, res, next) => { res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' }); next(); };
+app.options('/api/online/status', onlineCors, (_req, res) => res.end());
+app.get('/api/online/status', onlineCors, (req, res) => {
+  try { res.json(online.status(req.query.game ? String(req.query.game) : null)); }
+  catch (e) { console.error('online status', e); res.json({ enabled: false, active: null, queue: [], jobs: [], error: String(e).slice(0, 200) }); }
+});
+app.get('/api/online/:id/queue', async (req, res) => {
+  const game = (await getGames()).find((g) => g.id === req.params.id);
+  if (!game || !game.repo) return res.status(404).json({ error: 'unknown-game-or-no-repo' });
+  try { res.json({ game: game.id, notes: await online.openNotes(game.repo) }); }
+  catch (e) { res.status(502).json({ error: String(e.message).slice(0, 200) }); }
+});
+app.post('/api/online/:id/run', async (req, res) => {
+  if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
+  try { res.json(await online.enqueue(req.params.id)); }
+  catch (e) { console.error('online run', e); res.status(500).json({ ok: false, error: String(e.message).slice(0, 300) }); }
+});
+
 // ── Studio IDE ───────────────────────────────────────────────────────────────
 // The IDE composes a high-fidelity SUGGESTION and submits it as a NOTE; the same
 // notes → issues → fixes loop HANDLES it. The hub is the IDE's host:
@@ -513,4 +540,5 @@ app.delete('/api/ide/assets/:id/variant/:vid', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`game-engine hub on :${PORT}`);
   dashboard(true).catch(() => {});   // warm the cache on boot
+  online.init({ getGames }).catch((e) => console.error('online init', e));
 });

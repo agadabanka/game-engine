@@ -60,12 +60,17 @@ async function diaryFromGitHub(repo, token) {
 async function playtestIssues(repo, token) {
   const headers = { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `token ${token}` } : {}) };
   const byNote = new Map();   // note-id → { number, url, state, title }
+  const seen = new Set();
   let open = 0, closed = 0;
-  const raw = await fetchText(`https://api.github.com/repos/${repo}/issues?state=all&labels=playtest-note&per_page=100`, headers);
-  if (raw) {
+  // games label their note issues differently (older tools: playtest-note; the
+  // live servers: in-game-note) — pull both so the hub counts the whole loop.
+  for (const label of ['playtest-note', 'in-game-note']) {
+    const raw = await fetchText(`https://api.github.com/repos/${repo}/issues?state=all&labels=${label}&per_page=100`, headers);
+    if (!raw) continue;
     try {
       for (const iss of JSON.parse(raw)) {
-        if (iss.pull_request) continue;               // issues only
+        if (iss.pull_request || seen.has(iss.number)) continue;   // issues only, deduped across labels
+        seen.add(iss.number);
         if (iss.state === 'closed') closed++; else open++;
         const m = /note-id:\s*([a-z0-9-]+)/i.exec(iss.body || '');
         if (m) byNote.set(m[1], { number: iss.number, url: iss.html_url, state: iss.state, title: iss.title });
