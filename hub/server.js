@@ -314,11 +314,27 @@ app.get('/api/online/status', onlineCors, (req, res) => {
   try { res.json(online.status(req.query.game ? String(req.query.game) : null)); }
   catch (e) { console.error('online status', e); res.json({ enabled: false, active: null, queue: [], jobs: [], error: String(e).slice(0, 200) }); }
 });
-app.get('/api/online/:id/queue', async (req, res) => {
+app.options('/api/online/:id/queue', onlineCors, (_req, res) => res.end());
+app.get('/api/online/:id/queue', onlineCors, async (req, res) => {
   const game = (await getGames()).find((g) => g.id === req.params.id);
   if (!game || !game.repo) return res.status(404).json({ error: 'unknown-game-or-no-repo' });
-  try { res.json({ game: game.id, notes: await online.openNotes(game.repo) }); }
+  try { res.json({ game: game.id, live: online.isLive(game.id), notes: await online.openNotes(game.repo) }); }
   catch (e) { res.status(502).json({ error: String(e.message).slice(0, 200) }); }
+});
+// the IN-GAME live switch: on → join the auto set AND start on open notes right
+// away; off → leave the auto set (the run in flight, if any, completes). CORS-
+// open like /status so the vendored update-shell can call it from the game page.
+app.options('/api/online/:id/live', onlineCors, (_req, res) => res.end());
+app.post('/api/online/:id/live', onlineCors, async (req, res) => {
+  try {
+    const game = (await getGames()).find((g) => g.id === req.params.id);
+    if (!game || !game.repo) return res.status(404).json({ error: 'unknown-game-or-no-repo' });
+    const on = !!(req.body || {}).on;
+    await online.setLive(game.id, on);
+    let queued = null;
+    if (on) { const r = await online.enqueue(game.id); if (r.ok) queued = r.job; }   // start right away (no-open-notes is fine)
+    res.json({ ok: true, live: online.isLive(game.id), queued });
+  } catch (e) { console.error('online live', e); res.status(500).json({ ok: false, error: String(e.message).slice(0, 200) }); }
 });
 app.post('/api/online/:id/run', async (req, res) => {
   if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
