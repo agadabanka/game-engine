@@ -48,6 +48,10 @@ git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/<owner>/<repo>.git"
 - **Front door / hosting:** `docs/HOSTING.md` (DNS → Railway edge → hub → per-game
   deploys → shorts/analytics loop). Health-check a custom domain with the
   **`domain-doctor`** skill (`node scripts/domain-doctor.mjs <domain> --health /health`).
+- **Online mode:** `docs/ONLINE-MODE.md` — the hub runs the fix-notes loop as a cloud
+  agent (`hub/lib/online.js`, `/api/online/*`; needs `ANTHROPIC_API_KEY`); games show
+  "🤖 fixing your notes" + "🚀 update ready — tap to reload" via the vendored
+  `engine/sdk/update-shell.js` (synced by `npm run sync-sdk`, no-op under `?auto`).
 - **Architecture:** `docs/ENGINE.md`. **Skills:** `.claude/skills/` (make-game, new-game,
   analytics, trailer, add-character, tex-pdf, domain-doctor, …).
 - **CI safety net:** `.github/workflows/cross-game-eval.yml` runs the golden games' gates
