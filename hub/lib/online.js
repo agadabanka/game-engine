@@ -87,6 +87,14 @@ export async function setAuto(v) {
   try { await store.set('online:auto', _auto); } catch (e) { console.error('[online] persist auto', e.message); }
   return _auto;
 }
+// per-game live mode (the in-game switch): membership in the auto set.
+export function isLive(gameId) { return _auto === '*' || _auto.split(',').map((s) => s.trim()).includes(gameId); }
+export async function setLive(gameId, on) {
+  if (_auto === '*') return _auto;                     // global auto covers everything; per-game off is a no-op
+  const set = new Set(_auto.split(',').map((s) => s.trim()).filter(Boolean));
+  on ? set.add(gameId) : set.delete(gameId);
+  return setAuto([...set].join(','));
+}
 
 export function reasons() {
   const out = [];
@@ -333,6 +341,7 @@ export function status(gameId) {
     reasons: enabled() ? undefined : reasons(),
     model: MODEL,
     auto: _auto,
+    live: gameId ? isLive(gameId) : undefined,   // the in-game switch state for ?game= polls
     active: (!gameId || (state.active && state.active.game === gameId)) ? publicJob(state.active) : null,
     queue: filt(state.queue).map(publicJob),
     jobs: filt(state.jobs).slice(0, 12).map(publicJob),
