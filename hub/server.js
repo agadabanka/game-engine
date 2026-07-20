@@ -17,7 +17,16 @@ import * as store from './lib/store.js';
 import { snapshotAll } from './lib/aggregate.js';
 import { analyzeAll } from './lib/analytics.js';
 import * as online from './lib/online.js';
+import { makeEditor } from './lib/editor.js';
 import { generateImage, geminiConfigured } from '../scripts/gemini.js';
+
+// the AI-editor hub instance (game-engine#93): tools over ephemeral per-game claystone sessions,
+// backed by online.js's clone/gate/push machinery. openSession/publish only act on games that
+// vendor the editor stack; everything else returns a clean error.
+const editor = makeEditor({
+  openSession: (game, level) => online.openEditorSession(game, level),
+  publish: (job, ctx) => online.publishEditorDiff(job, ctx),
+});
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -348,6 +357,36 @@ app.post('/api/online/auto', async (req, res) => {
   if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
   try { res.json({ ok: true, auto: await online.setAuto(String((req.body || {}).auto ?? '')) }); }
   catch (e) { res.status(500).json({ ok: false, error: String(e.message).slice(0, 200) }); }
+});
+
+// ── AI editor (game-engine#93): tools over an ephemeral per-game claystone session ───────────
+// POST /api/online/:id/editor/open    {level}            → open a session (clones the game)
+// POST /api/online/:id/editor/:sid/:tool  {…args}        → place/move/remove/undo/simulate/diff/publish/close
+// The hub NEVER edits level files directly — every mutation goes through the game's session so the
+// laws + ghost proof are enforced at the source; publish runs the game's OWN gate. Admin-gated.
+app.post('/api/online/:id/editor/open', async (req, res) => {
+  if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
+  try { res.json(await editor.open(req.params.id, (req.body || {}).level | 0 || 1)); }
+  catch (e) { console.error('editor open', e); res.status(502).json({ ok: false, error: String(e.message).slice(0, 300) }); }
+});
+app.post('/api/online/:id/editor/:sid/:tool', async (req, res) => {
+  if (!authed(req)) return res.status(401).json({ error: 'unauthorized' });
+  const { sid, tool } = req.params, b = req.body || {};
+  try {
+    let r;
+    if (tool === 'list') r = editor.list(sid);
+    else if (tool === 'blocks') r = editor.blocks(sid);
+    else if (tool === 'place') r = editor.place(sid, b.block || {});
+    else if (tool === 'move') r = editor.move(sid, b.id, b.fields || {});
+    else if (tool === 'remove') r = editor.remove(sid, b.id);
+    else if (tool === 'undo') r = editor.undo(sid);
+    else if (tool === 'simulate') r = editor.simulate(sid);
+    else if (tool === 'diff') r = editor.diff(sid);
+    else if (tool === 'publish') r = await editor.publish(sid, { push: b.push !== false });
+    else if (tool === 'close') r = editor.close(sid);
+    else return res.status(400).json({ error: 'unknown editor tool: ' + tool });
+    res.json(r);
+  } catch (e) { console.error('editor', tool, e); res.status(502).json({ ok: false, error: String(e.message).slice(0, 300) }); }
 });
 
 // ── Studio IDE ───────────────────────────────────────────────────────────────

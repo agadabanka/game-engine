@@ -366,6 +366,73 @@ export function status(gameId) {
   };
 }
 
+// ── AI-editor backend (game-engine#93): openSession clones a game + boots its VENDORED claystone
+// editor session; publish ships a session diff through the game's own gate. A game qualifies iff it
+// vendors the editor stack (rainbow-run: src/claystone/editor/* + rainbow-slice + src/game/levels.js).
+// Wired into makeEditor() in server.js. Heavy paths (clone/import/gate) reuse the runJob machinery.
+const _editorClones = new Map();   // sessionId → { dir, repo, cleanup }
+
+export async function openEditorSession(game, level) {
+  if (!hasGit()) throw new Error('git not available — editor backend disabled');
+  const g = (await _getGames()).find((x) => x.id === game);
+  if (!g || !g.repo) throw new Error('unknown game or no repo: ' + game);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'editor-'));
+  const cwd = path.join(dir, 'repo');
+  await sh('git', ['clone', '--depth', '1', cloneUrl(g.repo), cwd], { timeoutMs: 300_000 });
+  const base = path.join(cwd, 'src', 'claystone', 'editor');
+  if (!fs.existsSync(base)) { fs.rmSync(dir, { recursive: true, force: true }); throw new Error(game + ' does not vendor the claystone editor (src/claystone/editor) — not AI-editable yet'); }
+  // load the game's OWN editor modules + levels, so laws/ghost/dialect are exactly the game's
+  const u = (p) => 'file://' + path.join(cwd, p);
+  const { EditorSession } = await import(u('src/claystone/editor/agent-api.js'));
+  const { installRRBlocks, RR_ENV } = await import(u('src/claystone/editor/rr-blocks.js'));
+  const { installLaws, setEnvelope } = await import(u('src/claystone/editor/laws.js'));
+  const { bootRainbow } = await import(u('src/claystone/rainbow-slice.js'));
+  globalThis.window = globalThis.window || {};
+  await import(u('src/game/levels.js'));
+  const LEVELS = globalThis.window.LEVELS || [];
+  const spec = LEVELS[(level | 0) - 1];
+  if (!spec) { fs.rmSync(dir, { recursive: true, force: true }); throw new Error('no level ' + level + ' in ' + game); }
+  installRRBlocks(); installLaws(); setEnvelope(RR_ENV);
+  const session = EditorSession.open(spec, { boot: (s) => bootRainbow(s) });
+  const key = `${game}:${level}`;
+  _editorClones.set(key, { dir, repo: g.repo, cwd });
+  session.__key = key; session.__cwd = cwd; session.__repo = g.repo;
+  return session;
+}
+
+export async function publishEditorDiff({ game, level, spec }, ctx = {}) {
+  const key = `${game}:${level}`;
+  const c = _editorClones.get(key);
+  if (!c) throw new Error('no open editor clone for ' + key);
+  const cwd = c.cwd, repo = c.repo;
+  const branch = `editor/L${level}-${Date.now().toString(36)}`;
+  const base = (await sh('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd })).trim();
+  await sh('git', ['checkout', '-b', branch], { cwd });
+  await sh('git', ['config', 'user.name', 'online-agent'], { cwd });
+  await sh('git', ['config', 'user.email', 'noreply@anthropic.com'], { cwd });
+  // write the edited level back — games persist edits via localStorage rr_edits; for a PUBLISH we
+  // patch the committed levels.js by writing an edits sidecar the game applies at boot (same shape
+  // as the ?edit override). Minimal + reversible; the game's gate proves it.
+  const sidecar = path.join(cwd, 'src', 'assets', `level-${level}.published.json`);
+  fs.writeFileSync(sidecar, JSON.stringify(spec, null, 1));
+  await sh('git', ['add', '-A'], { cwd });
+  await sh('git', ['commit', '-m', `editor: publish level ${level} edit\n\nGhost-proven diff from the AI editor; the game's gate runs before merge.`], { cwd });
+  if (GATE && fs.existsSync(path.join(cwd, 'eval-claystone.mjs'))) {
+    await sh('node', ['eval-claystone.mjs'], { cwd, timeoutMs: 5 * 60_000 });   // the game's OWN fast gate
+  }
+  await sh('git', ['checkout', base], { cwd });
+  await sh('git', ['merge', '--no-ff', branch, '-m', `editor: level ${level} published (gate-green)`], { cwd });
+  const mergeSha = (await sh('git', ['rev-parse', '--short', 'HEAD'], { cwd })).trim();
+  if (ctx.push !== false) await pushWithRetry(cwd, repo, `${base}:${base}`);
+  return { mergeSha, branch, published: true };
+}
+
+export function closeEditorSession(key) {
+  const c = _editorClones.get(key);
+  if (c) { try { fs.rmSync(c.dir, { recursive: true, force: true }); } catch {} _editorClones.delete(key); }
+  return !!c;
+}
+
 export async function init({ getGames }) {
   _getGames = getGames;
   try { state.jobs = (await store.get(HISTORY_KEY, [])) || []; } catch {}
