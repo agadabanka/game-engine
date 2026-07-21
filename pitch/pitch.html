@@ -70,6 +70,34 @@
   .quote{ font-size:13pt; color:#fff; font-style:italic; line-height:1.4; border-left:3px solid #7fd8ea; padding-left:14px; }
   .chip{ display:inline-block; font-size:8.6pt; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:20px; background:rgba(95,214,232,.16); color:#9fe8f4; margin:2px 4px 2px 0; }
   .chip.a{ background:rgba(255,177,77,.16); color:#ffcf9a; }
+  /* platform stack diagram */
+  .stackwrap{ display:flex; gap:16px; margin-top:6px; align-items:stretch; }
+  .stack{ flex:2.65; display:flex; flex-direction:column; gap:7px; }
+  .tier{ position:relative; border-radius:11px; padding:9px 16px; border:1px solid; display:flex; align-items:center; gap:14px; box-shadow:0 8px 22px rgba(0,0,0,.4); }
+  .tier .ico{ font-size:21pt; width:40px; text-align:center; flex:none; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+  .tier .tbody{ flex:1; min-width:0; }
+  .tier .tname{ font-size:13.5pt; font-weight:800; color:#fff; line-height:1.05; }
+  .tier .role{ font-size:9.4pt; color:#dbe4f6; margin-top:2px; line-height:1.28; }
+  .tier .role b{ color:#fff; }
+  .tier .lvl{ position:absolute; right:13px; top:9px; font-size:7.4pt; color:#93a0bd; text-transform:uppercase; letter-spacing:.12em; font-weight:700; }
+  .tier .mini{ font-size:7.8pt; color:#cdd8ee; letter-spacing:.02em; }
+  .tier .mini b{ color:#fff; }
+  .t-hub{ background:linear-gradient(90deg,rgba(95,214,232,.20),rgba(95,214,232,.07)); border-color:rgba(95,214,232,.5); }
+  .t-game{ background:linear-gradient(90deg,rgba(120,205,225,.17),rgba(120,205,225,.06)); border-color:rgba(120,205,225,.45); }
+  .t-dsl{ background:linear-gradient(90deg,rgba(140,200,205,.15),rgba(140,200,205,.05)); border-color:rgba(150,205,200,.4); }
+  .t-engine{ background:linear-gradient(90deg,rgba(180,190,180,.14),rgba(200,170,140,.06)); border-color:rgba(200,185,150,.4); }
+  .t-skills{ background:linear-gradient(90deg,rgba(255,190,120,.16),rgba(255,190,120,.05)); border-color:rgba(255,190,120,.45); }
+  .t-gemini{ background:linear-gradient(90deg,rgba(255,170,90,.20),rgba(190,140,255,.09)); border-color:rgba(255,175,110,.5); }
+  .seam{ text-align:center; font-size:8pt; color:#8fa0c0; line-height:.5; margin:-2px 0; letter-spacing:.18em; }
+  .foundtag{ text-align:center; font-size:7.6pt; color:#9aa6c2; text-transform:uppercase; letter-spacing:.16em; margin-top:3px; }
+  /* issues rail */
+  .rail{ flex:1; border-radius:12px; border:1px dashed rgba(160,150,255,.5); background:rgba(60,52,110,.16); padding:12px 14px; display:flex; flex-direction:column; }
+  .rail .rt{ font-size:11.5pt; font-weight:800; color:#c9b7ff; line-height:1.1; }
+  .rail .rs{ font-size:8.6pt; color:#c3c8e6; text-transform:uppercase; letter-spacing:.1em; margin:2px 0 8px; }
+  .rail ul{ margin:0; padding-left:15px; } .rail li{ font-size:9pt; margin:5px 0; color:#e4e2f6; line-height:1.32; }
+  .rail li b{ color:#d7ccff; }
+  .rail .flow{ margin-top:auto; font-size:8.6pt; color:#efe9ff; background:rgba(120,100,220,.16); border:1px solid rgba(160,150,255,.4); border-radius:9px; padding:7px 9px; line-height:1.4; }
+  .rail .flow b{ color:#fff; }
 </style></head><body>
 
 <!-- 1 · COVER -->
@@ -88,7 +116,7 @@
 <section class="slide" style="background-image:url('img/agenda.jpg')">
   <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.82),rgba(8,11,20,.44) 45%,rgba(8,11,20,.86))"></div>
   <div class="wrap">
-    <div class="kicker">The structure of this deck</div><h2>Six acts, 31 slides</h2>
+    <div class="kicker">The structure of this deck</div><h2>Six acts, 32 slides</h2>
     <div class="grid3" style="margin-top:4px">
       <div class="card tight"><h3 style="margin-top:2px">I · The problem &amp; the thesis</h3><p style="font-size:10.4pt">Why AI-built games hit a wall — and the single press that gets past it.</p></div>
       <div class="card tight"><h3 style="margin-top:2px">II · Claystone, feature by feature</h3><p style="font-size:10.4pt">The determinism lock-in, the architecture, and every subsystem.</p></div>
@@ -757,6 +785,43 @@ const s = game.snapshot();
       <p style="margin-top:12px">"What took ~15 browser-minutes on Phaser runs in about a second here — and each run is <b class="h">bit-exact by construction</b>." Parity is proven route-for-route against recorded Phaser golden traces: same route, same outcome, 0 deaths, frames within ±10%.</p>
     </div>
     <div class="pageno"></div><div class="brandmark">Rainbow Run</div>
+  </div>
+</section>
+
+<!-- 27b · THE PLATFORM STACK -->
+<section class="slide" style="background-image:url('img/platform-stack.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.82),rgba(8,11,20,.66) 45%,rgba(8,11,20,.86))"></div>
+  <div class="wrap" style="padding:13mm 18mm">
+    <div class="kicker">The whole system · one platform, stacked</div><h2 style="margin-bottom:2px">What runs on what — Gemini at the base, the Hub on top</h2>
+    <p style="font-size:9.4pt;color:#aeb9d4;margin:2px 0 0">Each layer is built on the one beneath it ▾ &nbsp;·&nbsp; every layer talks to the others through <b style="color:#c9b7ff">GitHub issues</b></p>
+    <div class="stackwrap">
+      <div class="stack">
+        <div class="tier t-hub"><span class="lvl">6 · orchestration</span><div class="ico">🛰️</div><div class="tbody"><div class="tname">The Hub — mission control</div><div class="role">Watches every game from one place · registers &amp; deploys them · runs the online fix-notes loop.</div><div class="mini"><b>hub</b> · /api/games · /api/online · shorts + analytics</div></div></div>
+        <div class="seam">▲ rests on</div>
+        <div class="tier t-game"><span class="lvl">5 · the product</span><div class="ico">🎮</div><div class="tbody"><div class="tname">The Game</div><div class="role">The playable game itself — e.g. <b>Rainbow Run</b>: worlds, cast, art, music, mechanics.</div><div class="mini"><b>server.js</b> · /health · in-game notes · /diary.html</div></div></div>
+        <div class="seam">▲ rests on</div>
+        <div class="tier t-dsl"><span class="lvl">4 · the language</span><div class="ico">📐</div><div class="tbody"><div class="tname">Level DSL + data</div><div class="role">The language that <b>drives the game</b> — levels as data, typed Materials, reward model.</div><div class="mini"><b>Studio.Level.build</b> · materials · specs · reward.js</div></div></div>
+        <div class="seam">▲ rests on</div>
+        <div class="tier t-engine"><span class="lvl">3 · the runtime</span><div class="ico">⚙️</div><div class="tbody"><div class="tname">Engine · Studio SDK</div><div class="role"><b>Claystone</b> (zero-dep, deterministic) or <b>Phaser 4</b> — the runtime everything is placed on.</div><div class="mini">deterministic loop · AABB physics · renderers · <b>Studio.*</b></div></div></div>
+        <div class="seam">▲ rests on</div>
+        <div class="tier t-skills"><span class="lvl">2 · the recipes</span><div class="ico">📜</div><div class="tbody"><div class="tname">Skills</div><div class="role">The recipes Claude runs by hand to build &amp; ship — one command each.</div><div class="mini"><b>make-game</b> · new-game · gate · build-world · fix-notes · trailer</div></div></div>
+        <div class="seam">▲ rests on</div>
+        <div class="tier t-gemini"><span class="lvl">1 · foundation</span><div class="ico">✨</div><div class="tbody"><div class="tname">Gemini</div><div class="role">The generative foundation — the art, vision and music every layer above draws on.</div><div class="mini"><b>Nano Banana Pro</b> (art · vision) · <b>Lyria</b> (music) · text</div></div></div>
+        <div class="foundtag">▼ the base everything is built on ▼</div>
+      </div>
+      <div class="rail">
+        <div class="rt">GitHub Issues</div>
+        <div class="rs">the connective tissue</div>
+        <ul>
+          <li><b>Per-stage build issues</b> — one issue per pipeline step, scaffold → ship.</li>
+          <li><b>Build tracker</b> — a pinned meta-issue for the whole game.</li>
+          <li><b>in-game-note issues</b> — players' 📝/🎙️ notes auto-filed from the Game.</li>
+          <li><b>Hub registration</b> — every game announces itself to the Hub.</li>
+        </ul>
+        <div class="flow"><b>The loop:</b> Game ▸ note → Issue → a Skill fixes &amp; re-gates → ✅ closes → diary → the Hub sees it. The stack improves itself through issues.</div>
+      </div>
+    </div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 

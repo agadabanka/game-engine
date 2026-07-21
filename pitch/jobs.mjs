@@ -83,6 +83,10 @@ export const JOBS = [
   ['editor-dragdrop', '16:9',
     'The Incredible Machine toybox moment: a frozen game-world with a collapsible glowing parts-tray drawer along the bottom edge holding little luminous part-icons; a hand/finger lifts one glowing part out of the tray and a translucent preview of it follows, snapping onto a bright grid with a green "legal" glow, while a faint ghost trail of light replays the level to prove the placement works. Drag-and-drop level building, as light. Warm clay blocks, cyan grid.' + TOPBAND],
 
+  // ——— Added: the platform stack diagram backdrop (dark, empty, for an overlaid block diagram) ———
+  ['platform-stack', '16:9',
+    'A very DARK, calm engineering blueprint backdrop: deep navy-black field with faint glowing cyan grid lines and a subtle sense of horizontal layered strata / tiers stacked and receding into shadow, like a cross-section of a technology stack, a whisper of warm clay-amber glow low at the bottom rising to cool cyan at the top. Lots of empty dark space, soft vignette, the whole CENTER almost pure dark navy so a diagram can sit on top. Minimal, abstract, no characters, no objects, no text.'],
+
   // ——— Closing ———
   ['closing', '16:9',
     'A serene wide vista: a whole constellation of glowing game-worlds floating in deep space, all connected by soft beams of light to a single bright central clay-stone core — a benevolent, growing network. Calm, hopeful, vast. A peaceful closing image.' + TOPBAND],
