@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Claystone — Pitch Deck</title>
+<style>
+  @page { size: 330mm 185.625mm; margin: 0; }          /* 16:9 widescreen */
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:"Helvetica Neue",Arial,sans-serif; color:#eef2f8; background:#0d1017; }
+  .slide{ position:relative; width:330mm; height:185.625mm; overflow:hidden; page-break-after:always;
+          background-size:cover; background-position:center; background-color:#0d1017; }
+  .slide:last-child{ page-break-after:auto; }
+  .scrim{ position:absolute; inset:0; }
+  .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; padding:16mm 20mm; }
+  .kicker{ text-transform:uppercase; letter-spacing:.28em; font-size:9pt; font-weight:800; color:#7fd8ea; text-shadow:0 2px 10px rgba(0,0,0,.85); }
+  h1{ font-size:58pt; margin:0; line-height:.98; color:#fff; letter-spacing:.01em; text-shadow:0 4px 24px rgba(0,0,0,.7); }
+  h2{ font-size:30pt; margin:3px 0 12px; line-height:1.03; color:#fff; text-shadow:0 3px 18px rgba(0,0,0,.9); }
+  h2 .amber{ color:#ffc386; } h2 .cyan{ color:#8fe3f0; }
+  p{ margin:6px 0; font-size:12pt; line-height:1.5; color:#e8edf7; }
+  .lead{ font-size:14.5pt; color:#fff; line-height:1.42; }
+  .card{ background:rgba(11,15,26,.74); border:1px solid rgba(140,180,220,.16); border-radius:14px;
+         padding:15px 19px; backdrop-filter:blur(3px); box-shadow:0 14px 40px rgba(0,0,0,.45); }
+  .card.tight{ padding:11px 15px; }
+  h3{ font-size:12.5pt; margin:11px 0 4px; color:#8fe3f0; }
+  b.h{ color:#ffc386; } b.c{ color:#8fe3f0; }
+  ul{ margin:6px 0; padding-left:19px; } li{ margin:4px 0; font-size:11pt; line-height:1.42; color:#e8edf7; }
+  code{ font-family:"SF Mono",Menlo,Consolas,monospace; background:rgba(120,160,220,.18); color:#cfe6ff; padding:1px 6px; border-radius:5px; font-size:10pt; }
+  pre{ margin:8px 0 2px; background:rgba(6,10,20,.82); border:1px solid rgba(140,180,220,.18); border-radius:10px;
+       padding:11px 14px; overflow:hidden; }
+  pre code{ background:none; padding:0; color:#dfeaff; font-size:10pt; line-height:1.5; display:block; white-space:pre; }
+  .foot{ margin-top:auto; }
+  .pageno{ position:absolute; bottom:9mm; right:16mm; font-size:9pt; color:#8b98b4; letter-spacing:.05em; }
+  .brandmark{ position:absolute; bottom:9mm; left:16mm; font-size:8.5pt; color:#8b98b4; letter-spacing:.18em; text-transform:uppercase; font-weight:700; }
+  /* cover */
+  .cover .wrap{ justify-content:center; }
+  .cover .badge{ font-size:10.5pt; color:#7fd8ea; font-weight:800; letter-spacing:.24em; text-transform:uppercase; text-shadow:0 2px 10px rgba(0,0,0,.8); }
+  .cover .sub{ font-size:17pt; color:#ffc386; margin-top:14px; font-weight:800; max-width:200mm; text-shadow:0 2px 12px rgba(0,0,0,.7); line-height:1.28; }
+  .cover .tagline{ font-size:11.5pt; color:#d6def0; margin-top:16px; max-width:186mm; }
+  /* grids & tiles */
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .tiles{ display:flex; gap:12px; margin-top:6px; }
+  .tile{ flex:1; background:rgba(11,15,26,.72); border:1px solid rgba(140,180,220,.16); border-radius:12px; padding:12px 14px; text-align:center; }
+  .tile .n{ font-size:26pt; font-weight:800; color:#8fe3f0; line-height:1; }
+  .tile .n.amber{ color:#ffc386; }
+  .tile .l{ font-size:9pt; color:#b7c2da; margin-top:6px; text-transform:uppercase; letter-spacing:.08em; line-height:1.3; }
+  /* comparison table */
+  table.cmp{ width:100%; border-collapse:separate; border-spacing:0 5px; margin-top:4px; }
+  table.cmp th{ text-align:left; font-size:10pt; color:#aab6d0; text-transform:uppercase; letter-spacing:.09em; padding:2px 12px; }
+  table.cmp th.cs{ color:#8fe3f0; } table.cmp th.ph{ color:#c9b7ff; }
+  table.cmp td{ font-size:10.3pt; padding:9px 12px; background:rgba(11,15,26,.72); border-top:1px solid rgba(140,180,220,.13); border-bottom:1px solid rgba(140,180,220,.13); vertical-align:top; }
+  table.cmp td.dim{ font-weight:800; color:#eef2f8; width:20%; background:rgba(20,26,42,.7); border-radius:9px 0 0 9px; }
+  table.cmp td.cs{ color:#d4f3fb; width:42%; } table.cmp td.cs b{ color:#8fe3f0; }
+  table.cmp td.ph{ color:#e6def8; width:38%; border-radius:0 9px 9px 0; } table.cmp td.ph b{ color:#c9b7ff; }
+  /* two-column verdict */
+  .split{ display:flex; gap:14px; margin-top:8px; }
+  .col{ flex:1; border-radius:13px; padding:14px 17px; border:1px solid; }
+  .col.cs{ background:rgba(95,214,232,.10); border-color:rgba(95,214,232,.42); }
+  .col.ph{ background:rgba(180,150,255,.10); border-color:rgba(180,150,255,.42); }
+  .col .ct{ font-size:14pt; font-weight:800; margin-bottom:2px; } .col.cs .ct{ color:#8fe3f0; } .col.ph .ct{ color:#c9b7ff; }
+  .col li{ font-size:10.4pt; margin:5px 0; }
+  /* pipeline steps */
+  .steps{ display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
+  .step{ background:rgba(11,15,26,.74); border:1px solid rgba(140,180,220,.2); border-radius:9px; padding:7px 11px; font-size:9.6pt; color:#dbe6fb; font-weight:600; }
+  .step b{ color:#8fe3f0; }
+  .arrow{ color:#7fd8ea; align-self:center; font-size:12pt; }
+  /* feature two-col list card */
+  .feat{ display:grid; grid-template-columns:1fr 1fr; gap:5px 22px; }
+  .feat li{ margin:3px 0; }
+  .quote{ font-size:13pt; color:#fff; font-style:italic; line-height:1.4; border-left:3px solid #7fd8ea; padding-left:14px; }
+  .chip{ display:inline-block; font-size:8.6pt; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:20px; background:rgba(95,214,232,.16); color:#9fe8f4; margin:2px 4px 2px 0; }
+  .chip.a{ background:rgba(255,177,77,.16); color:#ffcf9a; }
+</style></head><body>
+
+<!-- 1 · COVER -->
+<section class="slide cover" style="background-image:url('img/cover.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.42),rgba(8,11,20,.20) 40%,rgba(8,11,20,.72))"></div>
+  <div class="wrap">
+    <div class="badge">The AI Game Studio · Engine · Templates · Rainbow Run</div>
+    <h1>CLAYSTONE</h1>
+    <div class="sub">A determinism-first 2D game engine — and the templates &amp; games built on it.</div>
+    <div class="tagline">One person, one press, a shipped and self-improving game. This deck walks the engine that makes that possible, the templates that make it fast, and Rainbow Run — the flagship that proves it — end to end.</div>
+  </div>
+  <div class="brandmark">Built &amp; AI-evaluated with Claude Code · 2026</div>
+</section>
+
+<!-- 2 · AGENDA -->
+<section class="slide" style="background-image:url('img/agenda.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.82),rgba(8,11,20,.44) 45%,rgba(8,11,20,.86))"></div>
+  <div class="wrap">
+    <div class="kicker">The structure of this deck</div><h2>Six acts, ~28 slides</h2>
+    <div class="grid3" style="margin-top:4px">
+      <div class="card tight"><h3 style="margin-top:2px">I · The problem &amp; the thesis</h3><p style="font-size:10.4pt">Why AI-built games hit a wall — and the single press that gets past it.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">II · Claystone, feature by feature</h3><p style="font-size:10.4pt">The determinism lock-in, the architecture, and every subsystem.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">III · Claystone vs Phaser</h3><p style="font-size:10.4pt">An honest, sourced comparison — and why the design works.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">IV · The templates</h3><p style="font-size:10.4pt">Hit "new game" and go — what ships in the box, and the pipeline.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">V · Rainbow Run</h3><p style="font-size:10.4pt">25 worlds, the notes→fixes loop, and the Claystone migration.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">VI · The whole system</h3><p style="font-size:10.4pt">How engine, templates and games compound into one studio.</p></div>
+    </div>
+    <div class="foot"><div class="card tight"><p style="margin:0;font-size:10.4pt;color:#cdd9f0">Every number and quote in this deck is drawn from the live repositories — <b class="c">claystone-engine</b>, <b class="c">game-engine</b>, the templates, and <b class="h">rainbow-run</b>.</p></div></div>
+    <div class="pageno">02</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 3 · PROBLEM -->
+<section class="slide" style="background-image:url('img/problem.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.34) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">The problem</div><h2>To let an AI <span class="amber">build</span> games, an AI must <span class="amber">test</span> them — and that breaks on flakiness</h2>
+    <div class="card" style="max-width:196mm">
+      <p class="lead">The studio's promise is that <b class="h">one autopilot must beat every level at zero deaths</b> before it ships. That gate is only meaningful if the game runs <b class="c">the same way every time</b>.</p>
+      <p>But a normal engine runs its own clock, tied to <code>requestAnimationFrame</code> and wall-time. A single slow frame integrates a huge delta and flings the player across the world on one stale decision. Replays diverge; the gate becomes noise.</p>
+      <p class="quote">"An autopilot must win every level deterministically; flakiness would make the gate meaningless."</p>
+      <p style="font-size:10.5pt;color:#c3cee6">So the real engineering problem isn't graphics. It's <b class="h">reproducibility</b> — a loop you can drive by hand, frame by frame, and get bit-identical results, forever.</p>
+    </div>
+    <div class="pageno">03</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 4 · THESIS -->
+<section class="slide" style="background-image:url('img/thesis.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.3) 42%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">The thesis</div><h2>One press → a shipped, <span class="cyan">self-improving</span> game</h2>
+    <div class="card" style="max-width:196mm">
+      <p class="lead">Hit <b class="h">"new game"</b> and go. A clean base is cloned, rebranded, given a GitHub repo, registered with a mission-control hub, and issue-tracked — in a single command. Then an autonomous pipeline designs levels, an <b class="c">AI player gates them at 0 deaths</b>, art and music are generated, and it deploys itself.</p>
+      <p>Once live, players leave in-game notes; those become issues; the agent fixes them, re-gates, and writes the "why" into an in-game build diary. The game gets better on its own.</p>
+      <p style="font-size:11pt">Everything in that loop — the gate, the recorder, the headless design scans, the ghost-run editor — <b class="h">stands on one foundation: a deterministic engine.</b> That engine is Claystone.</p>
+    </div>
+    <div class="pageno">04</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 5 · MEET CLAYSTONE -->
+<section class="slide" style="background-image:url('img/meet.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.86))"></div>
+  <div class="wrap">
+    <div class="kicker">Meet the engine</div><h2>Claystone 🧱</h2>
+    <div class="card" style="max-width:200mm">
+      <p class="quote">"A determinism-first, custom 2D game engine to replace Phaser under the AI game studio SDK. Zero dependencies. Runs headless in Node — which is how the determinism gate is tested — and in the browser via a Canvas2D backend."</p>
+      <p style="font-size:10.6pt;color:#c3cee6;margin-top:10px">Its own framing: replacing Phaser is <b class="h">not primarily a graphics project — it's a determinism &amp; integration project</b>. Commodity 2D-engine features <b class="c">plus one special thing</b>: the deterministic, steppable, headless loop. That's the real lock-in.</p>
+    </div>
+    <div class="tiles" style="margin-top:14px">
+      <div class="tile"><div class="n">0</div><div class="l">runtime dependencies</div></div>
+      <div class="tile"><div class="n amber">111</div><div class="l">tests, all green</div></div>
+      <div class="tile"><div class="n">3,862</div><div class="l">lines of engine source</div></div>
+      <div class="tile"><div class="n amber">~20×</div><div class="l">faster headless</div></div>
+      <div class="tile"><div class="n">v0.1</div><div class="l">and already shipping games</div></div>
+    </div>
+    <div class="pageno">05</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 6 · CROWN JEWEL -->
+<section class="slide" style="background-image:url('img/crown.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">The crown jewel · issue #1</div><h2>Take over the clock. Step time by hand.</h2>
+    <div class="split" style="align-items:stretch">
+      <div class="card" style="flex:1.15">
+        <p>The SDK sleeps the RAF driver and advances the simulation <b class="h">one fixed 1/60s frame at a time, by hand</b>. Combined with a <b class="c">seeded RNG</b> — never <code>Math.random</code> — a run is <b class="h">bit-for-bit reproducible, forever</b>.</p>
+        <pre><code>game.rec.begin();   // sleep the loop, take the clock
+game.rec.step(1);   // advance exactly one 1/60s frame
+const s = game.snapshot();
+// same inputs ⇒ same s, always</code></pre>
+        <p style="font-size:10.3pt;color:#c3cee6">Everything else — the 0-death gate, the recorder, headless scans, the ghost-run editor — stands on this one property.</p>
+      </div>
+      <div class="card" style="flex:.85">
+        <h3 style="margin-top:2px">Two mechanisms, one guarantee</h3>
+        <ul>
+          <li><b class="c">Seeded mulberry32 RNG</b> — "same seed + same draws ⇒ the same sequence, forever."</li>
+          <li><b class="c">Hand-driven fixed timestep</b> — the clock is the SDK's, not the browser's.</li>
+          <li><b class="c">Fixed update order</b> — "change it and you change every replay."</li>
+          <li><b class="c">No <code>Math.random</code> in <code>src/</code></b> — enforced by a test that walks the tree.</li>
+        </ul>
+        <p style="font-size:9.8pt;color:#9fe8f4;margin-top:8px">Proven: two independent gate runs end identical; a 360-frame recording replays byte-for-byte.</p>
+      </div>
+    </div>
+    <div class="pageno">06</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 7 · ARCHITECTURE -->
+<section class="slide" style="background-image:url('img/arch.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.84),rgba(8,11,20,.5) 45%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Architecture</div><h2>The studio is a stack — each tier needs only the one beneath it</h2>
+    <div class="split">
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Seven load-bearing tiers</h3>
+        <ul>
+          <li><b class="h">Foundations</b> — the method + a working base, inherited whole.</li>
+          <li><b class="h">Platform</b> — server, volume store, Gemini, Lyria, Railway.</li>
+          <li><b class="h">Engine</b> — Phaser 4 <span style="color:#8fe3f0">or Claystone</span>, driven through the Studio SDK.</li>
+          <li><b class="h">Content &amp; authoring</b> — art pipeline, per-world music, level builder.</li>
+          <li><b class="h">Evaluation</b> — the 0-death gate, felt-fun, recorder, vision judge.</li>
+          <li><b class="h">Feedback loop</b> — in-game notes → issues → build diary.</li>
+          <li><b class="h">Publish &amp; ship</b> — YouTube shorts + Railway auto-deploy.</li>
+        </ul>
+      </div>
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Inside Claystone (<code>src/</code>)</h3>
+        <div class="feat"><ul style="margin:0">
+          <li><b class="c">core</b> — game loop, RNG, scene, events, timers</li>
+          <li><b class="c">physics</b> — AABB world + bodies</li>
+          <li><b class="c">render</b> — null · canvas2D · webgl · pixi</li>
+          <li><b class="c">display</b> — sprites, shapes, tiles, text</li>
+        </ul><ul style="margin:0">
+          <li><b class="c">anim</b> — tweens + frame animation</li>
+          <li><b class="c">fx</b> — camera, particles, lights, shadows, env</li>
+          <li><b class="c">input / audio / scale</b></li>
+          <li><b class="c">editor</b> — the proof-carrying AI editor</li>
+        </ul></div>
+        <p style="font-size:9.6pt;color:#9fe8f4;margin-top:8px">One <code>Studio.*</code> SDK sits on top — the same call surface a Phaser game uses.</p>
+      </div>
+    </div>
+    <div class="pageno">07</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 8 · FEATURE: LOOP + RNG -->
+<section class="slide" style="background-image:url('img/loop.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · the loop</div><h2>A fixed-timestep heartbeat + a seeded stream</h2>
+    <div class="split">
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Deterministic loop</h3>
+        <ul>
+          <li>Fixed <code>DT = 1000/60</code> with an accumulator and a <code>250ms</code> spike-clamp.</li>
+          <li>Live play uses RAF; the gate and recorder <b class="h">hand-drive</b> the same <code>step()</code>.</li>
+          <li>Default 960×540, default seed <code>0x1234abcd</code>.</li>
+        </ul>
+      </div>
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Seeded RNG</h3>
+        <ul>
+          <li><b class="c">mulberry32</b> 32-bit PRNG: <code>u32 · float · range · int · chance · pick</code>.</li>
+          <li><code>snapshot / restore</code> — the RNG is part of savable state.</li>
+          <li>"The same seed + same number of draws ⇒ the same sequence, forever. This is half of what makes runs bit-exact."</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.6pt">The other half is discipline: a documented <b class="h">fixed update order</b> (game update before physics) — a real Rainbow Run bug traced to a sub-frame phase offset that compounded into a missed landing. Order is now test-locked.</p></div>
+    <div class="pageno">08</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 9 · FEATURE: PHYSICS -->
+<section class="slide" style="background-image:url('img/physics.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · physics</div><h2>Custom AABB — exactly the subset the games use, deterministically</h2>
+    <div class="card" style="max-width:198mm">
+      <p class="lead">Arcade-style axis-aligned collision, reimplemented for bit-exact separation — not a general rigid-body sim, by design.</p>
+      <div class="feat" style="margin-top:6px"><ul style="margin:0">
+        <li><b class="c">Swept resolution</b> via previous-position, axis-separated.</li>
+        <li><b class="c">Per-edge <code>checkCollision</code> toggles</b> — one-way platforms: jump up through, land on top.</li>
+        <li>Static &amp; dynamic groups; registered colliders vs overlaps.</li>
+      </ul><ul style="margin:0">
+        <li>World bounds; <code>blocked / touching</code> flags; direct-velocity model.</li>
+        <li>Overlap callbacks drive win/death without touching the sim step.</li>
+        <li><b class="h">Proven:</b> gravity+floor, wall-blocking, deterministic separation — all test-green.</li>
+      </ul></div>
+    </div>
+    <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.5pt;color:#c3cee6">Deliberately <b class="h">not</b> built: tilemaps (levels are data), Matter/Box2D, gamepad, bitmap fonts. The explainer estimates the loop + AABB physics are <b class="c">~70% of the risk</b> in any engine replacement — so Claystone owns exactly those.</p></div>
+    <div class="pageno">09</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 10 · FEATURE: RENDERING -->
+<section class="slide" style="background-image:url('img/render.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · rendering</div><h2>Three renderers, <span class="cyan">one identical simulation</span> underneath</h2>
+    <div class="grid3" style="margin-top:4px">
+      <div class="card tight"><h3 style="margin-top:2px">null · headless</h3><p style="font-size:10.3pt">The test/gate path. Rendering stubbed out → <b class="h">~20× faster</b> and byte-identical to a rendered run.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">canvas2D · default</h3><p style="font-size:10.3pt">What plays in the browser. Includes <code>readPixels</code> / <code>isAllBlack</code> so the gate can prove a frame isn't blank.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">pixi · rich</h3><p style="font-size:10.3pt">Vendored <b class="c">PixiJS v8</b> (WebGL), lazily imported in-browser only. GPU bloom, grade, CRT, lights.</p></div>
+    </div>
+    <div class="card" style="margin-top:12px"><p style="margin:0"><b class="h">The invariant:</b> the simulation never touches a renderer. Headless equals rendered, byte-for-byte — so you can evaluate a game at 20× speed with total confidence it matches what a player sees. Pick a backend with <code>?r=</code>; pixi falls back to canvas when GL is missing.</p></div>
+    <div class="pageno">10</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 11 · FEATURE: FX -->
+<section class="slide" style="background-image:url('img/fx.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.46),rgba(8,11,20,.3) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · rich rendering</div><h2>Cinematic FX that <span class="amber">physically cannot</span> touch the sim</h2>
+    <div class="split">
+      <div class="card" style="flex:1.1">
+        <p>An entire "sim-blind" FX layer reads display objects and the frame counter but <b class="h">never writes simulation state</b>. Beauty with zero risk to the gate.</p>
+        <div class="feat" style="margin-top:4px"><ul style="margin:0">
+          <li><b class="c">Camera</b> — follow, shake, flash, fade, bounds</li>
+          <li><b class="c">Particles</b> — pooled, zero-allocation emitters + trails</li>
+          <li><b class="c">Post-FX</b> — filter stacks &amp; graded one-shots</li>
+        </ul><ul style="margin:0">
+          <li><b class="c">Lights</b> — ambient / point / spot + normal maps</li>
+          <li><b class="c">Shadows</b> — raycast volumes + blob drops</li>
+          <li><b class="c">Env</b> — one declarative atmosphere block</li>
+        </ul></div>
+      </div>
+      <div class="card" style="flex:.9">
+        <h3 style="margin-top:2px">One line of weather</h3>
+        <pre><code>Studio.Env.set(scene, {
+  grade:'dusk', godrays:[{angle:30}],
+  weather:{kind:'rain', density:2},
+  lightning:{period:420, jitterSeed:5},
+  fog:[{y0:430,y1:500}], water:{line:520}
+});</code></pre>
+        <p style="font-size:9.6pt;color:#9fe8f4">Time-varying effects advance from the frame counter; jitter uses per-emitter seeded RNGs — so FX can never shift the sim's stream.</p>
+      </div>
+    </div>
+    <div class="card tight" style="margin-top:11px"><p style="margin:0;font-size:10.3pt;color:#c3cee6">Graceful degrade is a rule, not luck: <b class="h">"geometry-ish atmosphere degrades, filter-ish polish disappears"</b> — full on pixi, softened on canvas, inert headless. The gate compares sim output: byte-identical with any FX declared.</p></div>
+    <div class="pageno">11</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 12 · FEATURE: LEVELS AS DATA -->
+<section class="slide" style="background-image:url('img/levels.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · level DSL</div><h2>Levels are <span class="cyan">data</span>, not tilemaps</h2>
+    <div class="split">
+      <div class="card" style="flex:1.05">
+        <p>A level is a plain spec that <code>Studio.Level.build()</code> turns into a playable world. No paint, no tile editor.</p>
+        <pre><code>const SPEC = {
+  groundY: 500,
+  ground: [[0,1380],[1460,2000]],   // pit 1380→1460
+  platforms: [[1080,360,120,16, true]], // one-way
+  coins: [[300,470],[640,470]],
+  goal: [1820,420,40,80],
+};</code></pre>
+      </div>
+      <div class="card" style="flex:.95">
+        <h3 style="margin-top:2px">Machine-readable Materials</h3>
+        <p style="font-size:10.4pt">Named surfaces carry their own physics + intent: <span class="chip">solid</span><span class="chip">ice</span><span class="chip">mud</span><span class="chip">cloud</span><span class="chip a">lava</span><span class="chip a">thorn</span><span class="chip">vine</span> each with friction, a <code>deadly</code> flag, and a colour.</p>
+        <p style="font-size:10.8pt;color:#fff"><b class="h">Levels are AI-completable by construction</b> — because "deadly" and "footing" are <b class="c">data, not pixels</b>. An agent can read a level's danger and reason about it directly.</p>
+      </div>
+    </div>
+    <div class="pageno">12</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 13 · FEATURE: AI EDITOR -->
+<section class="slide" style="background-image:url('img/editor.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · the AI editor</div><h2>Proof-carrying editing — every change plays itself instantly</h2>
+    <div class="split">
+      <div class="card" style="flex:1">
+        <p>Because the loop is steppable and bit-exact, every edit triggers an <b class="h">instant, invisible playthrough whose result is a fact</b>, not a guess.</p>
+        <pre><code>session.place(block)
+// → { ok, errors, violations, ghost }
+//   ghost = { trail, outcome, hash, cached }</code></pre>
+        <p style="font-size:10.2pt;color:#c3cee6">An exact cache keyed by spec hash means unchanged levels cost nothing. The diff even narrates: <i>"was: won@473 · now: dead@312 at x=1412 (fall)."</i></p>
+      </div>
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">A machine-checkable law-book</h3>
+        <ul>
+          <li>Placement laws derive from the real <b class="c">jump envelope</b> — <code>maxGap</code>, <code>maxRise</code> from run/jump/gravity constants.</li>
+          <li>Each violation ships a <code>{law, msg, fix}</code> — a suggested legal placement.</li>
+          <li>"Proof rides along with every edit" — a session can never be left unproven.</li>
+        </ul>
+        <p style="font-size:10pt;color:#9fe8f4;margin-top:6px"><b class="h">On Rainbow Run:</b> the law-book went from <b class="c">596 false alarms → 0</b> across 2,061 blocks.</p>
+      </div>
+    </div>
+    <div class="pageno">13</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 14 · FEATURE: THE GATE -->
+<section class="slide" style="background-image:url('img/eval.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · AI evaluation</div><h2>A robot QA team the engine ships with</h2>
+    <div class="card" style="max-width:200mm">
+      <p class="lead"><code>game.gate(3000)</code> resets, turns on the autopilot, and steps to win / death / timeout — returning <code>{ won, dead, frame }</code> <b class="c">bit-exact</b>. The reference level is beaten at frame 473.</p>
+      <p><b class="h">And the gate actually discriminates.</b> Give the autopilot its jump and it wins with zero deaths; take the jump away and it falls in the pit and reports <code>dead</code> at the right x-position. A gate that always passes proves nothing — this one doesn't.</p>
+    </div>
+    <div class="tiles" style="margin-top:14px">
+      <div class="tile"><div class="n">0</div><div class="l">deaths — the ship bar</div></div>
+      <div class="tile"><div class="n amber">473</div><div class="l">frames to beat the reference</div></div>
+      <div class="tile"><div class="n">~20×</div><div class="l">faster, rendering stubbed</div></div>
+      <div class="tile"><div class="n amber">4</div><div class="l">lenses: win · feel · record · judge</div></div>
+    </div>
+    <div class="pageno">14</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 15 · ZERO DEPENDENCY -->
+<section class="slide" style="background-image:url('img/zerodep.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.84),rgba(8,11,20,.48) 46%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · footprint</div><h2>Zero-dependency — and it stays that way</h2>
+    <div class="split">
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">The zero-dep amendment</h3>
+        <ul>
+          <li><b class="c">No dependencies, no devDependencies</b> — tests run on Node's built-in <code>node --test</code>.</li>
+          <li>The <b class="h">simulation is zero-dependency, forever.</b></li>
+          <li>Rich visuals may use vendored, pinned, MIT-licensed libs — <b class="c">lazy-imported in the browser only</b>, never on the headless/test path (enforced by a static-import sweep).</li>
+          <li>No CDN at runtime, ever.</li>
+        </ul>
+      </div>
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">What that weighs</h3>
+        <p style="font-size:11pt">A Claystone game ships as a <b class="h">static site</b> — readable ES modules, no bundle, no server needed to play.</p>
+        <div class="tiles" style="margin-top:4px">
+          <div class="tile"><div class="n">~0<span style="font-size:12pt">kb</span></div><div class="l">third-party on the play path</div></div>
+          <div class="tile"><div class="n amber">352<span style="font-size:12pt">kb</span></div><div class="l">total readable ES source</div></div>
+        </div>
+        <p style="font-size:9.8pt;color:#9fe8f4;margin-top:8px">For contrast, the Phaser build the other games ship is a fixed <b>1.13 MB</b> on every page load.</p>
+      </div>
+    </div>
+    <div class="pageno">15</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 16 · VS PHASER TABLE -->
+<section class="slide" style="background-image:url('img/vs1.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.86),rgba(8,11,20,.6) 45%,rgba(8,11,20,.9))"></div>
+  <div class="wrap" style="padding:13mm 18mm">
+    <div class="kicker">Claystone vs Phaser · the head-to-head</div><h2 style="margin-bottom:6px">One table, eight dimensions</h2>
+    <table class="cmp">
+      <tr><th>Dimension</th><th class="cs">Claystone 🧱</th><th class="ph">Phaser</th></tr>
+      <tr><td class="dim">Engine bundle</td><td class="cs"><b>~0 KB</b> third-party on the play path · 352 KB readable ES modules · zero runtime deps</td><td class="ph"><b>1.13 MB</b> <code>phaser.min.js</code> on every page</td></tr>
+      <tr><td class="dim">Determinism</td><td class="cs"><b>Native</b> — fixed 1/60s hand-stepped loop + seeded mulberry32, bit-exact</td><td class="ph"><b>Retrofitted</b> — SDK sleeps Phaser's clock + delta-clamp workaround</td></tr>
+      <tr><td class="dim">AI gate / replay / scan</td><td class="cs"><b>Built-in</b> · ~20× faster headless · proof-carrying ghost-run editor</td><td class="ph">Works — but only because the SDK forces determinism onto it</td></tr>
+      <tr><td class="dim">Rendering</td><td class="cs">null / canvas / optional pixi-WebGL · sim-blind FX · graceful degrade</td><td class="ph">Canvas/WebGL, mature — but GPU post-FX avoided (crashes in containers)</td></tr>
+      <tr><td class="dim">Physics</td><td class="cs">Custom AABB — one-way, swept, deterministic</td><td class="ph">Arcade AABB · Matter/Box2D available but unused here</td></tr>
+      <tr><td class="dim">Build step</td><td class="cs"><b>No-build</b> — static ES modules, served as-is</td><td class="ph"><b>No-build</b> too — loaded as a script-tag global</td></tr>
+      <tr><td class="dim">Maturity / ecosystem</td><td class="cs">v0.1.0, private, single-studio, purpose-built</td><td class="ph"><b>Mature</b> — 10+ yrs, huge community, deep docs</td></tr>
+      <tr><td class="dim">License</td><td class="cs">Proprietary (vendored FX libs are MIT)</td><td class="ph"><b>MIT</b>, open source</td></tr>
+    </table>
+    <div class="pageno">16</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 17 · VS PHASER — HONEST VERDICT -->
+<section class="slide" style="background-image:url('img/vs2.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.82),rgba(8,11,20,.5) 46%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Claystone vs Phaser · the honest read</div><h2>Different tools. Pick for the job.</h2>
+    <div class="split">
+      <div class="col cs">
+        <div class="ct">Claystone wins when…</div>
+        <ul>
+          <li>You need <b>reproducible 0-death gates</b>, replays and headless design scans.</li>
+          <li>An <b>AI builds and evaluates</b> the game — determinism is native, not bolted on.</li>
+          <li>Footprint matters — a static, ~0-dep site that loads instantly.</li>
+          <li>You want <b>full control</b> and a drop-in <code>Studio.*</code> seam to port games unchanged.</li>
+        </ul>
+      </div>
+      <div class="col ph">
+        <div class="ct">Phaser wins when…</div>
+        <ul>
+          <li><b>Maturity &amp; ecosystem</b> lead — thousands of examples, plugins, Stack Overflow.</li>
+          <li>A <b>human developer</b> wants the gentle on-ramp and vast public API.</li>
+          <li>You want <b>MIT open-source</b> governance and community ownership.</li>
+          <li>You need engine features Claystone deliberately skips (tilemaps, Matter/Box2D).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.4pt;color:#c3cee6"><b class="h">Kept honest:</b> the repos contain no head-to-head fps benchmark, and Claystone is pre-1.0. Its documented edges are <b class="c">determinism, footprint and AI-eval throughput</b> — not proven runtime-rendering superiority, and not ecosystem maturity, where Phaser clearly leads.</p></div>
+    <div class="pageno">17</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 18 · WHY THE DESIGN WORKS -->
+<section class="slide" style="background-image:url('img/whyworks.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.34) 42%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Why this design works</div><h2>Five choices that reinforce each other</h2>
+    <div class="grid3" style="margin-top:4px">
+      <div class="card tight"><h3 style="margin-top:2px">1 · Determinism is the keystone</h3><p style="font-size:10.2pt">Reproducibility isn't a feature — it's the foundation the gate, recorder, scans and editor all rest on. Get it right once, everything above becomes possible.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">2 · Headless-first is honest &amp; fast</h3><p style="font-size:10.2pt">Because headless equals rendered byte-for-byte, evaluation runs ~20× faster <i>and</i> tells the truth. Speed and fidelity stop being a trade-off.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">3 · Data, not paint</h3><p style="font-size:10.2pt">Levels-as-data with typed Materials make a world <i>readable</i> to an AI — danger and footing are facts it can reason over, so it can build and fix levels.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">4 · Beauty without risk</h3><p style="font-size:10.2pt">The sim-blind FX layer means rich weather, lights and post-FX can never destabilize the gate. Polish is free of consequence.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">5 · A shared seam</h3><p style="font-size:10.2pt">The same <code>Studio.*</code> SDK and 0-death contract span Phaser and Claystone — so a game is a drop-in port, not a rewrite.</p></div>
+      <div class="card tight" style="background:rgba(95,214,232,.12);border-color:rgba(95,214,232,.4)"><h3 style="margin-top:2px;color:#8fe3f0">The proof</h3><p style="font-size:10.2pt">Golden-trace parity: Claystone's runs are checked route-for-route against recorded Phaser traces — migration fidelity you can measure, not hope for.</p></div>
+    </div>
+    <div class="pageno">18</div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 19 · TEMPLATES INTRO -->
+<section class="slide" style="background-image:url('img/tpl-intro.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">The templates</div><h2>Hit "new game" and go</h2>
+    <div class="card" style="max-width:200mm">
+      <p class="lead">A single command clones a proven base, rebrands it, wires analytics and the notes bridge, writes a fresh build plan, creates a <b class="h">private GitHub repo</b>, pushes <code>main</code>, opens <b class="c">one issue per pipeline stage</b> plus a pinned build tracker, and registers the game with the mission-control hub.</p>
+      <p>The base isn't a skeleton — it's <b class="h">a complete, playable platformer wired to the whole stack</b>. You're live at scaffold time; from there you re-skin the top and let the pipeline run.</p>
+    </div>
+    <div class="steps" style="margin-top:14px">
+      <div class="step"><b>clone</b> proven base</div><div class="arrow">→</div>
+      <div class="step"><b>rebrand</b> + telemetry</div><div class="arrow">→</div>
+      <div class="step"><b>GitHub</b> repo + push</div><div class="arrow">→</div>
+      <div class="step"><b>issues</b> per stage</div><div class="arrow">→</div>
+      <div class="step"><b>register</b> with hub</div>
+    </div>
+    <div class="pageno">19</div><div class="brandmark">Templates</div>
+  </div>
+</section>
+
+<!-- 20 · WHAT'S IN THE BOX -->
+<section class="slide" style="background-image:url('img/tpl-box.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.84),rgba(8,11,20,.5) 46%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">The templates</div><h2>What ships in the box</h2>
+    <div class="split">
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Build &amp; design</h3>
+        <div class="feat"><ul style="margin:0">
+          <li><b class="c">Level DSL</b> — <code>Studio.Level.build</code></li>
+          <li><b class="c">Reward model</b> per-entity</li>
+          <li><b class="c">Autopilot</b> — the gate's bot</li>
+          <li><b class="c">Merge / checkpoints</b></li>
+        </ul><ul style="margin:0">
+          <li><b class="c">Art pipeline</b> — Nano Banana Pro</li>
+          <li><b class="c">Music</b> — Lyria per world</li>
+          <li><b class="c">Canvas level builder</b></li>
+          <li><b class="c">Chat brain</b> (Phaser base)</li>
+        </ul></div>
+      </div>
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Evaluate &amp; ship</h3>
+        <div class="feat"><ul style="margin:0">
+          <li><b class="c">0-death gate</b> — wincheck</li>
+          <li><b class="c">Felt-fun</b> — feel model + judge</li>
+          <li><b class="c">Deterministic recorder</b></li>
+          <li><b class="c">Vision art-director</b></li>
+        </ul><ul style="margin:0">
+          <li><b class="c">Notes → issues</b> bridge</li>
+          <li><b class="c">In-game build diary</b></li>
+          <li><b class="c">Shorts / video pipeline</b></li>
+          <li><b class="c">Railway deploy recipe</b></li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="card tight" style="margin-top:11px"><p style="margin:0;font-size:10.3pt;color:#c3cee6">Most tooling lives <b class="h">once</b> at the engine level and is inherited, not copied — so a fix to the gate or recorder improves every game at once. A curated set of <code>.claude</code> skills (<code>make-game · gate · design-pass · merge · trailer · add-character</code> …) drive it all.</p></div>
+    <div class="pageno">20</div><div class="brandmark">Templates</div>
+  </div>
+</section>
+
+<!-- 21 · TEMPLATE FLAVORS -->
+<section class="slide" style="background-image:url('img/tpl-flavors.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.84),rgba(8,11,20,.5) 46%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">The templates</div><h2>One base, three flavors</h2>
+    <div class="grid3" style="margin-top:4px">
+      <div class="card"><h3 style="margin-top:2px;color:#ffc386">studio-game-template</h3><p style="font-size:9pt;color:#9fe8f4;letter-spacing:.05em;text-transform:uppercase;margin:2px 0">the default</p><p style="font-size:10.2pt"><b class="c">Phaser 4</b> · arcade physics · webgl+canvas. Deliberately minimal — hub contracts + static game, one dependency. Ships with the <b class="h">deterministic 0-death eval</b>.</p></div>
+      <div class="card"><h3 style="margin-top:2px;color:#ffc386">game-template</h3><p style="font-size:9pt;color:#9fe8f4;letter-spacing:.05em;text-transform:uppercase;margin:2px 0">the fully-loaded one</p><p style="font-size:10.2pt"><b class="c">Phaser 3</b>, the richest tool tree — feel eval, recorder, showcase, plus an <b class="h">Anthropic chat brain</b> baked into the server. The "jazz" lineage.</p></div>
+      <div class="card" style="background:rgba(95,214,232,.10);border-color:rgba(95,214,232,.4)"><h3 style="margin-top:2px;color:#8fe3f0">claystone-platformer</h3><p style="font-size:9pt;color:#9fe8f4;letter-spacing:.05em;text-transform:uppercase;margin:2px 0">the determinism build</p><p style="font-size:10.2pt"><b class="c">Custom engine</b> · zero-dependency static site · same game runs headless in Node under the gate. <code>--engine claystone</code>.</p></div>
+    </div>
+    <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.6pt;color:#fff">The seam is the point: <b class="c">the same <code>Studio.*</code> SDK and the same 0-death gate contract span all three</b>. Phaser stays the default; Claystone is the opt-in determinism-first alternative — and a game moves between them as a port, not a rewrite.</p></div>
+    <div class="pageno">21</div><div class="brandmark">Templates</div>
+  </div>
+</section>
+
+<!-- 22 · THE PIPELINE -->
+<section class="slide" style="background-image:url('img/pipeline.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">The templates · the pipeline</div><h2>Concept in, <span class="cyan">shipped game out</span></h2>
+    <p style="max-width:200mm;font-size:12.5pt;color:#e8edf7">One runner executes the arc headlessly, with checkpoints, auto-retry and stop-on-fail — resumable from where it left off, with a live build board.</p>
+    <div class="steps" style="margin-top:8px">
+      <div class="step"><b>scaffold</b></div><div class="step"><b>identity</b></div><div class="step"><b>levels</b></div><div class="step"><b>gate</b></div><div class="step"><b>feel</b></div><div class="step"><b>art</b></div><div class="step"><b>music</b></div><div class="step"><b>deploy</b></div><div class="step"><b>videos</b></div><div class="step"><b>shorts</b></div><div class="step"><b>loop</b></div>
+    </div>
+    <div class="split" style="margin-top:14px">
+      <div class="card" style="flex:1"><h3 style="margin-top:2px">Deploy is a git push</h3><p style="font-size:10.4pt">One Railway project per game · <code>/health</code> check · a persistent volume so in-game notes survive redeploys · push <code>main</code> → auto-deploy. A <code>/api/version</code> commit SHA powers "tap to update" reloads.</p></div>
+      <div class="card" style="flex:1"><h3 style="margin-top:2px">Then it compounds</h3><p style="font-size:10.4pt">The recorder's clips become YouTube shorts &amp; playlists; PostHog + an ad-blocker-proof server counter feed real player signal — death-hotspots — back to <b class="h">calibrate the eval itself</b>. A flywheel, not a finish line.</p></div>
+    </div>
+    <div class="pageno">22</div><div class="brandmark">Templates</div>
+  </div>
+</section>
+
+<!-- 23 · RAINBOW RUN INTRO -->
+<section class="slide" style="background-image:url('img/rr-intro.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.44),rgba(8,11,20,.26) 42%,rgba(8,11,20,.86))"></div>
+  <div class="wrap">
+    <div class="kicker">The flagship</div><h2>Rainbow Run</h2>
+    <div class="card" style="max-width:198mm">
+      <p class="lead">"Run the rainbows with Labooboo &amp; Siya — the weather shifts as you go." A bright, children's-marker-art <b class="h">run · jump platformer</b> where every level is a distinct biome with its own signature traversal verb.</p>
+      <p>The story: a creeping grey hush called <b class="c">THE GREYOUT</b> is swallowing the rainbow roads. <b class="h">Labooboo</b> runs the ground, <b class="h">Siya the unicorn</b> runs the sky — racing the rainbows to relight them before the last colour fades. The antagonist isn't a boss to stomp; it's the colourless weather itself, felt as the world turns.</p>
+      <p style="font-size:10.4pt;color:#9fe8f4">Live: <code>rainbow-run-production.up.railway.app</code> — scaffolded from the studio template, then grown for months.</p>
+    </div>
+    <div class="pageno">23</div><div class="brandmark">Rainbow Run</div>
+  </div>
+</section>
+
+<!-- 24 · RAINBOW RUN WORLDS -->
+<section class="slide" style="background-image:url('img/rr-worlds.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.82),rgba(8,11,20,.5) 46%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Rainbow Run · scope</div><h2>25 worlds, 25 biomes — grown 5 → 20 → 25</h2>
+    <div class="tiles">
+      <div class="tile"><div class="n">25</div><div class="l">worlds / levels</div></div>
+      <div class="tile"><div class="n amber">11</div><div class="l">bosses, 11 themes</div></div>
+      <div class="tile"><div class="n">18</div><div class="l">power-ups, one spine</div></div>
+      <div class="tile"><div class="n amber">7+13</div><div class="l">enemy kinds + behaviors</div></div>
+      <div class="tile"><div class="n">5</div><div class="l">playable skins</div></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <p>Each world is a distinct biome + a single signature mechanic, built on a fractal length ladder (4000→10800px) with its own personality, palette, fauna and art set:</p>
+      <p style="font-size:10.2pt;color:#dbe6fb">Sunbeam Meadow · Drizzle Dunes · Rainbow Bridge · Frostspark Peaks · Thunder Heights · Bouncy Bog · Windy Cliffs · Cavern Depths · Lava Foundry · Clockwork Towers · Candy Kingdom · Aqua Reef · Haunted Hollow · Desert Mirage · Sky Citadel · Crystal Caves · Jungle Canopy · Volcano Rim · Frozen Tundra · Rainbow Cosmos · Prism Hollow · The Gearworks · Sky Rails · Sunken Vault · The Everstorm</p>
+      <p style="font-size:10pt;color:#9fe8f4;margin-top:6px">Signature mechanics span conveyors, bounce/dash pads, crumble bridges, fog + flicker, water, movers, chase, timed doors, portals, rotating gears, pendulum blades, ziplines, geysers, whirlpools and rhythm pads — variety kept by hand, so no two screens feel the same.</p>
+    </div>
+    <div class="pageno">24</div><div class="brandmark">Rainbow Run</div>
+  </div>
+</section>
+
+<!-- 25 · RAINBOW RUN ART + MUSIC -->
+<section class="slide" style="background-image:url('img/rr-art.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Rainbow Run · content pipeline</div><h2>Every sprite and score, generated</h2>
+    <div class="split">
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Art · Nano Banana Pro</h3>
+        <ul>
+          <li><b class="c">Gemini 3 Pro Image</b> (<code>gemini-3-pro-image-preview</code>) — this deck's art too.</li>
+          <li><b class="h">Reference-conditioned</b> sheets keep a character on-model across many poses.</li>
+          <li>Corner flood-fill background removal — no chroma-key.</li>
+          <li>Batch-API path ~50% cheaper for the ~640-asset build.</li>
+        </ul>
+        <p style="font-size:9.8pt;color:#9fe8f4"><code>assets/manifest.json</code> is the source of truth: <b class="h">242 assets</b>, 26 backdrops with 3-layer parallax.</p>
+      </div>
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">Music · Lyria</h3>
+        <ul>
+          <li>A distinct track per world + a title theme.</li>
+          <li><b class="c">11 boss themes</b> — Storm King, Bog Warden, Gale Wyvern, the VOID KING…</li>
+          <li><b class="h">38 tracks</b> in all, standardized on Lyria 3.</li>
+        </ul>
+        <p style="font-size:10pt;color:#dbe6fb;margin-top:6px">Art and music aren't hand-drawn assets bolted on — they're <b class="h">generated content the pipeline produces on demand</b>, versioned like code.</p>
+      </div>
+    </div>
+    <div class="pageno">25</div><div class="brandmark">Rainbow Run</div>
+  </div>
+</section>
+
+<!-- 26 · RAINBOW RUN FEEDBACK LOOP -->
+<section class="slide" style="background-image:url('img/rr-loop.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Rainbow Run · the living loop</div><h2>"I felt something" → it's fixed → it's on the record</h2>
+    <div class="steps" style="margin-top:6px">
+      <div class="step">📝 / 🎙️ <b>in-game note</b></div><div class="arrow">→</div>
+      <div class="step"><b>/api/notes</b> on volume</div><div class="arrow">→</div>
+      <div class="step"><b>GitHub issue</b> (auto)</div><div class="arrow">→</div>
+      <div class="step"><b>/fix-notes</b> → gate</div><div class="arrow">→</div>
+      <div class="step">✅ <b>fix comment</b> + close</div><div class="arrow">→</div>
+      <div class="step"><b>diary ledger</b></div>
+    </div>
+    <div class="card" style="margin-top:14px;max-width:200mm">
+      <p>Players leave typed or <b class="c">voice</b> notes right in the game. Each is de-duplicated and promoted to an <code>in-game-note</code> issue. The agent reproduces, fixes, <b class="h">re-gates at 0 deaths</b>, posts a ✅ fix comment, and closes it. That comment becomes the diary entry — a programmatic "Notes → fixes ledger" served in-game at <code>/diary.html</code>.</p>
+      <p style="font-size:10.2pt;color:#9fe8f4">The build diary holds <b class="h">75 dated entries + 41 numbered engine-level learnings</b> across 161 KB. The voice-note loop filed <b class="c">8 real issues within hours</b> of shipping.</p>
+    </div>
+    <div class="pageno">26</div><div class="brandmark">Rainbow Run</div>
+  </div>
+</section>
+
+<!-- 27 · RAINBOW RUN → CLAYSTONE -->
+<section class="slide" style="background-image:url('img/rr-migration.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Rainbow Run · the proof of the thesis</div><h2>The whole campaign now ships on <span class="cyan">Claystone</span></h2>
+    <div class="card" style="max-width:200mm">
+      <p class="lead">Rainbow Run — a full, months-grown Phaser game — was migrated onto Claystone and cut over. The migration validated every claim in this deck against real, shipped content.</p>
+      <div class="tiles" style="margin-top:8px">
+        <div class="tile"><div class="n">0.37<span style="font-size:13pt">s</span></div><div class="l">to gate all 25 levels</div></div>
+        <div class="tile"><div class="n amber">~15 min</div><div class="l">the same work on Phaser</div></div>
+        <div class="tile"><div class="n">25/25</div><div class="l">byte-identical round-trip</div></div>
+        <div class="tile"><div class="n amber">16 / 130</div><div class="l">SDK surfaces / call sites mapped</div></div>
+      </div>
+      <p style="margin-top:12px">"What took ~15 browser-minutes on Phaser runs in about a second here — and each run is <b class="h">bit-exact by construction</b>." Parity is proven route-for-route against recorded Phaser golden traces: same route, same outcome, 0 deaths, frames within ±10%.</p>
+    </div>
+    <div class="pageno">27</div><div class="brandmark">Rainbow Run</div>
+  </div>
+</section>
+
+<!-- 28 · CLOSING -->
+<section class="slide" style="background-image:url('img/closing.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.46),rgba(8,11,20,.3) 42%,rgba(8,11,20,.84))"></div>
+  <div class="wrap" style="justify-content:center">
+    <div class="kicker">Where this goes</div>
+    <h2 style="font-size:40pt;line-height:1.02">One engine. Many worlds.<br/><span class="cyan">A studio that improves itself.</span></h2>
+    <div class="card" style="max-width:196mm;margin-top:6px">
+      <p class="lead">Claystone makes games <b class="h">reproducible</b>. The templates make them <b class="h">fast</b>. The eval + feedback loops make them <b class="h">get better on their own</b>. Rainbow Run proves all three at once — 25 worlds, gated in a bit-exact third of a second.</p>
+      <p style="font-size:11pt;color:#c3cee6">The line to keep moving is the one between <b class="c">recipes an AI runs by hand</b> and <b class="c">machines that run themselves the same way every time</b>. Claystone is the machine the whole studio now stands on.</p>
+    </div>
+    <div class="foot"><p style="font-size:10pt;color:#8b98b4;letter-spacing:.06em">Claystone 🧱 · game-engine · rainbow-run — built &amp; AI-evaluated with Claude Code · art by Gemini Nano Banana Pro · 2026</p></div>
+  </div>
+</section>
+
+</body></html>

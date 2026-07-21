@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+import path from 'node:path';
+import fs from 'node:fs';
+const file = 'file://' + path.resolve('pitch/pitch.html');
+const b = await chromium.launch({ args: ['--no-sandbox'], executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const pg = await b.newPage();
+const errs = []; pg.on('pageerror', e => errs.push(String(e)));
+await pg.goto(file, { waitUntil: 'networkidle', timeout: 90000 });
+await pg.waitForTimeout(900);
+const out = 'pitch/claystone-pitch-deck.pdf';
+await pg.pdf({ path: out, preferCSSPageSize: true, printBackground: true });
+await b.close();
+const pages = (fs.readFileSync('pitch/pitch.html','utf8').match(/class="slide[ "]/g)||[]).length;
+console.log(`PDF: ${out} (${(fs.statSync(out).size/1024/1024).toFixed(1)} MB) · ${pages} slides · errors ${errs.length}`);
+if (errs.length) console.log(errs.slice(0,5).join('\n'));
