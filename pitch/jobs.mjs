@@ -75,6 +75,14 @@ export const JOBS = [
   ['rr-migration', '16:9',
     'A dramatic before/after of speed: a slow heavy amber hourglass draining over many minutes on the left, transforming into a single instantaneous blinding cyan flash on the right — the same work, minutes collapsing into one bit-exact second. Motion, acceleration, triumph.' + TOPBAND],
 
+  // ——— Added: evaluation deep-dive + drag-drop editor ———
+  ['why0death', '16:9',
+    'A single unbroken, continuous ribbon of cyan light tracing one flawless path from a glowing start flag, across a gauntlet of spikes, pits and hazards, to a goal flag — not one break, not one gap in the line, a large calm checkmark of light glowing above it. Beneath, a faint safety-net of light that never has to catch anything. Proof of a clean, deathless run. Warm clay platforms, dark stage.' + TOPBAND],
+  ['evals', '16:9',
+    'A dark control-room panel of several distinct glowing instruments side by side, each measuring a different quality of a small game-world hovering in the middle: a pass/fail gate, a glowing heart-meter (fun), a filmstrip recorder, a watching eye/lens, a compare/diff scale, and a live graph of player heat-dots. A row of different evaluators, each a different shape of light. Cyan and clay.' + DARK],
+  ['editor-dragdrop', '16:9',
+    'The Incredible Machine toybox moment: a frozen game-world with a collapsible glowing parts-tray drawer along the bottom edge holding little luminous part-icons; a hand/finger lifts one glowing part out of the tray and a translucent preview of it follows, snapping onto a bright grid with a green "legal" glow, while a faint ghost trail of light replays the level to prove the placement works. Drag-and-drop level building, as light. Warm clay blocks, cyan grid.' + TOPBAND],
+
   // ——— Closing ———
   ['closing', '16:9',
     'A serene wide vista: a whole constellation of glowing game-worlds floating in deep space, all connected by soft beams of light to a single bright central clay-stone core — a benevolent, growing network. Calm, hopeful, vast. A peaceful closing image.' + TOPBAND],

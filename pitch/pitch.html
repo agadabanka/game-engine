@@ -5,9 +5,9 @@
   @page { size: 330mm 185.625mm; margin: 0; }          /* 16:9 widescreen */
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
-  body{ font-family:"Helvetica Neue",Arial,sans-serif; color:#eef2f8; background:#0d1017; }
+  body{ font-family:"Helvetica Neue",Arial,sans-serif; color:#eef2f8; background:#0d1017; counter-reset:pg; }
   .slide{ position:relative; width:330mm; height:185.625mm; overflow:hidden; page-break-after:always;
-          background-size:cover; background-position:center; background-color:#0d1017; }
+          background-size:cover; background-position:center; background-color:#0d1017; counter-increment:pg; }
   .slide:last-child{ page-break-after:auto; }
   .scrim{ position:absolute; inset:0; }
   .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; padding:16mm 20mm; }
@@ -29,6 +29,7 @@
   pre code{ background:none; padding:0; color:#dfeaff; font-size:10pt; line-height:1.5; display:block; white-space:pre; }
   .foot{ margin-top:auto; }
   .pageno{ position:absolute; bottom:9mm; right:16mm; font-size:9pt; color:#8b98b4; letter-spacing:.05em; }
+  .pageno::after{ content:counter(pg,decimal-leading-zero); }
   .brandmark{ position:absolute; bottom:9mm; left:16mm; font-size:8.5pt; color:#8b98b4; letter-spacing:.18em; text-transform:uppercase; font-weight:700; }
   /* cover */
   .cover .wrap{ justify-content:center; }
@@ -87,7 +88,7 @@
 <section class="slide" style="background-image:url('img/agenda.jpg')">
   <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.82),rgba(8,11,20,.44) 45%,rgba(8,11,20,.86))"></div>
   <div class="wrap">
-    <div class="kicker">The structure of this deck</div><h2>Six acts, ~28 slides</h2>
+    <div class="kicker">The structure of this deck</div><h2>Six acts, 31 slides</h2>
     <div class="grid3" style="margin-top:4px">
       <div class="card tight"><h3 style="margin-top:2px">I · The problem &amp; the thesis</h3><p style="font-size:10.4pt">Why AI-built games hit a wall — and the single press that gets past it.</p></div>
       <div class="card tight"><h3 style="margin-top:2px">II · Claystone, feature by feature</h3><p style="font-size:10.4pt">The determinism lock-in, the architecture, and every subsystem.</p></div>
@@ -97,7 +98,7 @@
       <div class="card tight"><h3 style="margin-top:2px">VI · The whole system</h3><p style="font-size:10.4pt">How engine, templates and games compound into one studio.</p></div>
     </div>
     <div class="foot"><div class="card tight"><p style="margin:0;font-size:10.4pt;color:#cdd9f0">Every number and quote in this deck is drawn from the live repositories — <b class="c">claystone-engine</b>, <b class="c">game-engine</b>, the templates, and <b class="h">rainbow-run</b>.</p></div></div>
-    <div class="pageno">02</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -112,7 +113,7 @@
       <p class="quote">"An autopilot must win every level deterministically; flakiness would make the gate meaningless."</p>
       <p style="font-size:10.5pt;color:#c3cee6">So the real engineering problem isn't graphics. It's <b class="h">reproducibility</b> — a loop you can drive by hand, frame by frame, and get bit-identical results, forever.</p>
     </div>
-    <div class="pageno">03</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -126,7 +127,7 @@
       <p>Once live, players leave in-game notes; those become issues; the agent fixes them, re-gates, and writes the "why" into an in-game build diary. The game gets better on its own.</p>
       <p style="font-size:11pt">Everything in that loop — the gate, the recorder, the headless design scans, the ghost-run editor — <b class="h">stands on one foundation: a deterministic engine.</b> That engine is Claystone.</p>
     </div>
-    <div class="pageno">04</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -146,7 +147,7 @@
       <div class="tile"><div class="n amber">~20×</div><div class="l">faster headless</div></div>
       <div class="tile"><div class="n">v0.1</div><div class="l">and already shipping games</div></div>
     </div>
-    <div class="pageno">05</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -175,7 +176,7 @@ const s = game.snapshot();
         <p style="font-size:9.8pt;color:#9fe8f4;margin-top:8px">Proven: two independent gate runs end identical; a 360-frame recording replays byte-for-byte.</p>
       </div>
     </div>
-    <div class="pageno">06</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -213,7 +214,7 @@ const s = game.snapshot();
         <p style="font-size:9.6pt;color:#9fe8f4;margin-top:8px">One <code>Studio.*</code> SDK sits on top — the same call surface a Phaser game uses.</p>
       </div>
     </div>
-    <div class="pageno">07</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -241,7 +242,7 @@ const s = game.snapshot();
       </div>
     </div>
     <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.6pt">The other half is discipline: a documented <b class="h">fixed update order</b> (game update before physics) — a real Rainbow Run bug traced to a sub-frame phase offset that compounded into a missed landing. Order is now test-locked.</p></div>
-    <div class="pageno">08</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -263,7 +264,7 @@ const s = game.snapshot();
       </ul></div>
     </div>
     <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.5pt;color:#c3cee6">Deliberately <b class="h">not</b> built: tilemaps (levels are data), Matter/Box2D, gamepad, bitmap fonts. The explainer estimates the loop + AABB physics are <b class="c">~70% of the risk</b> in any engine replacement — so Claystone owns exactly those.</p></div>
-    <div class="pageno">09</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -278,7 +279,7 @@ const s = game.snapshot();
       <div class="card tight"><h3 style="margin-top:2px">pixi · rich</h3><p style="font-size:10.3pt">Vendored <b class="c">PixiJS v8</b> (WebGL), lazily imported in-browser only. GPU bloom, grade, CRT, lights.</p></div>
     </div>
     <div class="card" style="margin-top:12px"><p style="margin:0"><b class="h">The invariant:</b> the simulation never touches a renderer. Headless equals rendered, byte-for-byte — so you can evaluate a game at 20× speed with total confidence it matches what a player sees. Pick a backend with <code>?r=</code>; pixi falls back to canvas when GL is missing.</p></div>
-    <div class="pageno">10</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -312,7 +313,7 @@ const s = game.snapshot();
       </div>
     </div>
     <div class="card tight" style="margin-top:11px"><p style="margin:0;font-size:10.3pt;color:#c3cee6">Graceful degrade is a rule, not luck: <b class="h">"geometry-ish atmosphere degrades, filter-ish polish disappears"</b> — full on pixi, softened on canvas, inert headless. The gate compares sim output: byte-identical with any FX declared.</p></div>
-    <div class="pageno">11</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -338,7 +339,7 @@ const s = game.snapshot();
         <p style="font-size:10.8pt;color:#fff"><b class="h">Levels are AI-completable by construction</b> — because "deadly" and "footing" are <b class="c">data, not pixels</b>. An agent can read a level's danger and reason about it directly.</p>
       </div>
     </div>
-    <div class="pageno">12</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -365,7 +366,37 @@ const s = game.snapshot();
         <p style="font-size:10pt;color:#9fe8f4;margin-top:6px"><b class="h">On Rainbow Run:</b> the law-book went from <b class="c">596 false alarms → 0</b> across 2,061 blocks.</p>
       </div>
     </div>
-    <div class="pageno">13</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 13b · FEATURE: DRAG-AND-DROP EDITOR -->
+<section class="slide" style="background-image:url('img/editor-dragdrop.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 40%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Feature · the editor · "the game IS the editor"</div><h2>Freeze the frame, drag a part from the toybox, drop it in</h2>
+    <div class="split">
+      <div class="card" style="flex:1.05">
+        <h3 style="margin-top:2px">The drag-and-drop moment</h3>
+        <ul>
+          <li>Press <b class="c">Tab</b> — the sim freezes on the <b class="h">exact current frame</b> (the engine owns the clock).</li>
+          <li>Blocks grow <b class="c">drag handles</b>; move &amp; resize with <b class="c">grid snapping</b> (20px).</li>
+          <li>A collapsible <b class="h">Toybox tray</b> holds the game's parts — press one and a translucent preview <b class="c">follows your finger in world space</b>.</li>
+          <li><b class="c">Live law feedback</b> as you drag: <span style="color:#7fe3b0">green = legal</span>, <span style="color:#ffc386">amber = the law-book objects</span>.</li>
+          <li>Release → the part drops with its <b class="h">proven defaults</b> merged at that point.</li>
+        </ul>
+      </div>
+      <div class="card" style="flex:.95">
+        <h3 style="margin-top:2px">Why it stays trustworthy</h3>
+        <ul>
+          <li>Every drop <b class="c">re-runs the ghost</b> — an instant invisible playthrough ("start the machine"); a <b class="h">gate chip</b> shows live ✅ / ❌.</li>
+          <li>Edits live in the session's spec and <b class="c">apply on restart, never mid-run</b> — so determinism holds. Tab again resumes the original run untouched.</li>
+          <li>The tray is <b class="h">extracted, not declared</b> — a census of every part actually used across shipped levels, usage-ranked; unbuildable parts are greyed, not hidden.</li>
+        </ul>
+        <p style="font-size:9.6pt;color:#9fe8f4;margin-top:6px">Parts bin into <span class="chip">Terrain</span><span class="chip">Gadgets</span><span class="chip">Creatures</span><span class="chip">Pickups</span><span class="chip a">Hazards</span> — plus <b class="h">Combos</b>: drop-proven multi-part prefabs.</p>
+      </div>
+    </div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -384,7 +415,55 @@ const s = game.snapshot();
       <div class="tile"><div class="n">~20×</div><div class="l">faster, rendering stubbed</div></div>
       <div class="tile"><div class="n amber">4</div><div class="l">lenses: win · feel · record · judge</div></div>
     </div>
-    <div class="pageno">14</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 14b · WHY 0-DEATH -->
+<section class="slide" style="background-image:url('img/why0death.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.5),rgba(8,11,20,.32) 42%,rgba(8,11,20,.9))"></div>
+  <div class="wrap">
+    <div class="kicker">Why the bar is 0 deaths</div><h2>One clean run is the studio's whole safety net</h2>
+    <div class="grid3" style="margin-top:4px">
+      <div class="card tight"><h3 style="margin-top:2px">1 · Proof it's solvable &amp; fair</h3><p style="font-size:10.2pt">An AI placing levels at scale has no gut feel. A 0-death run is a <b class="h">machine-checkable proof</b> a real, executable path exists — no impossible jumps, no unreachable goals.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">2 · Binary — so it can be a gate</h3><p style="font-size:10.2pt">"Fun" is fuzzy; <b class="c">pass/fail</b> is not. Only an unambiguous bar can be wired into CI as a hard ship rule the machine enforces every time.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">3 · It lets one person ship</h3><p style="font-size:10.2pt">It's a <b class="h">robot QA team you trust more than yourself</b> — running on every level, every change, so nobody replays 25 worlds by hand.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">4 · Only real because it's deterministic</h3><p style="font-size:10.2pt">A pass is worthless if the next run might die from a timing fluke. Claystone's bit-exact loop makes "0 deaths" a <b class="c">durable fact, not a lucky roll</b>.</p></div>
+      <div class="card tight"><h3 style="margin-top:2px">5 · It actually discriminates</h3><p style="font-size:10.2pt">Give the bot its jump → it wins clean. Take the jump away → it falls in the pit and reports <code>dead</code>. A gate that only ever says "pass" proves nothing — this one doesn't.</p></div>
+      <div class="card tight" style="background:rgba(95,214,232,.12);border-color:rgba(95,214,232,.4)"><h3 style="margin-top:2px;color:#8fe3f0">A floor, not a ceiling</h3><p style="font-size:10.2pt">0-death proves a level is <b class="h">beatable and fair</b> — not that it's <i>fun</i>. That's a separate axis (the felt-fun eval). This is the non-negotiable baseline everything else builds on.</p></div>
+    </div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
+  </div>
+</section>
+
+<!-- 14c · THE FULL EVAL SUITE -->
+<section class="slide" style="background-image:url('img/evals.jpg')">
+  <div class="scrim" style="background:linear-gradient(180deg,rgba(8,11,20,.84),rgba(8,11,20,.5) 46%,rgba(8,11,20,.88))"></div>
+  <div class="wrap">
+    <div class="kicker">Beyond the gate</div><h2>0-death is one lens. The playtester has several.</h2>
+    <div class="split">
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">The core evaluators</h3>
+        <ul>
+          <li><b class="c">wincheck</b> — the 0-death gate; the ship bar.</li>
+          <li><b class="c">feel</b> — a felt-fun score (engagement, dynamics, arc, flow) that catches "beatable but boring."</li>
+          <li><b class="c">record</b> — the deterministic recorder; bit-identical replays and video.</li>
+          <li><b class="c">judge</b> — a vision art-director that eyeballs frames for look &amp; readability.</li>
+          <li><b class="c">game-diff / feel-judge</b> — prove a new game is genuinely <i>its own game</i>, not a re-skin.</li>
+        </ul>
+      </div>
+      <div class="card" style="flex:1">
+        <h3 style="margin-top:2px">The reproducibility &amp; reality checks</h3>
+        <ul>
+          <li><b class="c">determinism check</b> — two fresh runs must end byte-identical on x/y/vx/vy/frame/deaths/won/coins.</li>
+          <li><b class="c">parity gate</b> — Claystone runs matched route-for-route against recorded Phaser golden traces (±10% frames, ≤40px route drift).</li>
+          <li><b class="c">non-black render</b> — the frame actually drew something, on webgl <i>and</i> canvas.</li>
+          <li><b class="c">analytics-calibrated eval</b> — real player death-hotspots feed back so the bot is tuned to where humans actually struggle.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card tight" style="margin-top:11px"><p style="margin:0;font-size:10.4pt;color:#c3cee6">The perfect autopilot once "shipped the NEXT button broken twice" — so the eval doesn't stop at <i>can the bot win</i>. It asks <b class="h">does it render, is it fun, does it reproduce, and does it match how real people play</b>.</p></div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -413,7 +492,7 @@ const s = game.snapshot();
         <p style="font-size:9.8pt;color:#9fe8f4;margin-top:8px">For contrast, the Phaser build the other games ship is a fixed <b>1.13 MB</b> on every page load.</p>
       </div>
     </div>
-    <div class="pageno">15</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -433,7 +512,7 @@ const s = game.snapshot();
       <tr><td class="dim">Maturity / ecosystem</td><td class="cs">v0.1.0, private, single-studio, purpose-built</td><td class="ph"><b>Mature</b> — 10+ yrs, huge community, deep docs</td></tr>
       <tr><td class="dim">License</td><td class="cs">Proprietary (vendored FX libs are MIT)</td><td class="ph"><b>MIT</b>, open source</td></tr>
     </table>
-    <div class="pageno">16</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -463,7 +542,7 @@ const s = game.snapshot();
       </div>
     </div>
     <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.4pt;color:#c3cee6"><b class="h">Kept honest:</b> the repos contain no head-to-head fps benchmark, and Claystone is pre-1.0. Its documented edges are <b class="c">determinism, footprint and AI-eval throughput</b> — not proven runtime-rendering superiority, and not ecosystem maturity, where Phaser clearly leads.</p></div>
-    <div class="pageno">17</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -480,7 +559,7 @@ const s = game.snapshot();
       <div class="card tight"><h3 style="margin-top:2px">5 · A shared seam</h3><p style="font-size:10.2pt">The same <code>Studio.*</code> SDK and 0-death contract span Phaser and Claystone — so a game is a drop-in port, not a rewrite.</p></div>
       <div class="card tight" style="background:rgba(95,214,232,.12);border-color:rgba(95,214,232,.4)"><h3 style="margin-top:2px;color:#8fe3f0">The proof</h3><p style="font-size:10.2pt">Golden-trace parity: Claystone's runs are checked route-for-route against recorded Phaser traces — migration fidelity you can measure, not hope for.</p></div>
     </div>
-    <div class="pageno">18</div><div class="brandmark">Claystone</div>
+    <div class="pageno"></div><div class="brandmark">Claystone</div>
   </div>
 </section>
 
@@ -500,7 +579,7 @@ const s = game.snapshot();
       <div class="step"><b>issues</b> per stage</div><div class="arrow">→</div>
       <div class="step"><b>register</b> with hub</div>
     </div>
-    <div class="pageno">19</div><div class="brandmark">Templates</div>
+    <div class="pageno"></div><div class="brandmark">Templates</div>
   </div>
 </section>
 
@@ -540,7 +619,7 @@ const s = game.snapshot();
       </div>
     </div>
     <div class="card tight" style="margin-top:11px"><p style="margin:0;font-size:10.3pt;color:#c3cee6">Most tooling lives <b class="h">once</b> at the engine level and is inherited, not copied — so a fix to the gate or recorder improves every game at once. A curated set of <code>.claude</code> skills (<code>make-game · gate · design-pass · merge · trailer · add-character</code> …) drive it all.</p></div>
-    <div class="pageno">20</div><div class="brandmark">Templates</div>
+    <div class="pageno"></div><div class="brandmark">Templates</div>
   </div>
 </section>
 
@@ -555,7 +634,7 @@ const s = game.snapshot();
       <div class="card" style="background:rgba(95,214,232,.10);border-color:rgba(95,214,232,.4)"><h3 style="margin-top:2px;color:#8fe3f0">claystone-platformer</h3><p style="font-size:9pt;color:#9fe8f4;letter-spacing:.05em;text-transform:uppercase;margin:2px 0">the determinism build</p><p style="font-size:10.2pt"><b class="c">Custom engine</b> · zero-dependency static site · same game runs headless in Node under the gate. <code>--engine claystone</code>.</p></div>
     </div>
     <div class="card tight" style="margin-top:12px"><p style="margin:0;font-size:10.6pt;color:#fff">The seam is the point: <b class="c">the same <code>Studio.*</code> SDK and the same 0-death gate contract span all three</b>. Phaser stays the default; Claystone is the opt-in determinism-first alternative — and a game moves between them as a port, not a rewrite.</p></div>
-    <div class="pageno">21</div><div class="brandmark">Templates</div>
+    <div class="pageno"></div><div class="brandmark">Templates</div>
   </div>
 </section>
 
@@ -572,7 +651,7 @@ const s = game.snapshot();
       <div class="card" style="flex:1"><h3 style="margin-top:2px">Deploy is a git push</h3><p style="font-size:10.4pt">One Railway project per game · <code>/health</code> check · a persistent volume so in-game notes survive redeploys · push <code>main</code> → auto-deploy. A <code>/api/version</code> commit SHA powers "tap to update" reloads.</p></div>
       <div class="card" style="flex:1"><h3 style="margin-top:2px">Then it compounds</h3><p style="font-size:10.4pt">The recorder's clips become YouTube shorts &amp; playlists; PostHog + an ad-blocker-proof server counter feed real player signal — death-hotspots — back to <b class="h">calibrate the eval itself</b>. A flywheel, not a finish line.</p></div>
     </div>
-    <div class="pageno">22</div><div class="brandmark">Templates</div>
+    <div class="pageno"></div><div class="brandmark">Templates</div>
   </div>
 </section>
 
@@ -586,7 +665,7 @@ const s = game.snapshot();
       <p>The story: a creeping grey hush called <b class="c">THE GREYOUT</b> is swallowing the rainbow roads. <b class="h">Labooboo</b> runs the ground, <b class="h">Siya the unicorn</b> runs the sky — racing the rainbows to relight them before the last colour fades. The antagonist isn't a boss to stomp; it's the colourless weather itself, felt as the world turns.</p>
       <p style="font-size:10.4pt;color:#9fe8f4">Live: <code>rainbow-run-production.up.railway.app</code> — scaffolded from the studio template, then grown for months.</p>
     </div>
-    <div class="pageno">23</div><div class="brandmark">Rainbow Run</div>
+    <div class="pageno"></div><div class="brandmark">Rainbow Run</div>
   </div>
 </section>
 
@@ -607,7 +686,7 @@ const s = game.snapshot();
       <p style="font-size:10.2pt;color:#dbe6fb">Sunbeam Meadow · Drizzle Dunes · Rainbow Bridge · Frostspark Peaks · Thunder Heights · Bouncy Bog · Windy Cliffs · Cavern Depths · Lava Foundry · Clockwork Towers · Candy Kingdom · Aqua Reef · Haunted Hollow · Desert Mirage · Sky Citadel · Crystal Caves · Jungle Canopy · Volcano Rim · Frozen Tundra · Rainbow Cosmos · Prism Hollow · The Gearworks · Sky Rails · Sunken Vault · The Everstorm</p>
       <p style="font-size:10pt;color:#9fe8f4;margin-top:6px">Signature mechanics span conveyors, bounce/dash pads, crumble bridges, fog + flicker, water, movers, chase, timed doors, portals, rotating gears, pendulum blades, ziplines, geysers, whirlpools and rhythm pads — variety kept by hand, so no two screens feel the same.</p>
     </div>
-    <div class="pageno">24</div><div class="brandmark">Rainbow Run</div>
+    <div class="pageno"></div><div class="brandmark">Rainbow Run</div>
   </div>
 </section>
 
@@ -637,7 +716,7 @@ const s = game.snapshot();
         <p style="font-size:10pt;color:#dbe6fb;margin-top:6px">Art and music aren't hand-drawn assets bolted on — they're <b class="h">generated content the pipeline produces on demand</b>, versioned like code.</p>
       </div>
     </div>
-    <div class="pageno">25</div><div class="brandmark">Rainbow Run</div>
+    <div class="pageno"></div><div class="brandmark">Rainbow Run</div>
   </div>
 </section>
 
@@ -658,7 +737,7 @@ const s = game.snapshot();
       <p>Players leave typed or <b class="c">voice</b> notes right in the game. Each is de-duplicated and promoted to an <code>in-game-note</code> issue. The agent reproduces, fixes, <b class="h">re-gates at 0 deaths</b>, posts a ✅ fix comment, and closes it. That comment becomes the diary entry — a programmatic "Notes → fixes ledger" served in-game at <code>/diary.html</code>.</p>
       <p style="font-size:10.2pt;color:#9fe8f4">The build diary holds <b class="h">75 dated entries + 41 numbered engine-level learnings</b> across 161 KB. The voice-note loop filed <b class="c">8 real issues within hours</b> of shipping.</p>
     </div>
-    <div class="pageno">26</div><div class="brandmark">Rainbow Run</div>
+    <div class="pageno"></div><div class="brandmark">Rainbow Run</div>
   </div>
 </section>
 
@@ -677,7 +756,7 @@ const s = game.snapshot();
       </div>
       <p style="margin-top:12px">"What took ~15 browser-minutes on Phaser runs in about a second here — and each run is <b class="h">bit-exact by construction</b>." Parity is proven route-for-route against recorded Phaser golden traces: same route, same outcome, 0 deaths, frames within ±10%.</p>
     </div>
-    <div class="pageno">27</div><div class="brandmark">Rainbow Run</div>
+    <div class="pageno"></div><div class="brandmark">Rainbow Run</div>
   </div>
 </section>
 
